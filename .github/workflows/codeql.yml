@@ -1,0 +1,47 @@
+name: CodeQL
+
+# Static security analysis on every push and PR. Catches SQL injection,
+# path traversal, unsafe deserialization, hardcoded credentials, and
+# other patterns GitHub's security researchers catalog.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan on Mondays at 06:00 UTC for new vulnerabilities.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            paths: |
+              Browserapp/
+              tests/
+              eslint.config.js
+              commitlint.config.js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # CodeQL needs full git history for accurate analysis
+          fetch-depth: 0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'

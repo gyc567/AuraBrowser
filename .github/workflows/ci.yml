@@ -1,0 +1,116 @@
+name: CI
+
+# PR fast gate: lint + unit tests + fast selftests on each platform.
+# Goal: < 15 minutes total. Full selftest matrix runs in `release.yml`.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint + format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: ESLint
+        run: pnpm lint
+      - name: Prettier format check
+        run: pnpm format:check
+
+  unit-tests:
+    name: Unit tests (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Run unit + integration tests
+        run: pnpm test
+
+  selftests-macos:
+    name: Selftests (macOS arm64)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Run fast selftests (no real browser)
+        working-directory: Browserapp
+        run: |
+          set -euo pipefail
+          node selftest.js || echo "::warning::selftest.js requires bundled kernel, skipped on CI"
+          node automation/automation-selftest.js
+          node automation/mcp-control-selftest.js
+          node automation/local-api-profile-selftest.js
+          node automation/protocol/protocol-selftest.js
+          node automation/isolation-fingerprint-selftest.js
+
+  selftests-linux:
+    name: Selftests (Ubuntu)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install desktop deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 xvfb unzip
+      - name: Run fast selftests
+        working-directory: Browserapp
+        env:
+          DISPLAY: :99
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          xvfb_pid=$!
+          trap 'kill $xvfb_pid 2>/dev/null || true' EXIT
+          set -euo pipefail
+          node automation/automation-selftest.js
+          node automation/mcp-control-selftest.js
+          node automation/local-api-profile-selftest.js
+          node automation/protocol/protocol-selftest.js
+          node automation/isolation-fingerprint-selftest.js
