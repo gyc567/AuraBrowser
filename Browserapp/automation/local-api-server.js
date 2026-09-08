@@ -6,11 +6,32 @@ const { URL } = require('url');
 
 const MAX_BODY_BYTES = 1024 * 1024;
 
+// Default CORS allowlist: only Electron-style origins (file://, app://, null) and
+// the loopback HTTP(S) used by the bundled UI. Any other origin is denied.
+//
+// Why these defaults?
+//   - 'null' / file:// : Chromium loads some bundled pages with Origin: null or file://.
+//     These are SAME-MACHINE Electron contexts, not external browsers.
+//   - app:// : Electron's app: protocol (used in production builds).
+//   - http(s)://127.0.0.1 / http(s)://localhost : only if a developer opts in via
+//     options.allowedOrigins (not enabled by default — the renderer should call
+//     via IPC, not direct fetch).
+//
+// Operators can extend this set via options.allowedOrigins. Pass an explicit
+// `null` (not undefined) to disable the default and require exact-match only.
+const DEFAULT_ALLOWED_ORIGINS = new Set(['null', 'file://', 'app://openbrowser']);
+
 function responseHeaders(origin = '') {
   const headers = {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
+    // Never let the API be embedded in a frame, regardless of consumer.
+    'X-Frame-Options': 'DENY',
+    // Do not leak the request URL to third parties.
+    'Referrer-Policy': 'no-referrer',
+    // Disable powerful browser features by default for API consumers.
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
   };
   if (origin) {
     headers['Access-Control-Allow-Origin'] = origin;
@@ -72,7 +93,9 @@ function parseGeolocation(value) {
   if (value && typeof value === 'object') {
     return [Number(value.latitude ?? value.lat), Number(value.longitude ?? value.lon ?? value.lng)];
   }
-  const parts = String(value || '').split(/[,;:\s]+/).map(Number);
+  const parts = String(value || '')
+    .split(/[,;:\s]+/)
+    .map(Number);
   if (parts.length >= 2 && parts.every(Number.isFinite)) return [parts[0], parts[1]];
   return [NaN, NaN];
 }
@@ -174,7 +197,16 @@ class LocalApiServer {
     this.host = options.host || '127.0.0.1';
     this.port = Number(options.port) || 50325;
     this.apiKey = options.apiKey ? String(options.apiKey) : crypto.randomBytes(32).toString('base64url');
-    this.allowedOrigins = new Set(options.allowedOrigins || []);
+    // CORS allowlist: default to safe local Electron origins only.
+    // Pass `allowedOrigins: null` to require exact match (no defaults).
+    // Pass `allowedOrigins: []` (empty array) to deny all browser cross-origin.
+    if (options.allowedOrigins === null) {
+      this.allowedOrigins = new Set();
+    } else if (Array.isArray(options.allowedOrigins)) {
+      this.allowedOrigins = new Set(options.allowedOrigins);
+    } else {
+      this.allowedOrigins = new Set(DEFAULT_ALLOWED_ORIGINS);
+    }
     this.engine = options.engine;
     this.rpaEngine = options.rpaEngine;
     this.rpaStore = options.rpaStore;
@@ -191,7 +223,12 @@ class LocalApiServer {
     const headerKey = req.headers['api-key'] || req.headers['x-api-key'] || '';
     const auth = String(req.headers.authorization || '');
     const bearer = auth.toLowerCase().startsWith('bearer ') ? auth.slice(7).trim() : '';
-    const queryKey = url?.searchParams ? (url.searchParams.get('api_key') || url.searchParams.get('api_token') || url.searchParams.get('key') || '') : '';
+    const queryKey = url?.searchParams
+      ? url.searchParams.get('api_key') ||
+        url.searchParams.get('api_token') ||
+        url.searchParams.get('key') ||
+        ''
+      : '';
     let supplied = String(headerKey || bearer || queryKey || '').trim();
     if (supplied.startsWith('"') && supplied.endsWith('"')) supplied = supplied.slice(1, -1);
     if (supplied.startsWith("'") && supplied.endsWith("'")) supplied = supplied.slice(1, -1);
@@ -281,44 +318,76 @@ class LocalApiServer {
     }
 
     // ---- profiles (v1-style) ----
-    if (pathname === '/api/v1/user/list' || pathname === '/api/v2/browser-profile/list' || pathname === '/api/profiles') {
+    if (
+      pathname === '/api/v1/user/list' ||
+      pathname === '/api/v2/browser-profile/list' ||
+      pathname === '/api/profiles'
+    ) {
       const list = this.engine.status().map((item) => ({
         user_id: item.id,
         profile_id: item.id,
         name: item.name,
         number: item.number,
         status: item.running ? 'Active' : 'Inactive',
-        ws: item.port ? { puppeteer: `http://127.0.0.1:${item.port}`, selenium: `127.0.0.1:${item.port}` } : null,
+        ws: item.port
+          ? { puppeteer: `http://127.0.0.1:${item.port}`, selenium: `127.0.0.1:${item.port}` }
+          : null,
         debug_port: item.port || null,
       }));
       return ok({ list, page: 1, page_size: list.length });
     }
 
-    if (pathname === '/api/v1/user/create' || pathname === '/api/v2/browser-profile/create' || pathname === '/api/profiles/create') {
+    if (
+      pathname === '/api/v1/user/create' ||
+      pathname === '/api/v2/browser-profile/create' ||
+      pathname === '/api/profiles/create'
+    ) {
       if (!this.engine) return fail('profile engine unavailable');
-      const body = normalizeProfileInput(input && typeof input.profile === 'object' ? { ...input, ...input.profile } : input);
+      const body = normalizeProfileInput(
+        input && typeof input.profile === 'object' ? { ...input, ...input.profile } : input
+      );
       const existingIds = new Set(this.engine.profiles ? [...this.engine.profiles.keys()] : []);
       let id = String(body.user_id || body.profile_id || body.id || '').trim();
       if (!id) {
-        do { id = 'ob-' + Date.now().toString(36) + '-' + crypto.randomBytes(5).toString('hex'); } while (existingIds.has(id));
+        do {
+          id = 'ob-' + Date.now().toString(36) + '-' + crypto.randomBytes(5).toString('hex');
+        } while (existingIds.has(id));
       }
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return fail('invalid profile id');
       if (existingIds.has(id)) return fail('profile already exists');
-      const numbers = this.engine.profiles ? [...this.engine.profiles.values()].map((item) => Number(item.number)).filter((n) => Number.isInteger(n) && n > 0) : [];
-      const number = Number.isInteger(Number(body.number)) && Number(body.number) > 0 ? Number(body.number) : ((Math.max(0, ...numbers) || 0) + 1);
+      const numbers = this.engine.profiles
+        ? [...this.engine.profiles.values()]
+            .map((item) => Number(item.number))
+            .filter((n) => Number.isInteger(n) && n > 0)
+        : [];
+      const number =
+        Number.isInteger(Number(body.number)) && Number(body.number) > 0
+          ? Number(body.number)
+          : (Math.max(0, ...numbers) || 0) + 1;
       const rawProxy = String(body.proxy || '').trim();
-      const userProxy = body.user_proxy_config && typeof body.user_proxy_config === 'object' ? body.user_proxy_config : {};
+      const userProxy =
+        body.user_proxy_config && typeof body.user_proxy_config === 'object' ? body.user_proxy_config : {};
       const proxyType = String(userProxy.proxy_type || 'http').toLowerCase();
       const proxyHost = String(userProxy.proxy_host || '').trim();
       const proxyPort = String(userProxy.proxy_port || '').trim();
       const proxyUser = String(userProxy.proxy_user || '');
       const proxyPassword = String(userProxy.proxy_password || '');
-      const proxy = rawProxy || (proxyHost && proxyPort ? (proxyType === 'socks' ? 'socks5' : proxyType) + '://' + (proxyUser ? encodeURIComponent(proxyUser) + ':' + encodeURIComponent(proxyPassword) + '@' : '') + proxyHost + ':' + proxyPort : 'Direct');
+      const proxy =
+        rawProxy ||
+        (proxyHost && proxyPort
+          ? (proxyType === 'socks' ? 'socks5' : proxyType) +
+            '://' +
+            (proxyUser ? encodeURIComponent(proxyUser) + ':' + encodeURIComponent(proxyPassword) + '@' : '') +
+            proxyHost +
+            ':' +
+            proxyPort
+          : 'Direct');
       const profile = {
         ...body,
-        id, number,
-        name: String(body.name || body.title || ('Environment ' + number)),
-        title: String(body.title || body.name || ('Environment ' + number)),
+        id,
+        number,
+        name: String(body.name || body.title || 'Environment ' + number),
+        title: String(body.title || body.name || 'Environment ' + number),
         language: String(body.language || 'en-US'),
         networkMode: body.networkMode || (/^(direct|offline|none)$/i.test(proxy) ? 'direct' : 'proxy'),
         proxy,
@@ -347,14 +416,45 @@ class LocalApiServer {
       if (!id) return fail('profile id required');
       const current = this.engine.profiles.get(id);
       if (!current) return fail('profile not found');
-      const clearFingerprint = Boolean(input.__clearFingerprint) || input.fingerprint === null || input.privacy?.fingerprint === null;
+      const clearFingerprint =
+        Boolean(input.__clearFingerprint) ||
+        input.fingerprint === null ||
+        input.privacy?.fingerprint === null;
       const body = normalizeProfileInput(input);
       const allowed = new Set([
-        'name', 'title', 'number', 'language', 'proxy', 'networkMode', 'startUrl', 'os', 'platform',
-        'browser', 'userAgent', 'resolution', 'windowSize', 'timezone', 'locale', 'languageCode',
-        'geolocation', 'webglVendor', 'webglRenderer', 'hardwareConcurrency', 'deviceMemory', 'doNotTrack',
-        'privacy', 'fingerprint', 'user_proxy_config', 'note', 'width', 'height', 'advanced',
-        'proxyMeta', 'tag', 'groupId', 'group_name',
+        'name',
+        'title',
+        'number',
+        'language',
+        'proxy',
+        'networkMode',
+        'startUrl',
+        'os',
+        'platform',
+        'browser',
+        'userAgent',
+        'resolution',
+        'windowSize',
+        'timezone',
+        'locale',
+        'languageCode',
+        'geolocation',
+        'webglVendor',
+        'webglRenderer',
+        'hardwareConcurrency',
+        'deviceMemory',
+        'doNotTrack',
+        'privacy',
+        'fingerprint',
+        'user_proxy_config',
+        'note',
+        'width',
+        'height',
+        'advanced',
+        'proxyMeta',
+        'tag',
+        'groupId',
+        'group_name',
       ]);
       const patch = {};
       for (const [key, value] of Object.entries(body)) {
@@ -368,21 +468,29 @@ class LocalApiServer {
           const next = { ...(current.privacy || {}), ...(value && typeof value === 'object' ? value : {}) };
           if (clearFingerprint) delete next.fingerprint;
           patch.privacy = next;
-        }
-        else if (key === 'platform' && value && typeof value === 'object') patch.platform = { ...(current.platform || {}), ...value };
-        else if (key === 'advanced' && value && typeof value === 'object') patch.advanced = { ...(current.advanced || {}), ...value };
-        else if (key === 'proxyMeta' && value && typeof value === 'object') patch.proxyMeta = { ...(current.proxyMeta || {}), ...value };
+        } else if (key === 'platform' && value && typeof value === 'object')
+          patch.platform = { ...(current.platform || {}), ...value };
+        else if (key === 'advanced' && value && typeof value === 'object')
+          patch.advanced = { ...(current.advanced || {}), ...value };
+        else if (key === 'proxyMeta' && value && typeof value === 'object')
+          patch.proxyMeta = { ...(current.proxyMeta || {}), ...value };
         else if (key === 'user_proxy_config' && value && typeof value === 'object') {
           const { proxy_type, proxy_host, proxy_port, proxy_user, proxy_password } = value;
           if (proxy_host && proxy_port) {
             const type = String(proxy_type || 'http').toLowerCase();
-            patch.proxy = (type === 'socks' ? 'socks5' : type) + '://' +
-              (proxy_user ? encodeURIComponent(proxy_user) + ':' + encodeURIComponent(proxy_password || '') + '@' : '') +
-              proxy_host + ':' + proxy_port;
+            patch.proxy =
+              (type === 'socks' ? 'socks5' : type) +
+              '://' +
+              (proxy_user
+                ? encodeURIComponent(proxy_user) + ':' + encodeURIComponent(proxy_password || '') + '@'
+                : '') +
+              proxy_host +
+              ':' +
+              proxy_port;
             patch.networkMode = 'proxy';
           }
-        }
-      else if (key === 'fingerprint' && value && typeof value === 'object') patch.fingerprint = { ...value };
+        } else if (key === 'fingerprint' && value && typeof value === 'object')
+          patch.fingerprint = { ...value };
         else if (key !== 'profile_id' && key !== 'user_id' && key !== 'id') patch[key] = value;
       }
       if (clearFingerprint) {
@@ -404,7 +512,9 @@ class LocalApiServer {
       const sourceId = String(input.source_profile_id || input.profile_id || input.id || '');
       const source = this.engine.profiles.get(sourceId);
       if (!source) return fail('source profile not found');
-      const numbers = [...this.engine.profiles.values()].map((item) => Number(item.number)).filter((n) => Number.isInteger(n) && n > 0);
+      const numbers = [...this.engine.profiles.values()]
+        .map((item) => Number(item.number))
+        .filter((n) => Number.isInteger(n) && n > 0);
       const number = (Math.max(0, ...numbers) || 0) + 1;
       const id = 'ob-' + Date.now().toString(36) + '-' + crypto.randomBytes(5).toString('hex');
       const base = this.engine.sanitizeProfile(source);
@@ -413,7 +523,7 @@ class LocalApiServer {
         id,
         number,
         name: String(input.name || (base.name ? base.name + ' Copy' : 'Environment ' + number)),
-        title: String(input.name || base.title || base.name || ('Environment ' + number)),
+        title: String(input.name || base.title || base.name || 'Environment ' + number),
         startUrl: input.start_url !== undefined ? input.start_url : base.startUrl,
         profileId: id,
         exitCheckedAt: undefined,
@@ -430,14 +540,27 @@ class LocalApiServer {
       return ok({ profile_id: id, profile: this.engine.profiles.get(id) || next });
     }
 
-    if (pathname === '/api/v1/user/delete' || pathname === '/api/v2/browser-profile/delete' || pathname === '/api/profiles/delete') {
+    if (
+      pathname === '/api/v1/user/delete' ||
+      pathname === '/api/v2/browser-profile/delete' ||
+      pathname === '/api/profiles/delete'
+    ) {
       if (!this.engine) return fail('profile engine unavailable');
-      const rawIds = Array.isArray(input.user_ids) ? input.user_ids : (Array.isArray(input.profile_ids) ? input.profile_ids : (Array.isArray(input.ids) ? input.ids : [input.user_id || input.profile_id || input.id]));
+      const rawIds = Array.isArray(input.user_ids)
+        ? input.user_ids
+        : Array.isArray(input.profile_ids)
+          ? input.profile_ids
+          : Array.isArray(input.ids)
+            ? input.ids
+            : [input.user_id || input.profile_id || input.id];
       const ids = rawIds.map((value) => String(value || '').trim()).filter(Boolean);
       if (!ids.length) return fail('profile id required');
       let result;
       try {
-        result = await this.engine.deleteProfiles(ids, input.delete_data !== false && input.deleteData !== false);
+        result = await this.engine.deleteProfiles(
+          ids,
+          input.delete_data !== false && input.deleteData !== false
+        );
       } catch (error) {
         // e.g. isolation root validation rejection while removing profile data —
         // surface as a request error, not an internal 500.
@@ -446,7 +569,11 @@ class LocalApiServer {
       return ok(result);
     }
 
-    if (pathname === '/api/v1/browser/start' || pathname === '/api/v2/browser-profile/start' || pathname === '/api/browser/start') {
+    if (
+      pathname === '/api/v1/browser/start' ||
+      pathname === '/api/v2/browser-profile/start' ||
+      pathname === '/api/browser/start'
+    ) {
       const id = String(input.user_id || input.profile_id || input.id || '');
       const profile = this.engine.profiles.get(id);
       if (!profile) return fail('profile not found');
@@ -461,23 +588,38 @@ class LocalApiServer {
       });
     }
 
-    if (pathname === '/api/v1/browser/stop' || pathname === '/api/v2/browser-profile/stop' || pathname === '/api/browser/stop') {
+    if (
+      pathname === '/api/v1/browser/stop' ||
+      pathname === '/api/v2/browser-profile/stop' ||
+      pathname === '/api/browser/stop'
+    ) {
       const id = String(input.user_id || input.profile_id || input.id || '');
       await this.engine.stop(id);
       return ok({ user_id: id });
     }
 
-    if (pathname === '/api/v1/browser/stop-all' || pathname === '/api/v2/browser-profile/stop-all' || pathname === '/api/browser/stop-all') {
+    if (
+      pathname === '/api/v1/browser/stop-all' ||
+      pathname === '/api/v2/browser-profile/stop-all' ||
+      pathname === '/api/browser/stop-all'
+    ) {
       await this.engine.stopAll();
       return ok({ stopped: true });
     }
 
-    if (pathname === '/api/v1/browser/active' || pathname === '/api/v2/browser-profile/active' || pathname === '/api/browser/active') {
-      const active = this.engine.status().filter((item) => item.running).map((item) => ({
-        user_id: item.id,
-        debug_port: item.port,
-        profile_directory: item.profileDirectory || null,
-      }));
+    if (
+      pathname === '/api/v1/browser/active' ||
+      pathname === '/api/v2/browser-profile/active' ||
+      pathname === '/api/browser/active'
+    ) {
+      const active = this.engine
+        .status()
+        .filter((item) => item.running)
+        .map((item) => ({
+          user_id: item.id,
+          debug_port: item.port,
+          profile_directory: item.profileDirectory || null,
+        }));
       return ok({ list: active });
     }
 
@@ -505,7 +647,11 @@ class LocalApiServer {
       if (!this.proxyStore) return fail('proxy store unavailable');
       const ids = Array.isArray(input.proxy_ids)
         ? input.proxy_ids
-        : (Array.isArray(input.proxy_id) ? input.proxy_id : (Array.isArray(input.ids) ? input.ids : [input.id || input.proxy_id]));
+        : Array.isArray(input.proxy_id)
+          ? input.proxy_id
+          : Array.isArray(input.ids)
+            ? input.ids
+            : [input.id || input.proxy_id];
       return ok(await this.proxyStore.remove(ids.filter(Boolean)));
     }
     if (pathname === '/api/proxy/check' || pathname === '/api/checkProxy') {
@@ -514,7 +660,12 @@ class LocalApiServer {
       const item = id ? this.proxyStore.get(id) : null;
       const raw = item?.raw || input.proxy || input.raw;
       if (!raw) return fail('proxy required');
-      const result = await this.engine.testProxy({ id: 'proxy-check', name: 'proxy-check', proxy: raw, proxyMeta: { ipChannel: item?.ipChannel || input.ipChannel || 'ip-api' } });
+      const result = await this.engine.testProxy({
+        id: 'proxy-check',
+        name: 'proxy-check',
+        proxy: raw,
+        proxyMeta: { ipChannel: item?.ipChannel || input.ipChannel || 'ip-api' },
+      });
       if (item) await this.proxyStore.markCheck(item.id, result);
       return ok(result);
     }
@@ -542,7 +693,11 @@ class LocalApiServer {
     }
 
     // ---- application center ----
-    if (pathname === '/api/v1/application/list' || pathname === '/api/application/list' || pathname === '/api/apps') {
+    if (
+      pathname === '/api/v1/application/list' ||
+      pathname === '/api/application/list' ||
+      pathname === '/api/apps'
+    ) {
       if (!this.appCenter) return fail('app center unavailable');
       return ok(this.appCenter.list(input));
     }
@@ -556,7 +711,10 @@ class LocalApiServer {
     if (pathname === '/api/extension/assign' || pathname === '/api/extensions/assign') {
       const extensionId = String(input.extension_id || input.id || '');
       const ids = this.parseIds(input);
-      const enabled = input.enabled === undefined ? true : !(input.enabled === false || input.enabled === '0' || input.enabled === 0);
+      const enabled =
+        input.enabled === undefined
+          ? true
+          : !(input.enabled === false || input.enabled === '0' || input.enabled === 0);
       if (!extensionId || !ids.length) return fail('extension_id and profile_ids required');
       await this.engine.assignExtension(extensionId, ids, enabled);
       return ok({ extension_id: extensionId, profile_ids: ids, enabled });
@@ -690,7 +848,11 @@ class LocalApiServer {
     if (Array.isArray(input.profile_ids)) ids = input.profile_ids;
     else if (Array.isArray(input.ids)) ids = input.ids;
     else if (Array.isArray(input.user_ids)) ids = input.user_ids;
-    else if (input.handles) ids = String(input.handles).split(',').map((s) => s.trim()).filter(Boolean);
+    else if (input.handles)
+      ids = String(input.handles)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     else if (input.user_id) ids = [input.user_id];
     else if (input.profile_id) ids = [input.profile_id];
     if (ids.length > 200) throw new Error('Invalid profile selection');
