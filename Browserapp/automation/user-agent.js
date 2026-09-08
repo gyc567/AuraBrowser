@@ -131,7 +131,7 @@ function normalizeChromeFull(major, full) {
  * Build a complete UA string (desktop Chrome).
  */
 function buildUserAgentString(options = {}) {
-  const osKey = OS_PRESETS[options.os] ? options.os : (options.os === 'mac' ? 'macos' : detectHostOs());
+  const osKey = OS_PRESETS[options.os] ? options.os : options.os === 'mac' ? 'macos' : detectHostOs();
   const preset = OS_PRESETS[osKey] || OS_PRESETS.windows;
   const major = Number(options.chromeMajor || options.major || 131) || 131;
   const full = normalizeChromeFull(major, options.chromeFull || options.fullVersion);
@@ -159,16 +159,15 @@ function buildUserAgentMetadata(ua, overrides = {}) {
     : buildFullVersionList(major, fullVersion);
 
   const platform = overrides.platform || overrides.chPlatform || preset.chPlatform;
-  const platformVersion = overrides.platform_version
-    || overrides.platformVersion
-    || preset.chPlatformVersion;
+  const platformVersion = overrides.platform_version || overrides.platformVersion || preset.chPlatformVersion;
   const architecture = overrides.architecture || preset.architecture;
   const model = overrides.model != null ? String(overrides.model) : '';
   const mobile = overrides.mobile === true || overrides.mobile === '1' || overrides.mobile === 1;
   const bitness = overrides.bitness != null ? String(overrides.bitness) : preset.bitness;
-  const wow64 = overrides.wow64 === true || overrides.wow64 === '1' || overrides.wow64 === 1
-    ? true
-    : Boolean(preset.wow64);
+  const wow64 =
+    overrides.wow64 === true || overrides.wow64 === '1' || overrides.wow64 === 1
+      ? true
+      : Boolean(preset.wow64);
 
   // CDP Emulation/Network.setUserAgentOverride shape
   return {
@@ -194,8 +193,7 @@ function buildUserAgentMetadata(ua, overrides = {}) {
  */
 function buildUaProfile(options = {}) {
   let userAgent = String(options.userAgent || options.ua || '').trim();
-  const osKey = options.os
-    || (userAgent ? parseOsFromUa(userAgent) : detectHostOs());
+  const osKey = options.os || (userAgent ? parseOsFromUa(userAgent) : detectHostOs());
   const majorHint = Number(options.chromeMajor || options.major) || 0;
 
   if (!userAgent) {
@@ -428,7 +426,7 @@ function randomUaForSeed(seedU32, options = {}) {
     chromeFull: full,
     reduced: true,
     ua_full_version: full,
-    architecture: os === 'macos' && (seedU32 & 1) ? 'arm' : undefined,
+    architecture: os === 'macos' && seedU32 & 1 ? 'arm' : undefined,
   });
 }
 

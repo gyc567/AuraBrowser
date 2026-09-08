@@ -6,8 +6,12 @@
  */
 global.localStorage = {
   store: {},
-  getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; },
-  setItem(k, v) { this.store[k] = String(v); },
+  getItem(k) {
+    return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null;
+  },
+  setItem(k, v) {
+    this.store[k] = String(v);
+  },
 };
 
 const I = require('./i18n.js');
@@ -33,14 +37,26 @@ for (const [code, key, expect] of cases) {
   assert(I.t(key) === expect, `${code} ${key} => ${I.t(key)}`);
 }
 
-assert(I.SUPPORTED.some((x) => x.code === 'system'), 'system option missing');
+assert(
+  I.SUPPORTED.some((x) => x.code === 'system'),
+  'system option missing'
+);
 for (const v of ['en-US', 'zh-CN', 'ja-JP', 'vi-VN', 'fr-FR', 'de-DE', 'th-TH', 'id-ID']) {
-  assert(I.BROWSER_LOCALES.some((x) => x.value === v), `browser locale ${v}`);
+  assert(
+    I.BROWSER_LOCALES.some((x) => x.value === v),
+    `browser locale ${v}`
+  );
 }
 
 const pairs = [
-  ['JP', 'ja-JP'], ['VN', 'vi-VN'], ['TH', 'th-TH'], ['ID', 'id-ID'],
-  ['FR', 'fr-FR'], ['DE', 'de-DE'], ['US', 'en-US'], ['CN', 'zh-CN'],
+  ['JP', 'ja-JP'],
+  ['VN', 'vi-VN'],
+  ['TH', 'th-TH'],
+  ['ID', 'id-ID'],
+  ['FR', 'fr-FR'],
+  ['DE', 'de-DE'],
+  ['US', 'en-US'],
+  ['CN', 'zh-CN'],
 ];
 for (const [cc, loc] of pairs) {
   assert(localeFromCountryCode(cc) === loc, `country ${cc}`);

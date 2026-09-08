@@ -54,11 +54,13 @@ async function main() {
 
     // Simulate three independently/randomly zoomed controlled environments.
     const random = [2, 0.5, 1.6];
-    await Promise.all(tabs.slice(1).map((tab, index) => cdp.call(
-      tab.webSocketDebuggerUrl,
-      'Emulation.setPageScaleFactor',
-      { pageScaleFactor: random[index] },
-    )));
+    await Promise.all(
+      tabs.slice(1).map((tab, index) =>
+        cdp.call(tab.webSocketDebuggerUrl, 'Emulation.setPageScaleFactor', {
+          pageScaleFactor: random[index],
+        })
+      )
+    );
     const disturbed = await factors(tabs);
     await sleep(2200);
     const continuouslyCorrected = await factors(tabs);
@@ -80,15 +82,21 @@ async function main() {
     const ctrl0 = await factors(tabs);
     assertNear(ctrl0, 1, 'Ctrl+0 reset propagation failed');
 
-    process.stdout.write(JSON.stringify({
-      success: true,
-      windows: 4,
-      disturbed,
-      continuouslyCorrected,
-      zoom125,
-      correctedWhile125,
-      ctrl0,
-    }, null, 2));
+    process.stdout.write(
+      JSON.stringify(
+        {
+          success: true,
+          windows: 4,
+          disturbed,
+          continuouslyCorrected,
+          zoom125,
+          correctedWhile125,
+          ctrl0,
+        },
+        null,
+        2
+      )
+    );
   } finally {
     sync?.stop();
     await engine.stopAll().catch(() => {});

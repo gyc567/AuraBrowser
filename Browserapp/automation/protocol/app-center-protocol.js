@@ -38,10 +38,11 @@ function toLocalRecord(cloudApp = {}) {
     upload_type: cloudApp.upload_type,
     version: cloudApp.version || '',
     fixed_status: cloudApp.fixed_status || '0',
-    name: (cloudApp.application_name && cloudApp.application_name.en)
-      || cloudApp.name
-      || cloudApp.application_name
-      || '',
+    name:
+      (cloudApp.application_name && cloudApp.application_name.en) ||
+      cloudApp.name ||
+      cloudApp.application_name ||
+      '',
     legacy_flag: cloudApp.legacy_flag || '',
     official_id: cloudApp.official_id || '',
     third_id: cloudApp.third_id || '',
@@ -69,7 +70,8 @@ function safeComponent(value, label) {
 
 async function assertCopySourceSafe(root) {
   const rootStat = await fsp.lstat(root);
-  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('extension source must be a real directory');
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink())
+    throw new Error('extension source must be a real directory');
   const pending = [root];
   while (pending.length) {
     const current = pending.pop();
@@ -108,10 +110,14 @@ async function copyApplication(app, paths) {
   const uniqueId = safeComponent(app.unique_id, 'unique_id');
   const target = path.join(paths.extensionCenter, uniqueId);
   const cache = path.join(paths.cacheFolder, uniqueId);
-  const globalFolder = path.join(paths.globalExtensionRoot, safeComponent(app.id, 'application id'), uniqueId);
+  const globalFolder = path.join(
+    paths.globalExtensionRoot,
+    safeComponent(app.id, 'application id'),
+    uniqueId
+  );
 
   // Prefer existing cache (USE_OLD_EXTENSION_FOLDER)
-  if (await pathExists(cache) && await pathExists(path.join(cache, 'manifest.json'))) {
+  if ((await pathExists(cache)) && (await pathExists(path.join(cache, 'manifest.json')))) {
     if (target !== cache) {
       if (await pathExists(target)) await fsp.rm(target, { recursive: true, force: true });
       await copyFolder(cache, target);
@@ -122,7 +128,9 @@ async function copyApplication(app, paths) {
   // From global extension store
   const source = (await pathExists(path.join(globalFolder, 'manifest.json')))
     ? globalFolder
-    : (app.path && await pathExists(path.join(app.path, 'manifest.json')) ? app.path : null);
+    : app.path && (await pathExists(path.join(app.path, 'manifest.json')))
+      ? app.path
+      : null;
 
   if (!source) {
     // already staged?
@@ -147,11 +155,13 @@ async function checkApplicationFolder(extensionCenter, allowedUniqueIds = []) {
   if (!(await pathExists(extensionCenter))) return true;
   const allowed = new Set(allowedUniqueIds.map(String));
   const entries = await fsp.readdir(extensionCenter);
-  await Promise.all(entries.map(async (name) => {
-    if (!allowed.has(name)) {
-      await fsp.rm(path.join(extensionCenter, name), { recursive: true, force: true }).catch(() => {});
-    }
-  }));
+  await Promise.all(
+    entries.map(async (name) => {
+      if (!allowed.has(name)) {
+        await fsp.rm(path.join(extensionCenter, name), { recursive: true, force: true }).catch(() => {});
+      }
+    })
+  );
   return true;
 }
 

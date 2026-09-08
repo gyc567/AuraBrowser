@@ -19,10 +19,12 @@ function run() {
   });
   assert.deepStrictEqual(
     { score: residential.score, level: residential.level, label: residential.label },
-    { score: 70, level: 'review', label: '需复核' },
+    { score: 70, level: 'review', label: '需复核' }
   );
   assert.strictEqual(residential.confidence, 'low');
-  assert.ok(!residential.factors.some((item) => /IPPure|不可用|ip-api|ipwho|ipinfo/i.test(item.label + item.detail)));
+  assert.ok(
+    !residential.factors.some((item) => /IPPure|不可用|ip-api|ipwho|ipinfo/i.test(item.label + item.detail))
+  );
 
   const riskExample = calculateIpHealthScore({
     ip: '2.27.132.142',

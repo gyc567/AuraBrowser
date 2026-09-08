@@ -26,7 +26,9 @@ const DEFAULT_PROFILE_ID_LEN = 32;
 // isValidProfileId allows up to 64 chars.
 const MAX_PROFILE_ID_LEN = 64;
 
-function level(w) { return w.level; }
+function level(w) {
+  return w.level;
+}
 
 /**
  * @param {object} input
@@ -51,57 +53,84 @@ function platformPreflight(input = {}) {
 
   if (platform === 'win32') {
     if (!env.USERPROFILE && !env.HOMEDRIVE) {
-      push('warn', 'win-no-userprofile',
+      push(
+        'warn',
+        'win-no-userprofile',
         'USERPROFILE 未设置：桌面/文档/OneDrive 等用户目录解析可能失败（影响 RPA useExcel 等）',
-        '以正常交互用户会话启动，而非精简服务账户');
+        '以正常交互用户会话启动，而非精简服务账户'
+      );
     }
     if (!env.LOCALAPPDATA) {
-      push('warn', 'win-no-localappdata',
+      push(
+        'warn',
+        'win-no-localappdata',
         'LOCALAPPDATA 未设置：系统浏览器数据目录隔离校验可能不完整',
-        '确认标准 Windows 用户环境变量存在');
+        '确认标准 Windows 用户环境变量存在'
+      );
     }
     if (profileDataRoot) {
       // Worst-case cache path length = dataRoot \ {longest id} \ OpenBrowserCache + Chrome tail.
       const worstCacheBase = path.win32.join(profileDataRoot, 'X'.repeat(idLen), 'OpenBrowserCache');
       const projected = worstCacheBase.length + CHROME_CACHE_TAIL_BUDGET;
       if (projected >= WINDOWS_MAX_PATH) {
-        push('error', 'win-long-path',
+        push(
+          'error',
+          'win-long-path',
           `环境缓存路径可能超过 Windows MAX_PATH(260)：数据根「${profileDataRoot}」过深，最坏约 ${projected} 字符（含 Chromium 缓存子树预算 ${CHROME_CACHE_TAIL_BUDGET}）`,
-          '把数据根改到更短位置（如 C:\\ob），或为应用启用 longPathAware 清单并对内部 fs 用 \\\\?\\ 扩展长度前缀');
+          '把数据根改到更短位置（如 C:\\ob），或为应用启用 longPathAware 清单并对内部 fs 用 \\\\?\\ 扩展长度前缀'
+        );
       } else if (projected >= WINDOWS_MAX_PATH - 40) {
-        push('warn', 'win-long-path-near',
+        push(
+          'warn',
+          'win-long-path-near',
           `环境缓存路径接近 Windows MAX_PATH：最坏约 ${projected}/260 字符`,
-          '建议把数据根改短以留余量');
+          '建议把数据根改短以留余量'
+        );
       }
     }
     if (input.kernelRequiresX64 && arch === 'arm64') {
-      push('warn', 'win-arm-kernel',
+      push(
+        'warn',
+        'win-arm-kernel',
         'Windows on ARM：所选内核为 x64-only',
-        '使用 x64 内核（经 WOW64 x64 仿真运行）或提供 arm64 内核');
+        '使用 x64 内核（经 WOW64 x64 仿真运行）或提供 arm64 内核'
+      );
     }
   } else if (platform === 'darwin') {
     if (!env.HOME) {
       push('warn', 'mac-no-home', 'HOME 未设置：用户目录/内核模板解析可能失败', '以正常用户会话启动');
     }
-    push('info', 'mac-quarantine',
+    push(
+      'info',
+      'mac-quarantine',
       '若从浏览器下载安装，Gatekeeper 可能对 ad-hoc 签名应用打隔离属性',
-      '正式分发用 Developer ID 签名 + notarytool 公证 + stapler 装订；临时可 xattr -dr com.apple.quarantine <App>');
+      '正式分发用 Developer ID 签名 + notarytool 公证 + stapler 装订；临时可 xattr -dr com.apple.quarantine <App>'
+    );
     if (input.kernelRequiresX64 && arch === 'arm64') {
-      push('info', 'mac-arm-rosetta',
+      push(
+        'info',
+        'mac-arm-rosetta',
         'Apple Silicon：x64-only 内核（如 openbrowser-148）需 Rosetta 2',
-        '确认已安装 Rosetta 2（softwareupdate --install-rosetta），否则内核无法启动');
+        '确认已安装 Rosetta 2（softwareupdate --install-rosetta），否则内核无法启动'
+      );
     }
   } else if (platform === 'linux') {
     if (!env.HOME) {
       push('warn', 'linux-no-home', 'HOME 未设置：用户目录解析可能失败', '以正常用户会话启动');
     }
-    push('info', 'linux-sandbox',
+    push(
+      'info',
+      'linux-sandbox',
       'Chromium 内核需可用沙箱（unprivileged user namespaces 或 SUID sandbox）',
-      '内核起不来时：确认 kernel.unprivileged_userns_clone=1 或部署 chrome-sandbox SUID；避免无脑 --no-sandbox 削弱隔离');
+      '内核起不来时：确认 kernel.unprivileged_userns_clone=1 或部署 chrome-sandbox SUID；避免无脑 --no-sandbox 削弱隔离'
+    );
     if (env.XDG_SESSION_TYPE === 'wayland' || env.WAYLAND_DISPLAY) {
-      push('info', 'linux-wayland',
+      push(
+        'info',
+        'linux-wayland',
         'Wayland 会话：原生窗口/输入镜像受限，窗口同步降级为 CDP 层',
-        '需要完整原生窗口同步可切换到 X11(Xorg) 会话');
+        '需要完整原生窗口同步可切换到 X11(Xorg) 会话'
+      );
     }
   } else {
     push('warn', 'unknown-platform', `未识别平台：${platform}`, '仅正式支持 win32 / darwin / linux');

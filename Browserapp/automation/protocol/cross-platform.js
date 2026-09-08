@@ -14,9 +14,15 @@ function platform() {
   return process.platform; // win32 | darwin | linux
 }
 
-function isWindows() { return process.platform === 'win32'; }
-function isMac() { return process.platform === 'darwin'; }
-function isLinux() { return process.platform === 'linux'; }
+function isWindows() {
+  return process.platform === 'win32';
+}
+function isMac() {
+  return process.platform === 'darwin';
+}
+function isLinux() {
+  return process.platform === 'linux';
+}
 
 /** Native input tool name (docs; openbrowser uses native-input-mirror on Win) */
 function nativeToolName() {
@@ -62,13 +68,9 @@ function toFileUrl(filePath) {
  * Dock shells spawn …/环境 N.app/…/OpenBrowser.bin while kernel meta still points at …/OpenBrowser.
  */
 function normalizeExpectedExecutables(options = {}) {
-  const raw = options.expectedExecutables != null
-    ? options.expectedExecutables
-    : options.expectedExecutable;
+  const raw = options.expectedExecutables != null ? options.expectedExecutables : options.expectedExecutable;
   if (raw == null || raw === '') return [];
-  return (Array.isArray(raw) ? raw : [raw])
-    .map((item) => String(item || '').trim())
-    .filter(Boolean);
+  return (Array.isArray(raw) ? raw : [raw]).map((item) => String(item || '').trim()).filter(Boolean);
 }
 
 /**
@@ -82,29 +84,42 @@ function commandMatchesExecutable(command, executable) {
   const base = path.basename(hint);
   const winBase = path.win32.basename(hint);
   const basenames = new Set([base, winBase].filter(Boolean));
-  const compare = (value) => isWindows() ? String(value).toLowerCase() : String(value);
+  const compare = (value) => (isWindows() ? String(value).toLowerCase() : String(value));
   const comparableCommand = compare(cmd);
   // Full absolute path (may contain spaces) appears as a substring of the command line.
   if (path.isAbsolute(hint) || path.win32.isAbsolute(hint)) {
     const resolved = path.isAbsolute(hint) ? path.resolve(hint) : path.win32.normalize(hint);
-    if (comparableCommand.includes(compare(resolved)) || comparableCommand.includes(compare(hint))) return true;
+    if (comparableCommand.includes(compare(resolved)) || comparableCommand.includes(compare(hint)))
+      return true;
   }
   // Basename as a path segment: …/OpenBrowser.bin or …\OpenBrowser
   for (const candidate of basenames) {
-    if (comparableCommand.includes(`/${compare(candidate)}`) || comparableCommand.includes(`\\${compare(candidate)}`)) return true;
+    if (
+      comparableCommand.includes(`/${compare(candidate)}`) ||
+      comparableCommand.includes(`\\${compare(candidate)}`)
+    )
+      return true;
   }
   // Bare argv0 without directory (e.g. "node script.js", "OpenBrowser.bin --flag")
   const first = comparableCommand.split(/\s+/)[0].replace(/^['"]|['"]$/g, '');
   for (const candidate of basenames) {
     const comparableCandidate = compare(candidate);
-    if (first === comparableCandidate || compare(path.basename(first)) === comparableCandidate
-      || compare(path.win32.basename(first)) === comparableCandidate) return true;
+    if (
+      first === comparableCandidate ||
+      compare(path.basename(first)) === comparableCandidate ||
+      compare(path.win32.basename(first)) === comparableCandidate
+    )
+      return true;
   }
   // OpenBrowser Dock shell: kernel path ends with OpenBrowser, live process is OpenBrowser.bin
-  if ([...basenames].some((candidate) => /^OpenBrowser(\.bin)?$/i.test(candidate))
-    && /(?:^|\/|\\)OpenBrowser(?:\.bin)?(?:\s|$)/i.test(cmd)) return true;
+  if (
+    [...basenames].some((candidate) => /^OpenBrowser(\.bin)?$/i.test(candidate)) &&
+    /(?:^|\/|\\)OpenBrowser(?:\.bin)?(?:\s|$)/i.test(cmd)
+  )
+    return true;
   // env-apps Dock wrapper path is strong evidence for managed OpenBrowser shells
-  if (/env-apps[/\\]/.test(cmd) && /OpenBrowser(?:\.bin)?/i.test(cmd) && /OpenBrowser/i.test(base || hint)) return true;
+  if (/env-apps[/\\]/.test(cmd) && /OpenBrowser(?:\.bin)?/i.test(cmd) && /OpenBrowser/i.test(base || hint))
+    return true;
   return false;
 }
 
@@ -119,11 +134,7 @@ function inspectWindowsProcess(pid) {
     '[Console]::Out.Write(($p | Select-Object ProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress))',
   ].join('; ');
   try {
-    const output = execFileSync('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command', script,
-    ], {
+    const output = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
       encoding: 'utf8',
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -171,7 +182,10 @@ function processIdentity(pid, options = {}) {
     if (!inspected.ok) return inspected;
     const command = [inspected.executablePath, inspected.commandLine].filter(Boolean).join(' ');
     const executables = normalizeExpectedExecutables(options);
-    if (executables.length && !executables.some((exe) => windowsExecutableMatches(inspected.executablePath, exe))) {
+    if (
+      executables.length &&
+      !executables.some((exe) => windowsExecutableMatches(inspected.executablePath, exe))
+    ) {
       return { ok: false, reason: 'managed executable does not match', command, executables };
     }
     if (options.expectedUserDataDir) {
@@ -202,7 +216,9 @@ function processIdentity(pid, options = {}) {
   }
   if (options.expectedUserDataDir) {
     const expectedRoot = path.resolve(String(options.expectedUserDataDir));
-    const quoted = command.match(/(?:^|\s)--user-data-dir=("[^"]*"|'[^']*')/)?.[1]?.replace(/^['"]|['"]$/g, '');
+    const quoted = command
+      .match(/(?:^|\s)--user-data-dir=("[^"]*"|'[^']*')/)?.[1]
+      ?.replace(/^['"]|['"]$/g, '');
     // Node spawns argv unquoted, so `ps -o command=` space-joins a root that contains
     // spaces; a greedy [^\s]+ capture would truncate it. Capture up to the next
     // " --flag" boundary (or end) and compare resolved paths for equality — this keeps
@@ -234,7 +250,9 @@ function killProcessTree(pid, options = {}) {
         resolve(value);
       };
       const timer = setTimeout(() => {
-        try { child.kill(); } catch (_) {}
+        try {
+          child.kill();
+        } catch (_) {}
         finish(false);
       }, timeoutMs);
       timer.unref?.();

@@ -13,10 +13,18 @@
 
 const vm = require('vm');
 const assert = require('assert');
-const { buildFingerprint, buildInjectionScript, buildWorkerInjectionScript } = require('./automation/fingerprint');
+const {
+  buildFingerprint,
+  buildInjectionScript,
+  buildWorkerInjectionScript,
+} = require('./automation/fingerprint');
 
 let passed = 0;
-const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1; };
+const ok = (n, c) => {
+  assert.ok(c, n);
+  console.log('  PASS  ' + n);
+  passed += 1;
+};
 
 const NATIVE = /^function get [A-Za-z_$][\w$]*\(\) \{\s*\[native code\]\s*\}$/;
 
@@ -27,17 +35,46 @@ function makeDomContext() {
   const navigator = Object.create(Navigator.prototype);
   const screen = Object.create(Screen.prototype);
   const win = {
-    Navigator, Screen, navigator, screen,
-    devicePixelRatio: 1, screenX: 0, screenY: 0, innerWidth: 1280, innerHeight: 800,
-    outerWidth: 1280, outerHeight: 800,
+    Navigator,
+    Screen,
+    navigator,
+    screen,
+    devicePixelRatio: 1,
+    screenX: 0,
+    screenY: 0,
+    innerWidth: 1280,
+    innerHeight: 800,
+    outerWidth: 1280,
+    outerHeight: 800,
     document: { createElement: () => ({ getContext: () => null }), getOwnPropertyNames: [] },
     location: { href: 'https://example.com/', hostname: 'example.com' },
     matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
-    addEventListener() {}, removeEventListener() {},
-    Intl, Date, Math, JSON, Object, Function, Array, String, Number, Boolean,
-    Promise, WeakMap, Map, Set, Symbol, Reflect, Proxy, Error, TypeError, RangeError,
-    DOMException: function DOMException(m) { this.message = m; },
-augment: null,
+    addEventListener() {},
+    removeEventListener() {},
+    Intl,
+    Date,
+    Math,
+    JSON,
+    Object,
+    Function,
+    Array,
+    String,
+    Number,
+    Boolean,
+    Promise,
+    WeakMap,
+    Map,
+    Set,
+    Symbol,
+    Reflect,
+    Proxy,
+    Error,
+    TypeError,
+    RangeError,
+    DOMException: function DOMException(m) {
+      this.message = m;
+    },
+    augment: null,
   };
   win.window = win;
   win.globalThis = win;
@@ -64,22 +101,29 @@ const fp = buildFingerprint({
   }
   ok('page injection script executes', ran);
 
-  const probe = (target, key) => vm.runInContext(
-    `(() => { const d = Object.getOwnPropertyDescriptor(${target}, ${JSON.stringify(key)});
+  const probe = (target, key) =>
+    vm.runInContext(
+      `(() => { const d = Object.getOwnPropertyDescriptor(${target}, ${JSON.stringify(key)});
       return d && typeof d.get === 'function' ? { src: Function.prototype.toString.call(d.get), name: d.get.name } : null; })()`,
-    ctx,
-  );
+      ctx
+    );
 
   for (const key of ['platform', 'vendor', 'languages', 'hardwareConcurrency', 'deviceMemory', 'webdriver']) {
     const got = probe('Navigator.prototype', key);
-    if (!got) { console.log(`     (no accessor installed for navigator.${key}; skipped)`); continue; }
+    if (!got) {
+      console.log(`     (no accessor installed for navigator.${key}; skipped)`);
+      continue;
+    }
     ok(`navigator.${key} getter stringifies as native`, NATIVE.test(got.src));
     ok(`navigator.${key} getter is named "get ${key}"`, got.name === 'get ' + key);
   }
 
   for (const key of ['width', 'height', 'colorDepth']) {
     const got = probe('Screen.prototype', key);
-    if (!got) { console.log(`     (no accessor installed for screen.${key}; skipped)`); continue; }
+    if (!got) {
+      console.log(`     (no accessor installed for screen.${key}; skipped)`);
+      continue;
+    }
     ok(`screen.${key} getter stringifies as native`, NATIVE.test(got.src));
   }
 
@@ -93,27 +137,53 @@ const fp = buildFingerprint({
 
 // --- worker injection: WorkerNavigator accessors ---
 {
-  const ctx = vm.createContext((() => {
-    function WorkerNavigator() {}
-    const navigator = Object.create(WorkerNavigator.prototype);
-    const scope = {
-      WorkerNavigator, navigator,
-      Object, Function, Array, String, Number, Boolean, Math, JSON, Date, Intl,
-      Promise, WeakMap, Map, Set, Symbol, Reflect, Proxy, Error, TypeError,
-      addEventListener() {}, removeEventListener() {},
-    };
-    scope.self = scope; scope.globalThis = scope;
-    return scope;
-  })());
+  const ctx = vm.createContext(
+    (() => {
+      function WorkerNavigator() {}
+      const navigator = Object.create(WorkerNavigator.prototype);
+      const scope = {
+        WorkerNavigator,
+        navigator,
+        Object,
+        Function,
+        Array,
+        String,
+        Number,
+        Boolean,
+        Math,
+        JSON,
+        Date,
+        Intl,
+        Promise,
+        WeakMap,
+        Map,
+        Set,
+        Symbol,
+        Reflect,
+        Proxy,
+        Error,
+        TypeError,
+        addEventListener() {},
+        removeEventListener() {},
+      };
+      scope.self = scope;
+      scope.globalThis = scope;
+      return scope;
+    })()
+  );
   let ran = true;
-  try { vm.runInContext(buildWorkerInjectionScript(fp), ctx, { timeout: 10000 }); }
-  catch (error) { ran = false; console.log('     (worker injection threw: ' + error.message + ')'); }
+  try {
+    vm.runInContext(buildWorkerInjectionScript(fp), ctx, { timeout: 10000 });
+  } catch (error) {
+    ran = false;
+    console.log('     (worker injection threw: ' + error.message + ')');
+  }
   ok('worker injection script executes', ran);
 
   const got = vm.runInContext(
     `(() => { const d = Object.getOwnPropertyDescriptor(WorkerNavigator.prototype, 'platform');
       return d && typeof d.get === 'function' ? { src: Function.prototype.toString.call(d.get), name: d.get.name } : null; })()`,
-    ctx,
+    ctx
   );
   if (got) {
     ok('worker navigator.platform getter stringifies as native', NATIVE.test(got.src));

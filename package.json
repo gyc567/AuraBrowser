@@ -1,0 +1,38 @@
+{
+  "name": "openbrowser-monorepo",
+  "version": "1.1.0",
+  "private": true,
+  "description": "OpenBrowser workspace root — local fingerprint browser with isolated Chromium profiles",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,jsx,mjs,cjs,json,md,yml,yaml,css,html}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,mjs,cjs,json,md,yml,yaml,css,html}\"",
+    "test": "pnpm --filter openbrowser run test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css,html}": [
+      "prettier --write"
+    ]
+  }
+}

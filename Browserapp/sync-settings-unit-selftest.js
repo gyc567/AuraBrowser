@@ -23,7 +23,12 @@ assert.equal(queued({ type: 'mouse', phase: 'move' }), false);
 assert.equal(queued({ type: 'wheel', deltaY: 1 }), false);
 assert.equal(queued({ type: 'key', phase: 'down' }), true);
 
-const settings = controller.updateSettings({ inputMinMs: 420, inputMaxMs: 120, clickMinMs: -1, clickMaxMs: 99999 });
+const settings = controller.updateSettings({
+  inputMinMs: 420,
+  inputMaxMs: 120,
+  clickMinMs: -1,
+  clickMaxMs: 99999,
+});
 assert.equal(settings.inputMinMs, 420);
 assert.equal(settings.inputMaxMs, 420);
 assert.equal(settings.clickMinMs, 0);

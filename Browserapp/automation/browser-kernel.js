@@ -22,7 +22,8 @@ const { isSystemBrowserExecutable } = require('./isolation');
 /** Optional remote kernel feed URL (unused when integrated seeds are present). */
 const WAYFERN_META = 'https://donutbrowser.com/wayfern.json';
 /** Fallback: Google Chrome for Testing last-known-good. */
-const CFT_META = 'https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json';
+const CFT_META =
+  'https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json';
 
 const SOURCE_WAYFERN = 'donut-wayfern';
 const SOURCE_CFT = 'chrome-for-testing';
@@ -58,7 +59,9 @@ function validateArchiveMemberName(value) {
   }
   const parts = name.split('/').filter(Boolean);
   const reserved = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
-  if (parts.some((part) => part === '..' || part.includes(':') || /[. ]$/.test(part) || reserved.test(part))) {
+  if (
+    parts.some((part) => part === '..' || part.includes(':') || /[. ]$/.test(part) || reserved.test(part))
+  ) {
     throw new Error('Kernel archive contains an unsafe path segment');
   }
   return name;
@@ -73,40 +76,59 @@ async function preflightArchiveMembers(archivePath, kind) {
       const script = [
         'Add-Type -AssemblyName System.IO.Compression.FileSystem',
         `$z=[System.IO.Compression.ZipFile]::OpenRead('${escaped}')`,
-        "try { $z.Entries | ForEach-Object { $mode=($_.ExternalAttributes -shr 16) -band 0xF000; \"$($_.FullName)`t$mode\" } } finally { $z.Dispose() }",
+        'try { $z.Entries | ForEach-Object { $mode=($_.ExternalAttributes -shr 16) -band 0xF000; "$($_.FullName)`t$mode" } } finally { $z.Dispose() }',
       ].join('; ');
       ({ stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-Command', script], {
         windowsHide: true,
         maxBuffer: 32 * 1024 * 1024,
       }));
-      const rows = String(stdout || '').split(/\r?\n/).filter(Boolean);
-      if (!rows.length || rows.length > MAX_ARCHIVE_ENTRIES) throw new Error('Kernel archive entry count is invalid');
+      const rows = String(stdout || '')
+        .split(/\r?\n/)
+        .filter(Boolean);
+      if (!rows.length || rows.length > MAX_ARCHIVE_ENTRIES)
+        throw new Error('Kernel archive entry count is invalid');
       for (const row of rows) {
         const split = row.lastIndexOf('\t');
         const name = split >= 0 ? row.slice(0, split) : row;
         const mode = split >= 0 ? Number(row.slice(split + 1)) : 0;
         validateArchiveMemberName(name);
-        if (mode === 0xA000) throw new Error('Kernel ZIP contains a symbolic link');
+        if (mode === 0xa000) throw new Error('Kernel ZIP contains a symbolic link');
       }
       return;
     } else {
       ({ stdout } = await execFileAsync('unzip', ['-Z1', archivePath], { maxBuffer: 32 * 1024 * 1024 }));
-      const names = String(stdout || '').split(/\r?\n/).filter(Boolean);
-      if (!names.length || names.length > MAX_ARCHIVE_ENTRIES) throw new Error('Kernel archive entry count is invalid');
+      const names = String(stdout || '')
+        .split(/\r?\n/)
+        .filter(Boolean);
+      if (!names.length || names.length > MAX_ARCHIVE_ENTRIES)
+        throw new Error('Kernel archive entry count is invalid');
       for (const name of names) validateArchiveMemberName(name);
-      const listing = await execFileAsync('unzip', ['-Z', '-l', archivePath], { maxBuffer: 32 * 1024 * 1024 });
-      if (String(listing.stdout || '').split(/\r?\n/).some((line) => /^l[rwx-]{9}\s/.test(line))) {
+      const listing = await execFileAsync('unzip', ['-Z', '-l', archivePath], {
+        maxBuffer: 32 * 1024 * 1024,
+      });
+      if (
+        String(listing.stdout || '')
+          .split(/\r?\n/)
+          .some((line) => /^l[rwx-]{9}\s/.test(line))
+      ) {
         throw new Error('Kernel ZIP contains a symbolic link');
       }
       return;
     }
   } else {
     ({ stdout } = await execFileAsync('tar', ['-tf', archivePath], { maxBuffer: 32 * 1024 * 1024 }));
-    const names = String(stdout || '').split(/\r?\n/).filter(Boolean);
-    if (!names.length || names.length > MAX_ARCHIVE_ENTRIES) throw new Error('Kernel archive entry count is invalid');
+    const names = String(stdout || '')
+      .split(/\r?\n/)
+      .filter(Boolean);
+    if (!names.length || names.length > MAX_ARCHIVE_ENTRIES)
+      throw new Error('Kernel archive entry count is invalid');
     for (const name of names) validateArchiveMemberName(name);
     const listing = await execFileAsync('tar', ['-tvf', archivePath], { maxBuffer: 32 * 1024 * 1024 });
-    if (String(listing.stdout || '').split(/\r?\n/).some((line) => line[0] === 'l' || line[0] === 'h')) {
+    if (
+      String(listing.stdout || '')
+        .split(/\r?\n/)
+        .some((line) => line[0] === 'l' || line[0] === 'h')
+    ) {
       throw new Error('Kernel TAR contains a link');
     }
     return;
@@ -127,7 +149,8 @@ async function assertSafeExtractedTree(root) {
       const stat = await fsp.lstat(full);
       if (stat.isSymbolicLink()) {
         const target = await fsp.realpath(full).catch(() => null);
-        if (!target || !isPathInsideRoot(target, base)) throw new Error('Extracted kernel contains an unsafe link');
+        if (!target || !isPathInsideRoot(target, base))
+          throw new Error('Extracted kernel contains an unsafe link');
         continue;
       }
       if (stat.isDirectory()) stack.push(full);
@@ -139,7 +162,7 @@ async function assertSafeExtractedTree(root) {
 function isPathInsideRoot(candidate, root) {
   const child = path.resolve(candidate);
   const base = path.resolve(root);
-  const normalize = (value) => process.platform === 'win32' ? value.toLowerCase() : value;
+  const normalize = (value) => (process.platform === 'win32' ? value.toLowerCase() : value);
   return normalize(child) === normalize(base) || normalize(child).startsWith(normalize(base) + path.sep);
 }
 
@@ -255,7 +278,9 @@ function findOpenBrowserKernelBinary(kernelsRoot, extraRoots = []) {
     // legacy kernels/openbrowser/...
     candidates.push(path.join(root, legacyRel));
     // root is the seed dir itself (macos-x64 or openbrowser)
-    candidates.push(path.join(root, 'chrome_148', 'openbrowser_148', 'OpenBrowser.app', 'Contents', 'MacOS', 'OpenBrowser'));
+    candidates.push(
+      path.join(root, 'chrome_148', 'openbrowser_148', 'OpenBrowser.app', 'Contents', 'MacOS', 'OpenBrowser')
+    );
     // root is app/source dir
     candidates.push(path.join(root, 'kernels', rel));
     candidates.push(path.join(root, 'kernels', legacyRel));
@@ -281,14 +306,20 @@ function kernelDisplayName(source) {
 
 function isWayfernKernel(candidate = {}, versionOutput = '') {
   const source = String(candidate.source || '').toLowerCase();
-  const binaryPath = String(candidate.path || candidate.binary || candidate || '').toLowerCase().replace(/\\/g, '/');
+  const binaryPath = String(candidate.path || candidate.binary || candidate || '')
+    .toLowerCase()
+    .replace(/\\/g, '/');
   const version = String(versionOutput || candidate.versionOutput || '').toLowerCase();
-  return source === SOURCE_WAYFERN
-    || /(?:^|\/)wayfern(?:\/|$)/.test(binaryPath)
+  return (
+    source === SOURCE_WAYFERN ||
+    /(?:^|\/)wayfern(?:\/|$)/.test(binaryPath) ||
     // Flat integrated seeds (no "wayfern" segment in path)
-    || /(?:^|\/)kernels\/(?:windows-x64|macos-arm64)(?:\/|$)/.test(binaryPath)
-    || /(?:^|\/)(?:windows-x64|macos-arm64)\/(?:chrome\.exe|wayfern(?:\.exe)?|chromium(?:\.exe)?)$/.test(binaryPath)
-    || /\bwayfern\b/.test(version);
+    /(?:^|\/)kernels\/(?:windows-x64|macos-arm64)(?:\/|$)/.test(binaryPath) ||
+    /(?:^|\/)(?:windows-x64|macos-arm64)\/(?:chrome\.exe|wayfern(?:\.exe)?|chromium(?:\.exe)?)$/.test(
+      binaryPath
+    ) ||
+    /\bwayfern\b/.test(version)
+  );
 }
 
 /**
@@ -347,7 +378,9 @@ function readFileSlice(filePath, offset, length) {
     const n = fs.readSync(fd, buf, 0, length, offset);
     return n === length ? buf : null;
   } finally {
-    try { fs.closeSync(fd); } catch (_) {}
+    try {
+      fs.closeSync(fd);
+    } catch (_) {}
   }
 }
 
@@ -379,7 +412,10 @@ function isIntegratedKernelCdpReady(candidate = {}) {
   if (!binary || !fs.existsSync(binary)) return false;
   const source = String(candidate.source || '').toLowerCase();
   if (source === SOURCE_OPENBROWSER || source === SOURCE_CUSTOM || source === SOURCE_CFT) return true;
-  if (isOpenBrowser148SupportedHost() && /openbrowser_148|kernels[/\\](macos-x64|openbrowser)[/\\]/i.test(binary)) {
+  if (
+    isOpenBrowser148SupportedHost() &&
+    /openbrowser_148|kernels[/\\](macos-x64|openbrowser)[/\\]/i.test(binary)
+  ) {
     return true;
   }
   if (!isWayfernKernel({ path: binary, source })) {
@@ -422,7 +458,9 @@ function wayfernTermsAlreadyAccepted() {
 }
 
 function looksLikeTermsAcceptedOutput(text = '') {
-  return /Terms and Conditions accepted|License recorded|You can now run Wayfern normally/i.test(String(text || ''));
+  return /Terms and Conditions accepted|License recorded|You can now run Wayfern normally/i.test(
+    String(text || '')
+  );
 }
 
 async function ensureKernelReadyForLaunch(candidate = {}, versionOutput = '') {
@@ -430,12 +468,14 @@ async function ensureKernelReadyForLaunch(candidate = {}, versionOutput = '') {
   if (!binary) throw new Error('内核不可用：缺少内核路径');
 
   // Integrated Windows/mac-arm seeds must be CDP-ready before spawn (RPA / Local API).
-  if (isWayfernKernel({ ...candidate, path: binary }, versionOutput)
-    && !isIntegratedKernelCdpReady({ ...candidate, path: binary })) {
+  if (
+    isWayfernKernel({ ...candidate, path: binary }, versionOutput) &&
+    !isIntegratedKernelCdpReady({ ...candidate, path: binary })
+  ) {
     throw new Error(
-      '独立内核未就绪（CDP 会话策略不匹配）。请使用安装包内 kernels/windows-x64 或 kernels/macos-arm64 的完整内核，'
-      + '并删除 userData 下过期的 kernels 副本后重试。'
-      + ` binary=${binary}`
+      '独立内核未就绪（CDP 会话策略不匹配）。请使用安装包内 kernels/windows-x64 或 kernels/macos-arm64 的完整内核，' +
+        '并删除 userData 下过期的 kernels 副本后重试。' +
+        ` binary=${binary}`
     );
   }
 
@@ -473,8 +513,14 @@ async function ensureKernelReadyForLaunch(candidate = {}, versionOutput = '') {
 }
 
 function compareVersions(a, b) {
-  const pa = String(a || '').replace(/^v/i, '').split(/[^\d]+/).map((n) => Number.parseInt(n, 10) || 0);
-  const pb = String(b || '').replace(/^v/i, '').split(/[^\d]+/).map((n) => Number.parseInt(n, 10) || 0);
+  const pa = String(a || '')
+    .replace(/^v/i, '')
+    .split(/[^\d]+/)
+    .map((n) => Number.parseInt(n, 10) || 0);
+  const pb = String(b || '')
+    .replace(/^v/i, '')
+    .split(/[^\d]+/)
+    .map((n) => Number.parseInt(n, 10) || 0);
   const len = Math.max(pa.length, pb.length);
   for (let i = 0; i < len; i += 1) {
     const d = (pa[i] || 0) - (pb[i] || 0);
@@ -484,7 +530,8 @@ function compareVersions(a, b) {
 }
 
 function fetchJson(url, redirects = 0) {
-  if (redirects > MAX_REDIRECTS) return Promise.reject(new Error('Kernel metadata redirected too many times'));
+  if (redirects > MAX_REDIRECTS)
+    return Promise.reject(new Error('Kernel metadata redirected too many times'));
   const parsed = trustedKernelUrl(url);
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -493,36 +540,46 @@ function fetchJson(url, redirects = 0) {
       settled = true;
       handler(value);
     };
-    const req = https.get(parsed, { headers: { 'User-Agent': 'OpenBrowser/1.0 (kernel)' }, timeout: 30000 }, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume();
-        return fetchJson(new URL(res.headers.location, parsed).toString(), redirects + 1)
-          .then((value) => finish(resolve, value), (error) => finish(reject, error));
-      }
-      if (res.statusCode !== 200) {
-        res.resume();
-        return finish(reject, new Error('HTTP ' + res.statusCode + ' for ' + url));
-      }
-      const chunks = []; let size = 0;
-      res.on('data', (c) => {
-        if (settled) return;
-        size += c.length;
-        if (size > MAX_META_BYTES) {
-          const error = new Error('Kernel metadata exceeds 2 MiB');
-          finish(reject, error);
-          res.destroy(error);
-          req.destroy(error);
-        } else {
-          chunks.push(c);
+    const req = https.get(
+      parsed,
+      { headers: { 'User-Agent': 'OpenBrowser/1.0 (kernel)' }, timeout: 30000 },
+      (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          return fetchJson(new URL(res.headers.location, parsed).toString(), redirects + 1).then(
+            (value) => finish(resolve, value),
+            (error) => finish(reject, error)
+          );
         }
-      });
-      res.on('error', (error) => finish(reject, error));
-      res.on('end', () => {
-        if (settled) return;
-        try { finish(resolve, JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
-        catch (e) { finish(reject, e); }
-      });
-    });
+        if (res.statusCode !== 200) {
+          res.resume();
+          return finish(reject, new Error('HTTP ' + res.statusCode + ' for ' + url));
+        }
+        const chunks = [];
+        let size = 0;
+        res.on('data', (c) => {
+          if (settled) return;
+          size += c.length;
+          if (size > MAX_META_BYTES) {
+            const error = new Error('Kernel metadata exceeds 2 MiB');
+            finish(reject, error);
+            res.destroy(error);
+            req.destroy(error);
+          } else {
+            chunks.push(c);
+          }
+        });
+        res.on('error', (error) => finish(reject, error));
+        res.on('end', () => {
+          if (settled) return;
+          try {
+            finish(resolve, JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          } catch (e) {
+            finish(reject, e);
+          }
+        });
+      }
+    );
     req.on('timeout', () => req.destroy(new Error('Kernel metadata request timed out')));
     req.on('error', (error) => finish(reject, error));
   });
@@ -541,45 +598,62 @@ function downloadFile(url, dest, onProgress) {
       if (settled) return;
       settled = true;
       if (activeOutput && !activeOutput.destroyed) activeOutput.destroy();
-      fsp.rm(dest, { force: true }).catch(() => {}).finally(() => reject(error));
+      fsp
+        .rm(dest, { force: true })
+        .catch(() => {})
+        .finally(() => reject(error));
     };
     const doGet = (value, redirects = 0) => {
       if (settled) return;
       if (redirects > MAX_REDIRECTS) return fail(new Error('Kernel download redirected too many times'));
       let parsed;
-      try { parsed = trustedKernelUrl(value); } catch (error) { return fail(error); }
-      const req = https.get(parsed, { headers: { 'User-Agent': 'OpenBrowser/1.0 (kernel)' }, timeout: 60000 }, (res) => {
-        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          res.resume();
-          return doGet(new URL(res.headers.location, parsed).toString(), redirects + 1);
-        }
-        if (res.statusCode !== 200) {
-          res.resume();
-          return fail(new Error('Download HTTP ' + res.statusCode));
-        }
-        const total = Number(res.headers['content-length']) || 0;
-        if (total > MAX_KERNEL_BYTES) { res.resume(); return fail(new Error('Kernel archive exceeds 2 GiB')); }
-        let received = 0;
-        try { fs.rmSync(dest, { force: true }); } catch (_) {}
-        const out = createWriteStream(dest, { flags: 'w', mode: 0o600 });
-        activeOutput = out;
-        res.on('data', (chunk) => {
-          if (settled) return;
-          received += chunk.length;
-          if (received > MAX_KERNEL_BYTES) {
-            const error = new Error('Kernel archive exceeds 2 GiB');
-            res.destroy(error);
-            req.destroy(error);
-            fail(error);
-            return;
+      try {
+        parsed = trustedKernelUrl(value);
+      } catch (error) {
+        return fail(error);
+      }
+      const req = https.get(
+        parsed,
+        { headers: { 'User-Agent': 'OpenBrowser/1.0 (kernel)' }, timeout: 60000 },
+        (res) => {
+          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            res.resume();
+            return doGet(new URL(res.headers.location, parsed).toString(), redirects + 1);
           }
-          if (onProgress && total) onProgress({ received, total, percent: Math.floor((received / total) * 100) });
-        });
-        res.pipe(out);
-        out.on('finish', () => out.close(() => succeed({ path: dest, bytes: received })));
-        out.on('error', fail);
-        res.on('error', fail);
-      });
+          if (res.statusCode !== 200) {
+            res.resume();
+            return fail(new Error('Download HTTP ' + res.statusCode));
+          }
+          const total = Number(res.headers['content-length']) || 0;
+          if (total > MAX_KERNEL_BYTES) {
+            res.resume();
+            return fail(new Error('Kernel archive exceeds 2 GiB'));
+          }
+          let received = 0;
+          try {
+            fs.rmSync(dest, { force: true });
+          } catch (_) {}
+          const out = createWriteStream(dest, { flags: 'w', mode: 0o600 });
+          activeOutput = out;
+          res.on('data', (chunk) => {
+            if (settled) return;
+            received += chunk.length;
+            if (received > MAX_KERNEL_BYTES) {
+              const error = new Error('Kernel archive exceeds 2 GiB');
+              res.destroy(error);
+              req.destroy(error);
+              fail(error);
+              return;
+            }
+            if (onProgress && total)
+              onProgress({ received, total, percent: Math.floor((received / total) * 100) });
+          });
+          res.pipe(out);
+          out.on('finish', () => out.close(() => succeed({ path: dest, bytes: received })));
+          out.on('error', fail);
+          res.on('error', fail);
+        }
+      );
       req.on('timeout', () => req.destroy(new Error('Kernel download timed out')));
       req.on('error', fail);
     };
@@ -592,10 +666,16 @@ function requestJson(url, timeout = 5000) {
     const req = http.get(url, { timeout }, (res) => {
       let body = '';
       res.setEncoding('utf8');
-      res.on('data', (chunk) => { body += chunk; });
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
       res.on('end', () => {
         if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
-        try { resolve(JSON.parse(body)); } catch (error) { reject(error); }
+        try {
+          resolve(JSON.parse(body));
+        } catch (error) {
+          reject(error);
+        }
       });
     });
     req.on('timeout', () => req.destroy(new Error('CDP probe timed out')));
@@ -629,7 +709,10 @@ async function stopProbeProcess(child) {
   child.kill('SIGTERM');
   await new Promise((resolve) => {
     const timer = setTimeout(resolve, 3000);
-    child.once('exit', () => { clearTimeout(timer); resolve(); });
+    child.once('exit', () => {
+      clearTimeout(timer);
+      resolve();
+    });
   });
   if (child.exitCode === null) child.kill('SIGKILL');
 }
@@ -639,7 +722,9 @@ async function extractZip(zipPath, destDir) {
   await new Promise((resolve, reject) => {
     if (process.platform === 'win32') {
       const ps = `Expand-Archive -LiteralPath '${zipPath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`;
-      execFile('powershell.exe', ['-NoProfile', '-Command', ps], { windowsHide: true }, (err) => (err ? reject(err) : resolve()));
+      execFile('powershell.exe', ['-NoProfile', '-Command', ps], { windowsHide: true }, (err) =>
+        err ? reject(err) : resolve()
+      );
       return;
     }
     execFile('unzip', ['-o', '-q', zipPath, '-d', destDir], (err) => {
@@ -678,9 +763,11 @@ async function extractDmg(dmgPath, destDir) {
   await fsp.mkdir(mountRoot, { recursive: true });
   let mountPoint = null;
   try {
-    const { stdout } = await execFileAsync('hdiutil', [
-      'attach', dmgPath, '-nobrowse', '-readonly', '-mountroot', mountRoot,
-    ], { maxBuffer: 4 * 1024 * 1024 });
+    const { stdout } = await execFileAsync(
+      'hdiutil',
+      ['attach', dmgPath, '-nobrowse', '-readonly', '-mountroot', mountRoot],
+      { maxBuffer: 4 * 1024 * 1024 }
+    );
     // Prefer scanning mountRoot for .app; fallback parse plist-ish output for /Volumes/
     const entries = await fsp.readdir(mountRoot, { withFileTypes: true }).catch(() => []);
     const vol = entries.find((e) => e.isDirectory());
@@ -721,7 +808,11 @@ async function findExecutable(root, preferredNames) {
   while (stack.length) {
     const dir = stack.pop();
     let entries;
-    try { entries = await fsp.readdir(dir, { withFileTypes: true }); } catch (_) { continue; }
+    try {
+      entries = await fsp.readdir(dir, { withFileTypes: true });
+    } catch (_) {
+      continue;
+    }
     for (const ent of entries) {
       const full = path.join(dir, ent.name);
       if (ent.isDirectory()) {
@@ -759,17 +850,19 @@ async function resolveWayfernBinary(installDir) {
         const macosDir = path.join(installDir, app.name, 'Contents', 'MacOS');
         if (fs.existsSync(macosDir)) {
           const bins = await fsp.readdir(macosDir);
-          const pick = bins.find((n) => /Wayfern/i.test(n))
-            || bins.find((n) => /Chromium/i.test(n))
-            || bins.find((n) => /Chrome/i.test(n) && !/helper|crash/i.test(n));
+          const pick =
+            bins.find((n) => /Wayfern/i.test(n)) ||
+            bins.find((n) => /Chromium/i.test(n)) ||
+            bins.find((n) => /Chrome/i.test(n) && !/helper|crash/i.test(n));
           if (pick) return path.join(macosDir, pick);
         }
       }
     } catch (_) {}
   }
-  const names = process.platform === 'win32'
-    ? ['wayfern.exe', 'chromium.exe', 'chrome.exe']
-    : ['wayfern', 'chromium', 'chrome', 'Wayfern', 'Chromium'];
+  const names =
+    process.platform === 'win32'
+      ? ['wayfern.exe', 'chromium.exe', 'chrome.exe']
+      : ['wayfern', 'chromium', 'chrome', 'Wayfern', 'Chromium'];
   // direct candidates
   for (const name of names) {
     for (const rel of ['', 'wayfern', 'wayfern-linux', 'chrome-linux', 'Wayfern']) {
@@ -777,7 +870,10 @@ async function resolveWayfernBinary(installDir) {
       if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
     }
   }
-  return findExecutable(installDir, names.map((n) => n.replace(/\.exe$/i, '')));
+  return findExecutable(
+    installDir,
+    names.map((n) => n.replace(/\.exe$/i, ''))
+  );
 }
 
 /** Platform seed dir names under kernels/ (no cross-arch fallback on macOS). */
@@ -806,13 +902,18 @@ function isForeignWayfernSeedDir(name, platform = process.platform, arch = proce
 function findWayfernKernelBinary(root) {
   const base = path.resolve(String(root || ''));
   if (!fs.existsSync(base)) return null;
-  const names = process.platform === 'win32'
-    ? ['wayfern.exe', 'chromium.exe', 'chrome.exe']
-    : ['wayfern', 'chromium', 'chrome', 'Wayfern', 'Chromium'];
+  const names =
+    process.platform === 'win32'
+      ? ['wayfern.exe', 'chromium.exe', 'chrome.exe']
+      : ['wayfern', 'chromium', 'chrome', 'Wayfern', 'Chromium'];
   const walk = (dir, depth, skipForeignSeeds) => {
     if (depth > 8) return null;
     let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return null; }
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return null;
+    }
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory() && skipForeignSeeds && isForeignWayfernSeedDir(entry.name)) {
@@ -824,7 +925,10 @@ function findWayfernKernelBinary(root) {
         if (hit) return hit;
       } else if (entry.isFile() && names.some((name) => entry.name.toLowerCase() === name.toLowerCase())) {
         return full;
-      } else if (entry.isDirectory() && !['Frameworks', 'Helpers', 'resources', 'locales', 'Resources'].includes(entry.name)) {
+      } else if (
+        entry.isDirectory() &&
+        !['Frameworks', 'Helpers', 'resources', 'locales', 'Resources'].includes(entry.name)
+      ) {
         const hit = walk(full, depth + 1, false);
         if (hit) return hit;
       }
@@ -935,7 +1039,9 @@ class BrowserKernelManager {
     // Optional extra roots (e.g. process.resourcesPath) for bundled mac x64 kernel seed
     this.resourceRoots = Array.isArray(options.resourceRoots)
       ? options.resourceRoots.filter(Boolean)
-      : (options.resourceRoot ? [options.resourceRoot] : []);
+      : options.resourceRoot
+        ? [options.resourceRoot]
+        : [];
     this.meta = {
       version: null,
       platform: donutPlatformKey(),
@@ -1023,9 +1129,10 @@ class BrowserKernelManager {
       if (src === SOURCE_OPENBROWSER && !isOpenBrowser148SupportedHost()) {
         // fall through
       } else {
-        const trusted = (src === SOURCE_CUSTOM || src === SOURCE_OPENBROWSER)
-          ? this.safeCustomBinary(this.meta.binary)
-          : safeInstalledBinary(this.meta.binary, this.kernelsRoot);
+        const trusted =
+          src === SOURCE_CUSTOM || src === SOURCE_OPENBROWSER
+            ? this.safeCustomBinary(this.meta.binary)
+            : safeInstalledBinary(this.meta.binary, this.kernelsRoot);
         if (trusted) {
           // Skip userData / meta binaries that fail CDP readiness when a better seed exists.
           const ready = isIntegratedKernelCdpReady({ path: trusted, source: src });
@@ -1063,10 +1170,16 @@ class BrowserKernelManager {
       for (const seed of wayfernSeedDirNames()) {
         const seedRoot = path.join(this.kernelsRoot, seed);
         found = findWayfernKernelBinary(seedRoot);
-        if (found) { foundRoot = seedRoot; break; }
+        if (found) {
+          foundRoot = seedRoot;
+          break;
+        }
         const compat = path.join(this.kernelsRoot, 'wayfern', seed);
         found = findWayfernKernelBinary(compat);
-        if (found) { foundRoot = compat; break; }
+        if (found) {
+          foundRoot = compat;
+          break;
+        }
       }
       if (!found) {
         const wayfernDir = path.join(this.kernelsRoot, 'wayfern');
@@ -1126,12 +1239,11 @@ class BrowserKernelManager {
   status() {
     const installed = this.resolveInstalled();
     // Channel label only claims openbrowser-148 default on the supported host.
-    const openBrowserDefault = isOpenBrowser148SupportedHost()
-      && (!installed || installed.source === SOURCE_OPENBROWSER);
-    const wayfernIntegrated = !openBrowserDefault
-      && Boolean(installed && installed.source === SOURCE_WAYFERN);
-    const cftIntegrated = !openBrowserDefault
-      && Boolean(installed && installed.source === SOURCE_CFT);
+    const openBrowserDefault =
+      isOpenBrowser148SupportedHost() && (!installed || installed.source === SOURCE_OPENBROWSER);
+    const wayfernIntegrated =
+      !openBrowserDefault && Boolean(installed && installed.source === SOURCE_WAYFERN);
+    const cftIntegrated = !openBrowserDefault && Boolean(installed && installed.source === SOURCE_CFT);
     return {
       platform: donutPlatformKey(),
       cftPlatform: cftPlatformKey(),
@@ -1142,17 +1254,17 @@ class BrowserKernelManager {
       autoDownload: false,
       channel: openBrowserDefault
         ? {
-          name: 'OpenBrowser 148（macOS x86 内置）',
-          metaUrl: null,
-          site: null,
-          engineSite: null,
-        }
+            name: 'OpenBrowser 148（macOS x86 内置）',
+            metaUrl: null,
+            site: null,
+            engineSite: null,
+          }
         : {
-          name: '独立内核（安装包内置）',
-          metaUrl: null,
-          site: null,
-          engineSite: null,
-        },
+            name: '独立内核（安装包内置）',
+            metaUrl: null,
+            site: null,
+            engineSite: null,
+          },
       note: openBrowserDefault
         ? 'macOS x86 使用安装包/源码内置的 OpenBrowser 148（kernels/macos-x64/）。运行时不再自动下载内核。'
         : wayfernIntegrated
@@ -1261,9 +1373,9 @@ class BrowserKernelManager {
         }
       }
       throw new Error(
-        'macOS x86 内置内核 OpenBrowser 148 未找到。请确认安装包/源码包含 kernels/macos-x64，'
-        + '或设置 OPENBROWSER_KERNEL_ROOT，或在本地设置中选择自定义内核。'
-        + (force ? '（运行时已禁用自动下载，force 无效）' : '')
+        'macOS x86 内置内核 OpenBrowser 148 未找到。请确认安装包/源码包含 kernels/macos-x64，' +
+          '或设置 OPENBROWSER_KERNEL_ROOT，或在本地设置中选择自定义内核。' +
+          (force ? '（运行时已禁用自动下载，force 无效）' : '')
       );
     }
 
@@ -1298,9 +1410,9 @@ class BrowserKernelManager {
     }
 
     throw new Error(
-      '未找到内置独立内核（Windows: kernels/windows-x64；macOS: kernels/macos-arm64；Linux: kernels/chrome-for-testing/chrome-linux64）。本版本不再自动下载内核；'
-      + '请使用包含对应平台内核种子的安装包，或在本地设置中选择自定义 Chromium。'
-      + (force ? '（force 不会触发下载）' : '')
+      '未找到内置独立内核（Windows: kernels/windows-x64；macOS: kernels/macos-arm64；Linux: kernels/chrome-for-testing/chrome-linux64）。本版本不再自动下载内核；' +
+        '请使用包含对应平台内核种子的安装包，或在本地设置中选择自定义 Chromium。' +
+        (force ? '（force 不会触发下载）' : '')
     );
   }
 
@@ -1350,7 +1462,9 @@ class BrowserKernelManager {
     }
 
     if (process.platform !== 'win32') {
-      try { await fsp.chmod(trustedBinary, 0o755); } catch (_) {}
+      try {
+        await fsp.chmod(trustedBinary, 0o755);
+      } catch (_) {}
     }
 
     this.onProgress({ phase: 'validate', message: '验证已下载内核兼容性…', version, binary: trustedBinary });
@@ -1388,7 +1502,10 @@ class BrowserKernelManager {
 
     let binary = path.join(work, chromeForTestingBinaryRelative(plat));
     if (!fs.existsSync(binary)) {
-      const found = await findExecutable(work, process.platform === 'win32' ? ['chrome.exe'] : ['Google Chrome for Testing', 'chrome']);
+      const found = await findExecutable(
+        work,
+        process.platform === 'win32' ? ['chrome.exe'] : ['Google Chrome for Testing', 'chrome']
+      );
       if (!found) throw new Error('解压后未找到浏览器可执行文件');
       binary = found;
     }
@@ -1396,7 +1513,9 @@ class BrowserKernelManager {
     if (!binary) throw new Error('内核可执行文件逃逸出安装目录或是符号链接');
 
     if (process.platform !== 'win32') {
-      try { await fsp.chmod(binary, 0o755); } catch (_) {}
+      try {
+        await fsp.chmod(binary, 0o755);
+      } catch (_) {}
     }
 
     this.onProgress({ phase: 'validate', message: '验证已下载内核兼容性…', version, binary });
@@ -1418,17 +1537,30 @@ class BrowserKernelManager {
 
   async probeBrowserBinary(binaryPath) {
     const resolved = path.resolve(String(binaryPath || ''));
-    if (isSystemBrowserExecutable(resolved)) throw new Error('不能选择本机已安装的 Chrome、Edge 或 Chromium 作为指纹浏览器内核');
+    if (isSystemBrowserExecutable(resolved))
+      throw new Error('不能选择本机已安装的 Chrome、Edge 或 Chromium 作为指纹浏览器内核');
     let stat;
-    try { stat = await fsp.stat(resolved); } catch (_) { throw new Error('文件不存在: ' + resolved); }
+    try {
+      stat = await fsp.stat(resolved);
+    } catch (_) {
+      throw new Error('文件不存在: ' + resolved);
+    }
     if (!stat.isFile()) throw new Error('内核路径必须是可执行文件: ' + resolved);
     if (process.platform !== 'win32') {
-      try { await fsp.access(resolved, fs.constants.X_OK); } catch (_) { throw new Error('内核文件没有执行权限: ' + resolved); }
+      try {
+        await fsp.access(resolved, fs.constants.X_OK);
+      } catch (_) {
+        throw new Error('内核文件没有执行权限: ' + resolved);
+      }
     }
 
     let versionOutput;
     try {
-      const result = await execFileAsync(resolved, ['--version'], { timeout: 8000, windowsHide: true, maxBuffer: 64 * 1024 });
+      const result = await execFileAsync(resolved, ['--version'], {
+        timeout: 8000,
+        windowsHide: true,
+        maxBuffer: 64 * 1024,
+      });
       versionOutput = String(result.stdout || result.stderr || '').trim();
     } catch (error) {
       throw new Error('无法执行内核版本检查：' + (error.message || error));
@@ -1443,35 +1575,54 @@ class BrowserKernelManager {
     try {
       this.onProgress({ phase: 'validate', message: '验证自定义 Chromium 内核兼容性…', binary: resolved });
       await ensureKernelReadyForLaunch({ path: resolved }, versionOutput);
-      child = spawn(resolved, [
-        `--user-data-dir=${probeRoot}`,
-        `--disk-cache-dir=${path.join(probeRoot, 'OpenBrowserCache')}`,
-        `--crash-dumps-dir=${path.join(probeRoot, 'OpenBrowserCrashReports')}`,
-        '--remote-debugging-port=0',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-background-mode',
-        'about:blank',
-      ], { detached: process.platform !== 'win32', windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
+      child = spawn(
+        resolved,
+        [
+          `--user-data-dir=${probeRoot}`,
+          `--disk-cache-dir=${path.join(probeRoot, 'OpenBrowserCache')}`,
+          `--crash-dumps-dir=${path.join(probeRoot, 'OpenBrowserCrashReports')}`,
+          '--remote-debugging-port=0',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--disable-background-mode',
+          'about:blank',
+        ],
+        { detached: process.platform !== 'win32', windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] }
+      );
       child.stdout?.setEncoding('utf8');
       child.stderr?.setEncoding('utf8');
       child._startupStdout = '';
       child._startupStderr = '';
-      child.stdout?.on('data', (chunk) => { child._startupStdout = String(child._startupStdout + chunk).slice(-16 * 1024); });
-      child.stderr?.on('data', (chunk) => { child._startupStderr = String(child._startupStderr + chunk).slice(-16 * 1024); });
+      child.stdout?.on('data', (chunk) => {
+        child._startupStdout = String(child._startupStdout + chunk).slice(-16 * 1024);
+      });
+      child.stderr?.on('data', (chunk) => {
+        child._startupStderr = String(child._startupStderr + chunk).slice(-16 * 1024);
+      });
       const port = await waitForDevToolsPort(probeRoot);
       const details = await requestJson(`http://127.0.0.1:${port}/json/version`);
       if (!/\b(chrome|chromium|wayfern)\b/i.test(String(details.Browser || ''))) {
         throw new Error('CDP 返回的浏览器不是 Chromium 兼容内核');
       }
       const version = String(details.Browser || versionOutput).match(/(\d+(?:\.\d+){1,3})/)?.[1] || 'custom';
-      return { path: resolved, version, browser: String(details.Browser), protocolVersion: String(details['Protocol-Version'] || '') };
+      return {
+        path: resolved,
+        version,
+        browser: String(details.Browser),
+        protocolVersion: String(details['Protocol-Version'] || ''),
+      };
     } catch (error) {
       const output = startupOutput(child);
-      const status = child && child.exitCode !== null && child.exitCode !== undefined
-        ? ` exitCode=${child.exitCode}${child.signalCode ? ` signal=${child.signalCode}` : ''}`
-        : '';
-      throw new Error('内核兼容性验证失败：' + (error.message || error) + status + (output ? ` browserOutput=${output}` : ''));
+      const status =
+        child && child.exitCode !== null && child.exitCode !== undefined
+          ? ` exitCode=${child.exitCode}${child.signalCode ? ` signal=${child.signalCode}` : ''}`
+          : '';
+      throw new Error(
+        '内核兼容性验证失败：' +
+          (error.message || error) +
+          status +
+          (output ? ` browserOutput=${output}` : '')
+      );
     } finally {
       await stopProbeProcess(child).catch(() => {});
       await fsp.rm(probeRoot, { recursive: true, force: true }).catch(() => {});
@@ -1480,8 +1631,10 @@ class BrowserKernelManager {
 
   async setCustomBinary(binaryPath) {
     const probe = await this.probeBrowserBinary(binaryPath);
-    const isOpenBrowser = /[/\\]openbrowser[/\\]chrome_148[/\\]/i.test(probe.path)
-      || path.basename(path.dirname(probe.path)) === 'MacOS' && /OpenBrowser$/i.test(path.basename(probe.path));
+    const isOpenBrowser =
+      /[/\\]openbrowser[/\\]chrome_148[/\\]/i.test(probe.path) ||
+      (path.basename(path.dirname(probe.path)) === 'MacOS' &&
+        /OpenBrowser$/i.test(path.basename(probe.path)));
     this.meta.binary = probe.path;
     this.meta.version = probe.version || (isOpenBrowser ? OPENBROWSER_KERNEL_VERSION : probe.version);
     this.meta.source = isOpenBrowser ? SOURCE_OPENBROWSER : SOURCE_CUSTOM;

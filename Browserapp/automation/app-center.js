@@ -40,7 +40,8 @@ const RECOMMENDED_APPS = [
     category: 'privacy',
     description: '防 AudioContext 声音指纹探测',
     store_id: 'pmlkpdfnjdmoenlamjdfeoojifpejioc',
-    store_url: 'https://chromewebstore.google.com/detail/audiocontext-defender/pmlkpdfnjdmoenlamjdfeoojifpejioc',
+    store_url:
+      'https://chromewebstore.google.com/detail/audiocontext-defender/pmlkpdfnjdmoenlamjdfeoojifpejioc',
     tags: ['privacy', 'anti-detect'],
   },
   {
@@ -67,7 +68,8 @@ const RECOMMENDED_APPS = [
     category: 'productivity',
     description: '双语网页、PDF 与视频翻译，适合多语言资料整理',
     store_id: 'bpoadfkcbjbfhfodiogcnhhhpibjhbnh',
-    store_url: 'https://chromewebstore.google.com/detail/immersive-translate/bpoadfkcbjbfhfodiogcnhhhpibjhbnh',
+    store_url:
+      'https://chromewebstore.google.com/detail/immersive-translate/bpoadfkcbjbfhfodiogcnhhhpibjhbnh',
     tags: ['translation', 'bilingual', 'pdf'],
   },
   {
@@ -220,9 +222,10 @@ const RECOMMENDED_APPS = [
     category: 'privacy',
     description: '快速切换 User-Agent，用于兼容性和页面测试',
     store_id: 'djflhoibgkdhkhhcedjiklpkjnoahfmg',
-    store_url: 'https://chromewebstore.google.com/detail/user-agent-switcher/djflhoibgkdhkhhcedjiklpkjnoahfmg',
+    store_url:
+      'https://chromewebstore.google.com/detail/user-agent-switcher/djflhoibgkdhkhhcedjiklpkjnoahfmg',
     tags: ['user-agent', 'testing', 'privacy'],
-  }
+  },
 ];
 
 class AppCenter {
@@ -261,7 +264,26 @@ class AppCenter {
       };
     });
 
-    const local = installed.filter(ext => !(ext.name === 'OpenBrowser 环境标记' && !ext.builtIn)).map((ext) => ({ id: ext.id, name: ext.name, description: ext.description || '', version: ext.version, category: ext.builtIn ? 'builtin' : (ext.source === 'chrome-store' ? 'store' : 'local'), source: ext.source || (ext.builtIn ? 'builtin' : 'local'), store_id: ext.storeId || ext.chromeId || null, store_url: ext.storeUrl || null, icon_url: ext.iconUrl || null, installed: true, extension_id: ext.id, assigned_profiles: ext.assignedProfiles || 0, enabled_all: Boolean(ext.enabledAll), status: ext.enabledAll ? 'enabled' : (Number(ext.assignedProfiles) > 0 ? 'partial' : 'disabled'), path: ext.path || null, manifest_version: ext.manifestVersion }));
+    const local = installed
+      .filter((ext) => !(ext.name === 'OpenBrowser 环境标记' && !ext.builtIn))
+      .map((ext) => ({
+        id: ext.id,
+        name: ext.name,
+        description: ext.description || '',
+        version: ext.version,
+        category: ext.builtIn ? 'builtin' : ext.source === 'chrome-store' ? 'store' : 'local',
+        source: ext.source || (ext.builtIn ? 'builtin' : 'local'),
+        store_id: ext.storeId || ext.chromeId || null,
+        store_url: ext.storeUrl || null,
+        icon_url: ext.iconUrl || null,
+        installed: true,
+        extension_id: ext.id,
+        assigned_profiles: ext.assignedProfiles || 0,
+        enabled_all: Boolean(ext.enabledAll),
+        status: ext.enabledAll ? 'enabled' : Number(ext.assignedProfiles) > 0 ? 'partial' : 'disabled',
+        path: ext.path || null,
+        manifest_version: ext.manifestVersion,
+      }));
 
     const builtin = local.filter((item) => item.source === 'builtin');
 
@@ -272,9 +294,13 @@ class AppCenter {
     else if (tab === 'local') list = local;
     else list = { builtin, recommended, local };
 
-    const q = String(filter.q || filter.keyword || '').trim().toLowerCase();
+    const q = String(filter.q || filter.keyword || '')
+      .trim()
+      .toLowerCase();
     if (q && Array.isArray(list)) {
-      list = list.filter((item) => [item.name, item.description, item.category, ...(item.tags || [])].join(' ').toLowerCase().includes(q));
+      list = list.filter((item) =>
+        [item.name, item.description, item.category, ...(item.tags || [])].join(' ').toLowerCase().includes(q)
+      );
     }
 
     return {
@@ -290,7 +316,11 @@ class AppCenter {
 
   findRecommended(idOrStoreId) {
     const key = String(idOrStoreId || '').toLowerCase();
-    return this.recommended().find((item) => item.id === key || item.store_id === key || item.store_id.toLowerCase() === key) || null;
+    return (
+      this.recommended().find(
+        (item) => item.id === key || item.store_id === key || item.store_id.toLowerCase() === key
+      ) || null
+    );
   }
 }
 

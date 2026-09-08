@@ -18,11 +18,18 @@ async function main() {
       editorPresent: Boolean(editor)
     };
   })()`;
-  const result = await cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression, returnByValue: true });
+  const result = await cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', {
+    expression,
+    returnByValue: true,
+  });
   if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'renderer evaluation failed');
   const value = result.result?.value;
-  if (!value?.syncView || !value.health || !value.group || !value.startShortcut || !value.editorPresent) throw new Error(JSON.stringify(value));
+  if (!value?.syncView || !value.health || !value.group || !value.startShortcut || !value.editorPresent)
+    throw new Error(JSON.stringify(value));
   process.stdout.write(JSON.stringify({ success: true, ...value }));
 }
 
-main().catch((error) => { process.stderr.write(error.stack || error.message); process.exitCode = 1; });
+main().catch((error) => {
+  process.stderr.write(error.stack || error.message);
+  process.exitCode = 1;
+});

@@ -9,7 +9,7 @@ function assert(value, message) {
 async function main() {
   const root = path.join(__dirname, '..', 'extension-state-unit-selftest-data');
   await fs.rm(root, { recursive: true, force: true });
-  const engine = new BrowserEngine({ getPath: (name) => name === 'userData' ? root : '' });
+  const engine = new BrowserEngine({ getPath: (name) => (name === 'userData' ? root : '') });
   const profileIds = ['env-001', 'env-002', 'env-003', 'env-004'];
   engine.syncProfiles(profileIds.map((id) => ({ id, name: id, browser: 'Google Chrome', proxy: 'Direct' })));
   engine.extensions.set('test-extension', {
@@ -33,19 +33,28 @@ async function main() {
     const partial = engine.listExtensions()[0];
     assert(partial.enabledAll === false, 'partial state was incorrectly reported as all');
     assert(partial.assignedProfiles === 3, 'partial state count is incorrect');
-    assert(!partial.assignedProfileIds.includes('env-004'), 'assignment dialog kept a disabled environment checked');
+    assert(
+      !partial.assignedProfileIds.includes('env-004'),
+      'assignment dialog kept a disabled environment checked'
+    );
 
     await engine.assignExtension('test-extension', profileIds, false);
     const none = engine.listExtensions()[0];
     assert(none.enabledAll === false, 'gray/none state was incorrectly reported as all');
     assert(none.assignedProfiles === 0, 'none state still has assigned environments');
 
-    process.stdout.write(JSON.stringify({
-      success: true,
-      all: { enabledAll: all.enabledAll, assignedProfiles: all.assignedProfiles },
-      partial: { enabledAll: partial.enabledAll, assignedProfiles: partial.assignedProfiles },
-      none: { enabledAll: none.enabledAll, assignedProfiles: none.assignedProfiles },
-    }, null, 2));
+    process.stdout.write(
+      JSON.stringify(
+        {
+          success: true,
+          all: { enabledAll: all.enabledAll, assignedProfiles: all.assignedProfiles },
+          partial: { enabledAll: partial.enabledAll, assignedProfiles: partial.assignedProfiles },
+          none: { enabledAll: none.enabledAll, assignedProfiles: none.assignedProfiles },
+        },
+        null,
+        2
+      )
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
   }

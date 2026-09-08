@@ -27,7 +27,8 @@ const dnsPromises = dns.promises;
 
 const DEFAULT_PORT = Number(process.env.OPENBROWSER_START_PAGE_PORT || 50326);
 const PORT_CANDIDATES = [DEFAULT_PORT, 50327, 50328, 50329, 0];
-const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const BROWSER_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 /** 访问能力探测目标：连通 + 出口地区 + best-effort 可用性信号 */
 const REACHABILITY_TARGETS = {
@@ -81,11 +82,36 @@ const REACHABILITY_TARGETS = {
 };
 
 const COUNTRY_NAMES = {
-  US: '美国', JP: '日本', GB: '英国', UK: '英国', HK: '香港', TW: '台湾', CN: '中国',
-  SG: '新加坡', KR: '韩国', DE: '德国', FR: '法国', CA: '加拿大', AU: '澳大利亚',
-  NL: '荷兰', IE: '爱尔兰', IN: '印度', BR: '巴西', RU: '俄罗斯', TH: '泰国',
-  VN: '越南', MY: '马来西亚', PH: '菲律宾', ID: '印度尼西亚', MX: '墨西哥',
-  IT: '意大利', ES: '西班牙', SE: '瑞典', CH: '瑞士', AE: '阿联酋', TR: '土耳其',
+  US: '美国',
+  JP: '日本',
+  GB: '英国',
+  UK: '英国',
+  HK: '香港',
+  TW: '台湾',
+  CN: '中国',
+  SG: '新加坡',
+  KR: '韩国',
+  DE: '德国',
+  FR: '法国',
+  CA: '加拿大',
+  AU: '澳大利亚',
+  NL: '荷兰',
+  IE: '爱尔兰',
+  IN: '印度',
+  BR: '巴西',
+  RU: '俄罗斯',
+  TH: '泰国',
+  VN: '越南',
+  MY: '马来西亚',
+  PH: '菲律宾',
+  ID: '印度尼西亚',
+  MX: '墨西哥',
+  IT: '意大利',
+  ES: '西班牙',
+  SE: '瑞典',
+  CH: '瑞士',
+  AE: '阿联酋',
+  TR: '土耳其',
 };
 
 function countryLabel(code, fallback = '') {
@@ -129,7 +155,9 @@ function parseCfTrace(body = '') {
 function looksBlocked(body = '', status = 0) {
   const text = String(body || '');
   if (status === 403 || status === 451) return true;
-  return /just a moment|attention required|access denied|not available in your (country|region)|unsupported.?country|vpn|proxy detected|sorry, you have been blocked|title>\s*blocked\s*</i.test(text);
+  return /just a moment|attention required|access denied|not available in your (country|region)|unsupported.?country|vpn|proxy detected|sorry, you have been blocked|title>\s*blocked\s*</i.test(
+    text
+  );
 }
 
 function looksUnlockedMeta(body = '', status = 0) {
@@ -176,7 +204,9 @@ function readHttpResponse(socket, timeout, maxBody = 65536) {
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      try { socket.destroy(); } catch (_) {}
+      try {
+        socket.destroy();
+      } catch (_) {}
       reject(new Error('timeout'));
     }, timeout);
     const finish = (err, value) => {
@@ -190,7 +220,9 @@ function readHttpResponse(socket, timeout, maxBody = 65536) {
       chunks.push(chunk);
       const total = Buffer.concat(chunks);
       if (total.length > maxBody + 8192) {
-        try { socket.destroy(); } catch (_) {}
+        try {
+          socket.destroy();
+        } catch (_) {}
       }
     });
     socket.once('error', (error) => finish(error));
@@ -215,11 +247,19 @@ async function connectProxyTunnel(bridge, hostname, port, timeout = 8000) {
   const socket = net.connect({ host: '127.0.0.1', port: bridge.port });
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('proxy connect timeout')), timeout);
-    socket.once('connect', () => { clearTimeout(timer); resolve(); });
-    socket.once('error', (error) => { clearTimeout(timer); reject(error); });
+    socket.once('connect', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    socket.once('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
   });
   if (bridge.protocol === 'http') {
-    socket.write(`CONNECT ${hostname}:${port} HTTP/1.1\r\nHost: ${hostname}:${port}\r\nConnection: keep-alive\r\n\r\n`);
+    socket.write(
+      `CONNECT ${hostname}:${port} HTTP/1.1\r\nHost: ${hostname}:${port}\r\nConnection: keep-alive\r\n\r\n`
+    );
     const head = await new Promise((resolve, reject) => {
       let buf = Buffer.alloc(0);
       const timer = setTimeout(() => reject(new Error('proxy CONNECT timeout')), timeout);
@@ -235,7 +275,10 @@ async function connectProxyTunnel(bridge, hostname, port, timeout = 8000) {
         }
       };
       socket.on('data', onData);
-      socket.once('error', (error) => { clearTimeout(timer); reject(error); });
+      socket.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
     });
     const status = Number(head.header.split('\r\n', 1)[0].match(/\s(\d{3})(?:\s|$)/)?.[1] || 0);
     if (status !== 200) {
@@ -255,38 +298,43 @@ async function connectProxyTunnel(bridge, hostname, port, timeout = 8000) {
 function probeDirect(url, timeout = 8000, maxBody = 65536) {
   return new Promise((resolve) => {
     let parsed;
-    try { parsed = new URL(url); } catch (error) {
+    try {
+      parsed = new URL(url);
+    } catch (error) {
       resolve({ ok: false, status: 0, error: 'invalid url', body: '' });
       return;
     }
     const transport = parsed.protocol === 'https:' ? https : http;
-    const request = transport.request({
-      protocol: parsed.protocol,
-      hostname: parsed.hostname,
-      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
-      path: `${parsed.pathname || '/'}${parsed.search || ''}`,
-      method: 'GET',
-      headers: {
-        'User-Agent': BROWSER_UA,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'identity',
-        Connection: 'close',
+    const request = transport.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+        path: `${parsed.pathname || '/'}${parsed.search || ''}`,
+        method: 'GET',
+        headers: {
+          'User-Agent': BROWSER_UA,
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'identity',
+          Connection: 'close',
+        },
       },
-    }, (response) => {
-      const chunks = [];
-      response.on('data', (chunk) => {
-        if (Buffer.concat(chunks).length < maxBody) chunks.push(chunk);
-      });
-      response.once('end', () => {
-        resolve({
-          ok: response.statusCode >= 200 && response.statusCode < 500,
-          status: response.statusCode || 0,
-          body: Buffer.concat(chunks).toString('utf8'),
-          headers: response.headers || {},
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => {
+          if (Buffer.concat(chunks).length < maxBody) chunks.push(chunk);
         });
-      });
-    });
+        response.once('end', () => {
+          resolve({
+            ok: response.statusCode >= 200 && response.statusCode < 500,
+            status: response.statusCode || 0,
+            body: Buffer.concat(chunks).toString('utf8'),
+            headers: response.headers || {},
+          });
+        });
+      }
+    );
     request.setTimeout(timeout, () => request.destroy(new Error('timeout')));
     request.once('error', (error) => resolve({ ok: false, status: 0, error: error.message, body: '' }));
     request.end();
@@ -295,7 +343,9 @@ function probeDirect(url, timeout = 8000, maxBody = 65536) {
 
 async function probeViaProxy(proxyRaw, url, timeout = 8000, maxBody = 65536) {
   let config;
-  try { config = parseProxy(proxyRaw); } catch (error) {
+  try {
+    config = parseProxy(proxyRaw);
+  } catch (error) {
     return { ok: false, status: 0, error: error.message, body: '' };
   }
   if (!config) return { ok: false, status: 0, error: 'invalid proxy', body: '' };
@@ -328,8 +378,14 @@ async function probeViaProxy(proxyRaw, url, timeout = 8000, maxBody = 65536) {
       });
       await new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('tls timeout')), timeout);
-        secure.once('secureConnect', () => { clearTimeout(timer); resolve(); });
-        secure.once('error', (error) => { clearTimeout(timer); reject(error); });
+        secure.once('secureConnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        secure.once('error', (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
       });
       secure.write(payload);
       const response = await readHttpResponse(secure, timeout, maxBody);
@@ -349,9 +405,15 @@ async function probeViaProxy(proxyRaw, url, timeout = 8000, maxBody = 65536) {
   } catch (error) {
     return { ok: false, status: 0, error: error.message, body: '' };
   } finally {
-    try { secure?.destroy(); } catch (_) {}
-    try { socket?.destroy(); } catch (_) {}
-    try { await bridge?.close?.(); } catch (_) {}
+    try {
+      secure?.destroy();
+    } catch (_) {}
+    try {
+      socket?.destroy();
+    } catch (_) {}
+    try {
+      await bridge?.close?.();
+    } catch (_) {}
   }
 }
 
@@ -373,12 +435,7 @@ async function probeTarget(target, options = {}) {
   const bodyForClass = unlockProbe?.body || primary.body || '';
   const statusForClass = unlockProbe?.status || primary.status || 0;
   const cf = target.kind === 'cf-trace' ? parseCfTrace(primary.body || '') : null;
-  const unlock = classifyUnlock(
-    target.kind,
-    statusForClass || primary.status || 0,
-    bodyForClass,
-    cf
-  );
+  const unlock = classifyUnlock(target.kind, statusForClass || primary.status || 0, bodyForClass, cf);
 
   const siteIp = cf?.ip || '';
   const siteCountryCode = cf?.countryCode || '';
@@ -414,10 +471,12 @@ async function lookupReachability(options = {}) {
   const timeout = Number(options.timeout) || 8000;
   const proxy = options.proxy || '';
   const exitNetwork = options.exitNetwork || null;
-  const entries = await Promise.all(Object.entries(REACHABILITY_TARGETS).map(async ([id, meta]) => {
-    const result = await probeTarget({ id, ...meta }, { timeout, proxy, exitNetwork });
-    return [id, result];
-  }));
+  const entries = await Promise.all(
+    Object.entries(REACHABILITY_TARGETS).map(async ([id, meta]) => {
+      const result = await probeTarget({ id, ...meta }, { timeout, proxy, exitNetwork });
+      return [id, result];
+    })
+  );
   return Object.fromEntries(entries);
 }
 
@@ -426,13 +485,15 @@ function sleep(ms) {
 }
 
 function normalizeCountryCode(value) {
-  return String(value || '').trim().toUpperCase();
+  return String(value || '')
+    .trim()
+    .toUpperCase();
 }
 
 async function fetchJsonUrl(url, { timeout = 12000, headers = {} } = {}) {
   const probe = await probeDirect(url, timeout, 200000);
   if (!probe.ok && !(probe.status >= 200 && probe.status < 500)) {
-    throw new Error(probe.error || ('HTTP ' + (probe.status || 0)));
+    throw new Error(probe.error || 'HTTP ' + (probe.status || 0));
   }
   const text = String(probe.body || '').trim();
   if (!text) throw new Error('empty response');
@@ -450,14 +511,20 @@ async function resolveDnsLeakProbes(testId, count = 12) {
   const hosts = indexes.map((i) => `${i}.${id}.bash.ws`);
   // Fire unique A lookups so the leak service can observe which resolvers query them.
   // NXDOMAIN / timeout still count as probes that left this machine.
-  await Promise.all(hosts.map(async (host) => {
-    try {
-      await Promise.race([
-        dnsPromises.lookup(host, { all: true }),
-        sleep(2500).then(() => { throw new Error('timeout'); }),
-      ]);
-    } catch (_) { /* expected for many probes */ }
-  }));
+  await Promise.all(
+    hosts.map(async (host) => {
+      try {
+        await Promise.race([
+          dnsPromises.lookup(host, { all: true }),
+          sleep(2500).then(() => {
+            throw new Error('timeout');
+          }),
+        ]);
+      } catch (_) {
+        /* expected for many probes */
+      }
+    })
+  );
   return { resolved: hosts.length, hosts };
 }
 
@@ -504,9 +571,7 @@ function summarizeDnsLeak(rows = [], exitNetwork = null) {
 
   const dnsCountries = [...new Set(unique.map((item) => item.countryCode).filter(Boolean))];
   const countryMismatch = Boolean(
-    exitCountry
-    && dnsCountries.length
-    && dnsCountries.some((code) => code !== exitCountry)
+    exitCountry && dnsCountries.length && dnsCountries.some((code) => code !== exitCountry)
   );
   const multiCountryDns = dnsCountries.length > 1;
   const sameAsExitIp = Boolean(exitIp && unique.some((item) => item.ip === exitIp));
@@ -526,20 +591,33 @@ function summarizeDnsLeak(rows = [], exitNetwork = null) {
     detail = [
       exitCountry ? `出口地区 ${exitCountry}` : '',
       dnsCountries.length ? `DNS 地区 ${dnsCountries.join('/')}` : '',
-      unique.slice(0, 4).map((item) => item.ip).join(', '),
-    ].filter(Boolean).join(' · ');
+      unique
+        .slice(0, 4)
+        .map((item) => item.ip)
+        .join(', '),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   } else if (multiCountryDns) {
     state = 'warn';
     label = 'DNS 地区不一致';
-    detail = `观测到多个 DNS 地区：${dnsCountries.join('/')}。服务器：${unique.slice(0, 4).map((item) => item.ip).join(', ')}`;
+    detail = `观测到多个 DNS 地区：${dnsCountries.join('/')}。服务器：${unique
+      .slice(0, 4)
+      .map((item) => item.ip)
+      .join(', ')}`;
   } else if (!exitCountry && dnsCountries.length) {
     state = 'good';
     label = '已观测 DNS 解析器';
     detail = [
       dnsCountries[0] ? `DNS ${dnsCountries[0]}` : '',
       `${unique.length} 个解析器`,
-      unique.slice(0, 3).map((item) => item.ip).join(', '),
-    ].filter(Boolean).join(' · ');
+      unique
+        .slice(0, 3)
+        .map((item) => item.ip)
+        .join(', '),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   } else {
     state = 'good';
     label = sameAsExitIp ? 'DNS 与出口一致' : 'DNS 地区一致';
@@ -547,8 +625,13 @@ function summarizeDnsLeak(rows = [], exitNetwork = null) {
       exitCountry ? `出口 ${exitCountry}` : '',
       dnsCountries[0] ? `DNS ${dnsCountries[0]}` : '',
       `${unique.length} 个解析器`,
-      unique.slice(0, 3).map((item) => item.ip).join(', '),
-    ].filter(Boolean).join(' · ');
+      unique
+        .slice(0, 3)
+        .map((item) => item.ip)
+        .join(', '),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   return {
@@ -602,7 +685,7 @@ async function lookupDnsLeak(options = {}) {
       ok: false,
       state: 'warn',
       label: '检测失败',
-      detail: String(error && error.message || error || 'dns leak check failed'),
+      detail: String((error && error.message) || error || 'dns leak check failed'),
       exitIp: String(exitNetwork?.ip || ''),
       exitCountryCode: normalizeCountryCode(exitNetwork?.countryCode || ''),
       observedIp: '',
@@ -611,16 +694,14 @@ async function lookupDnsLeak(options = {}) {
       countryMismatch: false,
       conclusion: '',
       checkedAt: new Date().toISOString(),
-      error: String(error && error.message || error || ''),
+      error: String((error && error.message) || error || ''),
     };
   }
 }
 
 function formatTime(ts) {
   const n = Number(ts);
-  const d = Number.isFinite(n) && n > 1e9
-    ? new Date(n > 1e12 ? n : n * 1000)
-    : new Date();
+  const d = Number.isFinite(n) && n > 1e9 ? new Date(n > 1e12 ? n : n * 1000) : new Date();
   const p = (x) => String(x).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
@@ -661,8 +742,7 @@ class StartPageServer {
     if (s.includes('openbrowser-start.html')) return true;
     if (s.includes('openbrowser-start-page') || s.includes('openbrowser-native')) return true;
     if (this.port) {
-      return s.startsWith(`http://127.0.0.1:${this.port}/`)
-        || s.startsWith(`http://localhost:${this.port}/`);
+      return s.startsWith(`http://127.0.0.1:${this.port}/`) || s.startsWith(`http://localhost:${this.port}/`);
     }
     return /https?:\/\/127\.0\.0\.1:5032[6-9]\/?/.test(s);
   }
@@ -675,11 +755,12 @@ class StartPageServer {
     const profileId = String(profile.id || '');
     const serial = String(profile.number || profile.serial || extras.serial || profileId);
     const network = decorateNetwork(extras.network || profile.network || null);
-    const timezone = extras.timezone
-      || profile.exitTimezone
-      || network?.timezone
-      || (profile.privacy?.timezoneMode === 'custom' ? profile.privacy.timezone : '')
-      || '';
+    const timezone =
+      extras.timezone ||
+      profile.exitTimezone ||
+      network?.timezone ||
+      (profile.privacy?.timezoneMode === 'custom' ? profile.privacy.timezone : '') ||
+      '';
 
     const session = {
       pid: profileId,
@@ -704,67 +785,54 @@ class StartPageServer {
       startedAtLabel: formatTime(extras.time || Date.now() / 1000),
       browserName: extras.browserName || '',
       extensionCount: extras.extensionCount || 0,
-      networkMode: profile.networkMode === 'direct' || !profile.proxy || /^(direct|offline|none)$/i.test(String(profile.proxy)) ? 'direct' : 'proxy',
-      proxyProtocol: profile.networkMode === 'direct' || !profile.proxy || /^(direct|offline|none)$/i.test(String(profile.proxy))
-        ? 'direct'
-        : String(profile.proxy).split(':', 1)[0].toLowerCase(),
+      networkMode:
+        profile.networkMode === 'direct' ||
+        !profile.proxy ||
+        /^(direct|offline|none)$/i.test(String(profile.proxy))
+          ? 'direct'
+          : 'proxy',
+      proxyProtocol:
+        profile.networkMode === 'direct' ||
+        !profile.proxy ||
+        /^(direct|offline|none)$/i.test(String(profile.proxy))
+          ? 'direct'
+          : String(profile.proxy).split(':', 1)[0].toLowerCase(),
       expectedFingerprint: {
-        ...(extras.expectedFingerprint && typeof extras.expectedFingerprint === 'object' ? extras.expectedFingerprint : {}),
+        ...(extras.expectedFingerprint && typeof extras.expectedFingerprint === 'object'
+          ? extras.expectedFingerprint
+          : {}),
         language: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.language)
-          || profile.language
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.language) || profile.language || ''
         ),
         userAgent: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.userAgent)
-          || profile.userAgent
-          || extras.userAgent
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.userAgent) ||
+            profile.userAgent ||
+            extras.userAgent ||
+            ''
         ),
         timezone: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.timezone)
-          || timezone
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.timezone) || timezone || ''
         ),
-        screenWidth: Number(
-          (extras.expectedFingerprint && extras.expectedFingerprint.screenWidth)
-          || profile.width
-        ) || null,
-        screenHeight: Number(
-          (extras.expectedFingerprint && extras.expectedFingerprint.screenHeight)
-          || profile.height
-        ) || null,
+        screenWidth:
+          Number((extras.expectedFingerprint && extras.expectedFingerprint.screenWidth) || profile.width) ||
+          null,
+        screenHeight:
+          Number((extras.expectedFingerprint && extras.expectedFingerprint.screenHeight) || profile.height) ||
+          null,
         webrtc: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.webrtc)
-          || profile.privacy?.webrtc
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.webrtc) || profile.privacy?.webrtc || ''
         ),
         canvas: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.canvas)
-          || profile.privacy?.canvas
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.canvas) || profile.privacy?.canvas || ''
         ),
         webgl: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.webgl)
-          || profile.privacy?.webgl
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.webgl) || profile.privacy?.webgl || ''
         ),
-        webglVendor: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.webglVendor)
-          || ''
-        ),
-        webglRenderer: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.webglRenderer)
-          || ''
-        ),
-        platform: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.platform)
-          || ''
-        ),
+        webglVendor: String((extras.expectedFingerprint && extras.expectedFingerprint.webglVendor) || ''),
+        webglRenderer: String((extras.expectedFingerprint && extras.expectedFingerprint.webglRenderer) || ''),
+        platform: String((extras.expectedFingerprint && extras.expectedFingerprint.platform) || ''),
         audio: String(
-          (extras.expectedFingerprint && extras.expectedFingerprint.audio)
-          || profile.privacy?.audio
-          || ''
+          (extras.expectedFingerprint && extras.expectedFingerprint.audio) || profile.privacy?.audio || ''
         ),
         hardwareConcurrency: (() => {
           const fromExtra = extras.expectedFingerprint && extras.expectedFingerprint.hardwareConcurrency;
@@ -800,9 +868,7 @@ class StartPageServer {
   getSession(pid) {
     if (!pid) return null;
     const key = String(pid);
-    return this.sessions.get(key)
-      || this.sessions.get('serial:' + key)
-      || null;
+    return this.sessions.get(key) || this.sessions.get('serial:' + key) || null;
   }
 
   updateNetwork(pid, network) {
@@ -912,13 +978,12 @@ class StartPageServer {
         session = this.getSession(pid);
       }
       if (refresh && profile) {
-        const isDirect = profile.networkMode === 'direct'
-          || !profile.proxy
-          || /^(direct|offline|none)$/i.test(String(profile.proxy));
+        const isDirect =
+          profile.networkMode === 'direct' ||
+          !profile.proxy ||
+          /^(direct|offline|none)$/i.test(String(profile.proxy));
         try {
-          const network = isDirect
-            ? await this.lookupDirectNetwork()
-            : await this.engine.checkProxy(profile);
+          const network = isDirect ? await this.lookupDirectNetwork() : await this.engine.checkProxy(profile);
           if (isDirect) this.engine.networkInfo?.set?.(String(pid), network);
           this.updateNetwork(pid, network);
           return decorateNetwork(network);
@@ -944,9 +1009,9 @@ class StartPageServer {
           }
           if (session?.network) return session.network;
           const endpoint = proxyEndpoint(profile.proxy);
-          throw new Error(endpoint
-            ? `代理 ${endpoint} 出口检测失败：${error.message}`
-            : `出口检测失败：${error.message}`);
+          throw new Error(
+            endpoint ? `代理 ${endpoint} 出口检测失败：${error.message}` : `出口检测失败：${error.message}`
+          );
         }
       }
       if (runningNet) {
@@ -979,7 +1044,8 @@ class StartPageServer {
         ip: session.exitIp,
         countryCode: session.countryCode || '',
         timezone: session.timezone || '',
-        protocol: session.networkMode === 'direct' || session.proxyProtocol === 'direct' ? 'direct' : undefined,
+        protocol:
+          session.networkMode === 'direct' || session.proxyProtocol === 'direct' ? 'direct' : undefined,
       });
     }
     if (session && (session.networkMode === 'direct' || session.proxyProtocol === 'direct')) {
@@ -1015,12 +1081,20 @@ class StartPageServer {
     const pid = query.pid || query.id || '';
     let session = this.getSession(pid);
     const token = String(query.token || req.headers['x-openbrowser-start-token'] || '');
-    let authorized = Boolean(session && token && token.length === session.token.length
-      && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(session.token)));
+    let authorized = Boolean(
+      session &&
+      token &&
+      token.length === session.token.length &&
+      crypto.timingSafeEqual(Buffer.from(token), Buffer.from(session.token))
+    );
 
     // Running env but stale token (OpenBrowser restarted, or old bookmark): re-bind session and redirect.
-    if (!authorized && pid && this.engine?.running?.has?.(pid)
-      && (pathname === '/' || pathname === '/index.html' || pathname === '/start')) {
+    if (
+      !authorized &&
+      pid &&
+      this.engine?.running?.has?.(pid) &&
+      (pathname === '/' || pathname === '/index.html' || pathname === '/start')
+    ) {
       try {
         const item = this.engine.running.get(pid);
         const profile = item?.profile || { id: pid, name: pid, number: query.id || pid };
@@ -1036,14 +1110,26 @@ class StartPageServer {
         });
         res.end();
         return;
-      } catch (_) { /* fall through to unauthorized */ }
+      } catch (_) {
+        /* fall through to unauthorized */
+      }
     }
 
     session = this.getSession(pid);
-    authorized = Boolean(session && token && token.length === session.token.length
-      && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(session.token)));
+    authorized = Boolean(
+      session &&
+      token &&
+      token.length === session.token.length &&
+      crypto.timingSafeEqual(Buffer.from(token), Buffer.from(session.token))
+    );
 
-    if ((pathname.startsWith('/api/') || pathname === '/' || pathname === '/index.html' || pathname === '/start') && !authorized) {
+    if (
+      (pathname.startsWith('/api/') ||
+        pathname === '/' ||
+        pathname === '/index.html' ||
+        pathname === '/start') &&
+      !authorized
+    ) {
       // Browser navigations get HTML (JSON looks like "page won't open"); APIs stay JSON.
       const accept = String(req.headers.accept || '');
       const wantsHtml = !pathname.startsWith('/api/') && !/application\/json/i.test(accept);
@@ -1083,7 +1169,11 @@ h1{margin:0 0 12px;font-size:20px}p{margin:8px 0;color:#b7becc}code{color:#93c5f
       let body = '';
       for await (const chunk of req) body += chunk;
       let report = {};
-      try { report = body ? JSON.parse(body) : {}; } catch (_) { report = { raw: String(body).slice(0, 2000) }; }
+      try {
+        report = body ? JSON.parse(body) : {};
+      } catch (_) {
+        report = { raw: String(body).slice(0, 2000) };
+      }
       const expected = session?.expectedFingerprint || {};
       await fpLog('welcome.report', {
         profileId: pid,
@@ -1091,13 +1181,22 @@ h1{margin:0 0 12px;font-size:20px}p{margin:8px 0;color:#b7becc}code{color:#93c5f
         expected,
         live: report.live || report,
         mismatch: {
-          ua: Boolean(expected.userAgent && report.live?.userAgent && expected.userAgent !== report.live.userAgent),
-          platform: Boolean(expected.platform && report.live?.platform && expected.platform !== report.live.platform),
-          cores: expected.hardwareConcurrency != null && report.live?.hardwareConcurrency != null
-            && Number(expected.hardwareConcurrency) !== Number(report.live.hardwareConcurrency),
-          webglRenderer: Boolean(expected.webglRenderer && report.live?.webglRenderer
-            && String(report.live.webglRenderer) !== String(expected.webglRenderer)
-            && !String(report.live.webglRenderer).includes(String(expected.webglRenderer).slice(0, 20))),
+          ua: Boolean(
+            expected.userAgent && report.live?.userAgent && expected.userAgent !== report.live.userAgent
+          ),
+          platform: Boolean(
+            expected.platform && report.live?.platform && expected.platform !== report.live.platform
+          ),
+          cores:
+            expected.hardwareConcurrency != null &&
+            report.live?.hardwareConcurrency != null &&
+            Number(expected.hardwareConcurrency) !== Number(report.live.hardwareConcurrency),
+          webglRenderer: Boolean(
+            expected.webglRenderer &&
+            report.live?.webglRenderer &&
+            String(report.live.webglRenderer) !== String(expected.webglRenderer) &&
+            !String(report.live.webglRenderer).includes(String(expected.webglRenderer).slice(0, 20))
+          ),
         },
       });
       return this.#json(res, 200, { ok: true });
@@ -1121,14 +1220,21 @@ h1{margin:0 0 12px;font-size:20px}p{margin:8px 0;color:#b7becc}code{color:#93c5f
       if (this.engine && pid) {
         exitNetwork = this.engine.networkInfo?.get?.(String(pid)) || exitNetwork;
         if (!exitNetwork) {
-          try { exitNetwork = await this.#resolveNetwork(pid, false); } catch (_) {}
+          try {
+            exitNetwork = await this.#resolveNetwork(pid, false);
+          } catch (_) {}
         }
         if (profile) {
-          const isDirect = profile.networkMode === 'direct'
-            || !profile.proxy
-            || /^(direct|offline|none)$/i.test(String(profile.proxy));
+          const isDirect =
+            profile.networkMode === 'direct' ||
+            !profile.proxy ||
+            /^(direct|offline|none)$/i.test(String(profile.proxy));
           if (!isDirect) proxy = String(profile.proxy || '');
-        } else if (session?.networkMode === 'proxy' && session?.proxyProtocol && session.proxyProtocol !== 'direct') {
+        } else if (
+          session?.networkMode === 'proxy' &&
+          session?.proxyProtocol &&
+          session.proxyProtocol !== 'direct'
+        ) {
           // session alone may not hold full proxy URL; leave direct probe
           proxy = '';
         }
@@ -1161,7 +1267,9 @@ h1{margin:0 0 12px;font-size:20px}p{margin:8px 0;color:#b7becc}code{color:#93c5f
       if (this.engine && pid) {
         exitNetwork = this.engine.networkInfo?.get?.(String(pid)) || exitNetwork;
         if (!exitNetwork) {
-          try { exitNetwork = await this.#resolveNetwork(pid, false); } catch (_) {}
+          try {
+            exitNetwork = await this.#resolveNetwork(pid, false);
+          } catch (_) {}
         }
       }
       try {
@@ -1203,7 +1311,8 @@ h1{margin:0 0 12px;font-size:20px}p{margin:8px 0;color:#b7becc}code{color:#93c5f
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store',
-        'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        'Content-Security-Policy':
+          "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',

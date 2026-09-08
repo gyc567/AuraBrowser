@@ -77,7 +77,9 @@ const COUNTRY_TO_LOCALE = {
 };
 
 function localeFromCountryCode(countryCode, fallback = 'en-US') {
-  const code = String(countryCode || '').trim().toUpperCase();
+  const code = String(countryCode || '')
+    .trim()
+    .toUpperCase();
   if (!/^[A-Z]{2}$/.test(code)) return fallback;
   return COUNTRY_TO_LOCALE[code] || fallback;
 }

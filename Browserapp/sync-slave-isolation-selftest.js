@@ -13,7 +13,11 @@ const cdp = require('./cdp');
 const { LiveSyncController } = require('./live-sync-v5.js');
 
 let passed = 0;
-const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1; };
+const ok = (n, c) => {
+  assert.ok(c, n);
+  console.log('  PASS  ' + n);
+  passed += 1;
+};
 
 const MASTER_PORT = 9001;
 const GOOD_SLAVE_PORT = 9002;
@@ -44,7 +48,13 @@ function makeController() {
   return controller;
 }
 
-const page = (id, url) => ({ id, type: 'page', url, title: id, webSocketDebuggerUrl: `ws://127.0.0.1/${id}` });
+const page = (id, url) => ({
+  id,
+  type: 'page',
+  url,
+  title: id,
+  webSocketDebuggerUrl: `ws://127.0.0.1/${id}`,
+});
 
 (async () => {
   const originalTargets = cdp.targets;
@@ -62,7 +72,11 @@ const page = (id, url) => ({ id, type: 'page', url, title: id, webSocketDebugger
     {
       const controller = makeController();
       let threw = null;
-      try { await controller.refreshMasterTabs(); } catch (error) { threw = error; }
+      try {
+        await controller.refreshMasterTabs();
+      } catch (error) {
+        threw = error;
+      }
       ok('pass completes despite an unreachable slave', threw === null);
       ok('reachable slave still processed (mapping stage reached)', controller.mappingReady === true);
       ok('master tabs still refreshed', controller.masterTabs.length === 1);
@@ -89,8 +103,15 @@ const page = (id, url) => ({ id, type: 'page', url, title: id, webSocketDebugger
         return [page('t1', 'https://example.com/')];
       };
       let threw = null;
-      try { await controller.refreshMasterTabs(); } catch (error) { threw = error; }
-      ok('an unreachable master still throws (session stop path intact)', threw !== null && /ECONNREFUSED/.test(threw.message));
+      try {
+        await controller.refreshMasterTabs();
+      } catch (error) {
+        threw = error;
+      }
+      ok(
+        'an unreachable master still throws (session stop path intact)',
+        threw !== null && /ECONNREFUSED/.test(threw.message)
+      );
     }
   } finally {
     cdp.targets = originalTargets;
@@ -98,4 +119,7 @@ const page = (id, url) => ({ id, type: 'page', url, title: id, webSocketDebugger
 
   console.log(`\nsync-slave-isolation-selftest: ${passed} checks passed.`);
   process.exit(0);
-})().catch((e) => { console.error('sync-slave-isolation-selftest FAILED:', e); process.exit(1); });
+})().catch((e) => {
+  console.error('sync-slave-isolation-selftest FAILED:', e);
+  process.exit(1);
+});

@@ -199,7 +199,10 @@ function frameUrlKey(value) {
     url.hash = '';
     return url.href.replace(/\/$/, '').toLowerCase();
   } catch (_) {
-    return String(value || '').split('#')[0].replace(/\/$/, '').toLowerCase();
+    return String(value || '')
+      .split('#')[0]
+      .replace(/\/$/, '')
+      .toLowerCase();
   }
 }
 
@@ -216,7 +219,9 @@ function chooseFullscreenFrame(frameTree, payload = {}) {
     const exact = candidates.filter((entry) => frameUrlKey(entry.frame?.url) === requestedUrl);
     candidates = exact.length
       ? exact
-      : candidates.filter((entry) => frameUrlKey(entry.frame?.url).split('?')[0] === requestedUrl.split('?')[0]);
+      : candidates.filter(
+          (entry) => frameUrlKey(entry.frame?.url).split('?')[0] === requestedUrl.split('?')[0]
+        );
     if (!candidates.length) return null;
   }
   if (requestedName) {
@@ -238,7 +243,10 @@ function chooseFullscreenFrame(frameTree, payload = {}) {
     if (requestedDepth !== null) score += 120;
     if (requestedPath) score += 1;
     if (entry.depth === 0 && !requestedUrl && requestedDepth === null) score += 10;
-    if (score > bestScore) { best = entry; bestScore = score; }
+    if (score > bestScore) {
+      best = entry;
+      bestScore = score;
+    }
   }
   if (pathOnlyRequest) {
     const depth = requestedDepth === null ? 0 : requestedDepth;
@@ -247,18 +255,45 @@ function chooseFullscreenFrame(frameTree, payload = {}) {
   return bestScore > 0 ? best.frame : null;
 }
 
-function environmentMarker(id, master) { const text = (master ? '\u4e3b\u63a7 | ' : '') + '\u73af\u5883\u7f16\u53f7: ' + id; const color = master ? '#123a8c' : '#334155'; return `(() => { const install=()=>{if(!document.documentElement)return requestAnimationFrame(install);let e=document.getElementById('openbrowser-environment-marker');if(!e){e=document.createElement('div');e.id='openbrowser-environment-marker';document.documentElement.appendChild(e);}e.textContent=${JSON.stringify(text)};e.style.cssText='position:fixed;right:12px;top:12px;z-index:2147483646;background:${color};color:white;padding:7px 12px;border-radius:8px;font:700 13px Segoe UI,sans-serif;box-shadow:0 4px 16px #0004;pointer-events:none';};install();})()`; }
+function environmentMarker(id, master) {
+  const text = (master ? '\u4e3b\u63a7 | ' : '') + '\u73af\u5883\u7f16\u53f7: ' + id;
+  const color = master ? '#123a8c' : '#334155';
+  return `(() => { const install=()=>{if(!document.documentElement)return requestAnimationFrame(install);let e=document.getElementById('openbrowser-environment-marker');if(!e){e=document.createElement('div');e.id='openbrowser-environment-marker';document.documentElement.appendChild(e);}e.textContent=${JSON.stringify(text)};e.style.cssText='position:fixed;right:12px;top:12px;z-index:2147483646;background:${color};color:white;padding:7px 12px;border-radius:8px;font:700 13px Segoe UI,sans-serif;box-shadow:0 4px 16px #0004;pointer-events:none';};install();})()`;
+}
 
-function managedTabs(values) { return values.filter((tab) => !/^(devtools|chrome-extension|edge-extension):/i.test(tab.url)); }
-function normalTabs(values) { return values.filter((tab) => !/^(devtools|chrome-extension|edge-extension):/i.test(tab.url) && (!/^(chrome|edge):/i.test(tab.url) || /^chrome:\/\/(newtab|new-tab-page)/i.test(tab.url))); }
-function extensionPages(values) { return values.filter((tab) => ['page', 'iframe'].includes(String(tab.type || 'page')) && /^(chrome|edge)-extension:\/\//i.test(String(tab.url || ''))); }
+function managedTabs(values) {
+  return values.filter((tab) => !/^(devtools|chrome-extension|edge-extension):/i.test(tab.url));
+}
+function normalTabs(values) {
+  return values.filter(
+    (tab) =>
+      !/^(devtools|chrome-extension|edge-extension):/i.test(tab.url) &&
+      (!/^(chrome|edge):/i.test(tab.url) || /^chrome:\/\/(newtab|new-tab-page)/i.test(tab.url))
+  );
+}
+function extensionPages(values) {
+  return values.filter(
+    (tab) =>
+      ['page', 'iframe'].includes(String(tab.type || 'page')) &&
+      /^(chrome|edge)-extension:\/\//i.test(String(tab.url || ''))
+  );
+}
 function extensionPageKey(tab) {
-  try { const value = new URL(String(tab.url || '')); return (value.protocol + '//' + value.hostname + value.pathname).toLowerCase(); }
-  catch (_) { return String(tab.url || '').split(/[?#]/)[0].toLowerCase(); }
+  try {
+    const value = new URL(String(tab.url || ''));
+    return (value.protocol + '//' + value.hostname + value.pathname).toLowerCase();
+  } catch (_) {
+    return String(tab.url || '')
+      .split(/[?#]/)[0]
+      .toLowerCase();
+  }
 }
 function extensionHost(tab) {
-  try { return new URL(String(tab.url || '')).hostname.toLowerCase(); }
-  catch (_) { return ''; }
+  try {
+    return new URL(String(tab.url || '')).hostname.toLowerCase();
+  } catch (_) {
+    return '';
+  }
 }
 function isEnvironmentStartUrl(value) {
   const s = String(value || '');
@@ -290,35 +325,80 @@ class LiveSyncController extends LiveSyncV4 {
     super(engine, emit);
     this.tabMap = new Map();
     this.desiredUrlMap = new Map();
-    this.extensionMap = new Map(); this.extensionConnections = new Map();
+    this.extensionMap = new Map();
+    this.extensionConnections = new Map();
     this.mappingReady = false;
-    this.activeMasterTab = null; this.lastWindowSync = 0; this.lastHealthCheck = 0; this.nativeInputMirror = null; this.nativePopupActive = false;
-    this.geometryPausedUntil = 0; this.geometryPending = new Map(); this.fullscreenByTab = new Map(); this.fullscreenSessions = new Map(); this.fullscreenActiveSessions = new Map();
-    this.browserOwnedUntil = 0; this.nativeInputStdoutBuffer = '';
-    this.nativeRestartTimer = null; this.nativeRestartCount = 0; this.nativeDevToolsMode = false;
+    this.activeMasterTab = null;
+    this.lastWindowSync = 0;
+    this.lastHealthCheck = 0;
+    this.nativeInputMirror = null;
+    this.nativePopupActive = false;
+    this.geometryPausedUntil = 0;
+    this.geometryPending = new Map();
+    this.fullscreenByTab = new Map();
+    this.fullscreenSessions = new Map();
+    this.fullscreenActiveSessions = new Map();
+    this.browserOwnedUntil = 0;
+    this.nativeInputStdoutBuffer = '';
+    this.nativeRestartTimer = null;
+    this.nativeRestartCount = 0;
+    this.nativeDevToolsMode = false;
     this.nativeBridgeState = process.platform === 'win32' ? 'down' : 'disabled';
     this.nativeBridgeReadyTimer = null;
     // Keep the logical session identity separate from the live CDP objects. A
     // browser-close disconnect can clear `master` before the engine emits its
     // final status event, but the controlled environments still need closing.
-    this.syncSession = null; this.syncGeneration = 0; this.masterClosePromise = null; this.masterCloseGeneration = null;
-    this.syncSettings = { keyboard: true, click: true, scroll: true, track: true, delayClick: false, delayInput: false, inputMinMs: 300, inputMaxMs: 300, clickMinMs: 100, clickMaxMs: 300 };
+    this.syncSession = null;
+    this.syncGeneration = 0;
+    this.masterClosePromise = null;
+    this.masterCloseGeneration = null;
+    this.syncSettings = {
+      keyboard: true,
+      click: true,
+      scroll: true,
+      track: true,
+      delayClick: false,
+      delayInput: false,
+      inputMinMs: 300,
+      inputMaxMs: 300,
+      clickMinMs: 100,
+      clickMaxMs: 300,
+    };
   }
 
   updateSettings(value = {}) {
-    const boolean = (name) => value[name] === undefined ? this.syncSettings[name] : value[name] !== false;
+    const boolean = (name) => (value[name] === undefined ? this.syncSettings[name] : value[name] !== false);
     const range = (name, fallback) => Math.max(0, Math.min(5000, Number(value[name] ?? fallback) || 0));
-    const next = { ...this.syncSettings, keyboard: boolean('keyboard'), click: boolean('click'), scroll: boolean('scroll'), track: boolean('track'), delayClick: boolean('delayClick'), delayInput: boolean('delayInput') };
-    next.inputMinMs = range('inputMinMs', next.inputMinMs); next.inputMaxMs = Math.max(next.inputMinMs, range('inputMaxMs', next.inputMaxMs));
-    next.clickMinMs = range('clickMinMs', next.clickMinMs); next.clickMaxMs = Math.max(next.clickMinMs, range('clickMaxMs', next.clickMaxMs));
+    const next = {
+      ...this.syncSettings,
+      keyboard: boolean('keyboard'),
+      click: boolean('click'),
+      scroll: boolean('scroll'),
+      track: boolean('track'),
+      delayClick: boolean('delayClick'),
+      delayInput: boolean('delayInput'),
+    };
+    next.inputMinMs = range('inputMinMs', next.inputMinMs);
+    next.inputMaxMs = Math.max(next.inputMinMs, range('inputMaxMs', next.inputMaxMs));
+    next.clickMinMs = range('clickMinMs', next.clickMinMs);
+    next.clickMaxMs = Math.max(next.clickMinMs, range('clickMaxMs', next.clickMaxMs));
     this.syncSettings = next;
     if (this.master) this.startNativeInputMirror();
-    this.emit({ type: 'sync-settings', settings: { ...next }, operate: settingsToOperateList(next), capabilities: syncCapabilities() });
+    this.emit({
+      type: 'sync-settings',
+      settings: { ...next },
+      operate: settingsToOperateList(next),
+      capabilities: syncCapabilities(),
+    });
     return { ...next, operate: settingsToOperateList(next) };
   }
 
   getSettings() {
-    return { ...this.syncSettings, operate: settingsToOperateList(this.syncSettings), capabilities: syncCapabilities() };
+    return {
+      ...this.syncSettings,
+      operate: settingsToOperateList(this.syncSettings),
+      capabilities: syncCapabilities(),
+    };
   }
 
   /** Operate list for gates / Local API */
@@ -345,7 +425,9 @@ class LiveSyncController extends LiveSyncV4 {
     });
   }
 
-  randomDelay(min, max) { return min + Math.random() * Math.max(0, max - min); }
+  randomDelay(min, max) {
+    return min + Math.random() * Math.max(0, max - min);
+  }
 
   async start(ids) {
     const pendingClose = this.masterClosePromise;
@@ -354,7 +436,8 @@ class LiveSyncController extends LiveSyncV4 {
     this.syncGeneration += 1;
     if (pendingClose) await pendingClose.catch(() => {});
     const result = await super.start(ids);
-    this.nativeRestartCount = 0; this.startNativeInputMirror();
+    this.nativeRestartCount = 0;
+    this.startNativeInputMirror();
     const masterId = this.master?.id;
     const controlledIds = this.slaves.map((item) => item.id);
     const session = { masterId, controlledIds: [...controlledIds], generation: this.syncGeneration };
@@ -363,7 +446,13 @@ class LiveSyncController extends LiveSyncV4 {
     // Re-arm it now so every future tick carries the current generation.
     this.scheduleRefreshTick();
     this.unsubscribeMasterClose = this.engine.on((event) => {
-      if (this.syncSession !== session || event?.type !== 'status' || event.running !== false || event.id !== session.masterId) return;
+      if (
+        this.syncSession !== session ||
+        event?.type !== 'status' ||
+        event.running !== false ||
+        event.id !== session.masterId
+      )
+        return;
       this.scheduleMasterClose(session.controlledIds, session);
     });
     return result;
@@ -381,10 +470,21 @@ class LiveSyncController extends LiveSyncV4 {
     if (!this.isRefreshGenerationCurrent(refreshGeneration)) return;
     const message = String(error?.message || error || 'Unknown sync error');
     const session = this.syncSession;
-    if (/ECONNREFUSED|connection refused|fetch failed|CDP (?:persistent )?socket (?:error|closed)|CDP connection closed/i.test(message) && session?.masterId) {
+    if (
+      /ECONNREFUSED|connection refused|fetch failed|CDP (?:persistent )?socket (?:error|closed)|CDP connection closed/i.test(
+        message
+      ) &&
+      session?.masterId
+    ) {
       const master = session.masterId;
       const slaves = [...session.controlledIds];
-      this.emit({ type: 'sync-disconnected', active: false, master, slaves, message: '浏览器环境已关闭或调试端口失效，同步已自动停止' });
+      this.emit({
+        type: 'sync-disconnected',
+        active: false,
+        master,
+        slaves,
+        message: '浏览器环境已关闭或调试端口失效，同步已自动停止',
+      });
       this.scheduleMasterClose(slaves, session);
       return;
     }
@@ -400,22 +500,54 @@ class LiveSyncController extends LiveSyncV4 {
     if (!this.master) return;
     if (process.platform !== 'win32') {
       this.nativeBridgeState = 'disabled';
-      this.emit({ type: 'native-input', active: false, mode: 'cdp-only', platform: process.platform, message: 'macOS/Linux 使用 CDP 页面同步；Chrome 原生 UI 输入镜像仅 Windows 支持' });
+      this.emit({
+        type: 'native-input',
+        active: false,
+        mode: 'cdp-only',
+        platform: process.platform,
+        message: 'macOS/Linux 使用 CDP 页面同步；Chrome 原生 UI 输入镜像仅 Windows 支持',
+      });
       return;
     }
     const executable = path.join(__dirname, 'native-input-mirror.exe');
-    if (!fs.existsSync(executable)) { this.nativeBridgeState = 'down'; this.emit({ type: 'sync-error', action: 'native-input', message: 'Windows input bridge is missing' }); return; }
+    if (!fs.existsSync(executable)) {
+      this.nativeBridgeState = 'down';
+      this.emit({ type: 'sync-error', action: 'native-input', message: 'Windows input bridge is missing' });
+      return;
+    }
     const masterPid = this.engine.running.get(this.master.id)?.pid;
-    const slavePids = this.slaves.map((slave) => this.engine.running.get(slave.id)?.pid).filter((pid) => Number.isInteger(pid) && pid > 0);
-    if (!Number.isInteger(masterPid) || masterPid <= 0 || !slavePids.length) { this.nativeBridgeState = 'down'; return; }
-    const nativeEnv = { ...process.env, OPENBROWSER_SYNC_KEYBOARD: this.syncSettings.keyboard ? '1' : '0', OPENBROWSER_SYNC_CLICK: this.syncSettings.click ? '1' : '0', OPENBROWSER_SYNC_SCROLL: this.syncSettings.scroll ? '1' : '0', OPENBROWSER_SYNC_TRACK: this.syncSettings.track ? '1' : '0', OPENBROWSER_DELAY_CLICK: this.syncSettings.delayClick ? '1' : '0', OPENBROWSER_DELAY_INPUT: this.syncSettings.delayInput ? '1' : '0', OPENBROWSER_INPUT_MIN_MS: String(this.syncSettings.inputMinMs), OPENBROWSER_INPUT_MAX_MS: String(this.syncSettings.inputMaxMs), OPENBROWSER_CLICK_MIN_MS: String(this.syncSettings.clickMinMs), OPENBROWSER_CLICK_MAX_MS: String(this.syncSettings.clickMaxMs) };
-    const child = spawn(executable, [String(masterPid), ...slavePids.map(String)], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: nativeEnv });
+    const slavePids = this.slaves
+      .map((slave) => this.engine.running.get(slave.id)?.pid)
+      .filter((pid) => Number.isInteger(pid) && pid > 0);
+    if (!Number.isInteger(masterPid) || masterPid <= 0 || !slavePids.length) {
+      this.nativeBridgeState = 'down';
+      return;
+    }
+    const nativeEnv = {
+      ...process.env,
+      OPENBROWSER_SYNC_KEYBOARD: this.syncSettings.keyboard ? '1' : '0',
+      OPENBROWSER_SYNC_CLICK: this.syncSettings.click ? '1' : '0',
+      OPENBROWSER_SYNC_SCROLL: this.syncSettings.scroll ? '1' : '0',
+      OPENBROWSER_SYNC_TRACK: this.syncSettings.track ? '1' : '0',
+      OPENBROWSER_DELAY_CLICK: this.syncSettings.delayClick ? '1' : '0',
+      OPENBROWSER_DELAY_INPUT: this.syncSettings.delayInput ? '1' : '0',
+      OPENBROWSER_INPUT_MIN_MS: String(this.syncSettings.inputMinMs),
+      OPENBROWSER_INPUT_MAX_MS: String(this.syncSettings.inputMaxMs),
+      OPENBROWSER_CLICK_MIN_MS: String(this.syncSettings.clickMinMs),
+      OPENBROWSER_CLICK_MAX_MS: String(this.syncSettings.clickMaxMs),
+    };
+    const child = spawn(executable, [String(masterPid), ...slavePids.map(String)], {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: nativeEnv,
+    });
     this.nativeInputMirror = child;
     this.nativeBridgeState = 'starting';
     this.browserOwnedUntil = Math.max(this.browserOwnedUntil || 0, Date.now() + 1200);
     this.nativeInputStdoutBuffer = '';
     this.nativeBridgeReadyTimer = setTimeout(() => {
-      if (this.nativeInputMirror === child && this.nativeBridgeState === 'starting') this.nativeBridgeState = 'ready';
+      if (this.nativeInputMirror === child && this.nativeBridgeState === 'starting')
+        this.nativeBridgeState = 'ready';
     }, 1200);
     this.nativeBridgeReadyTimer.unref?.();
     child.stdout?.setEncoding('utf8');
@@ -431,9 +563,15 @@ class LiveSyncController extends LiveSyncV4 {
       this.nativeInputStdoutBuffer = lines.pop() || '';
       for (const line of lines) {
         const match = line.match(/^DEVTOOLS_MODE=([01])$/);
-        if (match) { this.nativeDevToolsMode = match[1] === '1'; this.emit({ type: 'native-devtools', active: this.nativeDevToolsMode }); }
+        if (match) {
+          this.nativeDevToolsMode = match[1] === '1';
+          this.emit({ type: 'native-devtools', active: this.nativeDevToolsMode });
+        }
         const popup = line.match(/^NATIVE_POPUP_ACTIVE=([01])$/);
-        if (popup) { this.nativePopupActive = popup[1] === '1'; this.emit({ type: 'native-popup', active: this.nativePopupActive }); }
+        if (popup) {
+          this.nativePopupActive = popup[1] === '1';
+          this.emit({ type: 'native-popup', active: this.nativePopupActive });
+        }
       }
     });
     child.once('error', (error) => {
@@ -466,36 +604,69 @@ class LiveSyncController extends LiveSyncV4 {
       if (wasPopup) this.emit({ type: 'native-popup', active: false });
       const exitMessage = code !== null ? 'exit ' + code : 'terminated';
       if (this.master) {
-        this.emit({ type: 'sync-error', action: 'native-input', message: 'Windows input bridge exited: ' + (code ?? 'signal') });
+        this.emit({
+          type: 'sync-error',
+          action: 'native-input',
+          message: 'Windows input bridge exited: ' + (code ?? 'signal'),
+        });
         this.scheduleNativeInputRestart(exitMessage);
       }
     });
-    this.emit({ type: 'native-input', active: true, master: this.master.id, slaves: this.slaves.map((slave) => slave.id) });
+    this.emit({
+      type: 'native-input',
+      active: true,
+      master: this.master.id,
+      slaves: this.slaves.map((slave) => slave.id),
+    });
   }
 
   scheduleNativeInputRestart(reason) {
     if (this.nativeRestartTimer || !this.master) return;
-    if (this.nativeRestartCount >= 3) { this.emit({ type: 'sync-error', action: 'native-input-restart', message: 'Windows input bridge could not be recovered automatically' }); return; }
-    const attempt = ++this.nativeRestartCount; const delay = 350 * (2 ** (attempt - 1));
+    if (this.nativeRestartCount >= 3) {
+      this.emit({
+        type: 'sync-error',
+        action: 'native-input-restart',
+        message: 'Windows input bridge could not be recovered automatically',
+      });
+      return;
+    }
+    const attempt = ++this.nativeRestartCount;
+    const delay = 350 * 2 ** (attempt - 1);
     this.emit({ type: 'sync-recovering', component: 'native-input', attempt, delay, reason });
-    this.nativeRestartTimer = setTimeout(() => { this.nativeRestartTimer = null; if (this.master) this.startNativeInputMirror(); }, delay);
+    this.nativeRestartTimer = setTimeout(() => {
+      this.nativeRestartTimer = null;
+      if (this.master) this.startNativeInputMirror();
+    }, delay);
     this.nativeRestartTimer.unref?.();
   }
 
   stopNativeInputMirror(resetAttempts = true) {
-    if (this.nativeRestartTimer) clearTimeout(this.nativeRestartTimer); this.nativeRestartTimer = null;
-    if (this.nativeBridgeReadyTimer) clearTimeout(this.nativeBridgeReadyTimer); this.nativeBridgeReadyTimer = null;
+    if (this.nativeRestartTimer) clearTimeout(this.nativeRestartTimer);
+    this.nativeRestartTimer = null;
+    if (this.nativeBridgeReadyTimer) clearTimeout(this.nativeBridgeReadyTimer);
+    this.nativeBridgeReadyTimer = null;
     if (resetAttempts) this.nativeRestartCount = 0;
-    const child = this.nativeInputMirror; this.nativeInputMirror = null; this.nativeDevToolsMode = false; this.nativePopupActive = false;
+    const child = this.nativeInputMirror;
+    this.nativeInputMirror = null;
+    this.nativeDevToolsMode = false;
+    this.nativePopupActive = false;
     this.nativeBridgeState = process.platform === 'win32' ? 'down' : 'disabled';
-    if (child && !child.killed) { try { child.kill(); } catch (_) {} }
+    if (child && !child.killed) {
+      try {
+        child.kill();
+      } catch (_) {}
+    }
   }
 
   enqueueForward(tabId, payload, action = 'forward') {
     const type = payload?.type;
     if (action === 'forward') {
       if (!this.syncSettings.keyboard && ['key', 'input', 'beforeinput'].includes(type)) return;
-      if (!this.syncSettings.click && (type === 'click' || type === 'focus' || (type === 'mouse' && payload?.phase !== 'move'))) return;
+      if (
+        !this.syncSettings.click &&
+        (type === 'click' || type === 'focus' || (type === 'mouse' && payload?.phase !== 'move'))
+      )
+        return;
       if (!this.syncSettings.track && type === 'mouse' && payload?.phase === 'move') return;
       if (!this.syncSettings.scroll && ['wheel', 'scroll'].includes(type)) return;
       if (this.nativeDevToolsMode && ['click', 'mouse', 'wheel', 'scroll'].includes(type)) return;
@@ -517,14 +688,25 @@ class LiveSyncController extends LiveSyncV4 {
       const type = payload?.type;
       const clickEvent = type === 'click';
       const inputEvent = type === 'beforeinput' || (type === 'key' && payload?.phase === 'down');
-      if (clickEvent && this.syncSettings.delayClick) await new Promise((resolve) => setTimeout(resolve, this.randomDelay(this.syncSettings.clickMinMs, this.syncSettings.clickMaxMs)));
-      if (inputEvent && this.syncSettings.delayInput) await new Promise((resolve) => setTimeout(resolve, this.randomDelay(this.syncSettings.inputMinMs, this.syncSettings.inputMaxMs)));
+      if (clickEvent && this.syncSettings.delayClick)
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.randomDelay(this.syncSettings.clickMinMs, this.syncSettings.clickMaxMs))
+        );
+      if (inputEvent && this.syncSettings.delayInput)
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.randomDelay(this.syncSettings.inputMinMs, this.syncSettings.inputMaxMs))
+        );
     }
     // Semantic selector-based forward remains in v4 (more accurate than raw x/y on multi-resolution slaves).
     // Protocol plan is retained for Local API telemetry / debugging.
     const result = await super.forward(tabId, payload);
     if (plan && !plan.skip && this.emit) {
-      this.lastProtocolPlan = { eventType: plan.eventType, proprietary: plan.proprietary?.command, standardCount: plan.standard?.length || 0, at: Date.now() };
+      this.lastProtocolPlan = {
+        eventType: plan.eventType,
+        proprietary: plan.proprietary?.command,
+        standardCount: plan.standard?.length || 0,
+        at: Date.now(),
+      };
     }
     return result;
   }
@@ -539,13 +721,19 @@ class LiveSyncController extends LiveSyncV4 {
       if (session && generation !== this.syncGeneration) return;
       await Promise.allSettled(remaining.map((id) => this.engine.stop(id)));
       if (session && generation !== this.syncGeneration) return;
-      const running = this.engine.running instanceof Map
-        ? new Set(this.engine.running.keys())
-        : new Set((this.engine.status?.() || []).filter((item) => item.running).map((item) => item.id));
+      const running =
+        this.engine.running instanceof Map
+          ? new Set(this.engine.running.keys())
+          : new Set((this.engine.status?.() || []).filter((item) => item.running).map((item) => item.id));
       remaining = remaining.filter((id) => running.has(id));
       if (remaining.length && attempt === 0) await new Promise((resolve) => setTimeout(resolve, 150));
     }
-    if (remaining.length) this.emit({ type: 'sync-error', action: 'master-close', message: `从控环境停止未收敛：${remaining.join(', ')}` });
+    if (remaining.length)
+      this.emit({
+        type: 'sync-error',
+        action: 'master-close',
+        message: `从控环境停止未收敛：${remaining.join(', ')}`,
+      });
     this.emit({ type: 'master-closed', controlled, remaining });
   }
 
@@ -556,24 +744,37 @@ class LiveSyncController extends LiveSyncV4 {
     });
     this.masterClosePromise = task;
     this.masterCloseGeneration = session?.generation ?? null;
-    task.finally(() => {
-      // An older close task must never clear a newer session's close barrier.
-      if (this.masterClosePromise === task) {
-        this.masterClosePromise = null;
-        this.masterCloseGeneration = null;
-      }
-    }).catch(() => {});
+    task
+      .finally(() => {
+        // An older close task must never clear a newer session's close barrier.
+        if (this.masterClosePromise === task) {
+          this.masterClosePromise = null;
+          this.masterCloseGeneration = null;
+        }
+      })
+      .catch(() => {});
     return task;
   }
 
   stop(options = {}) {
     if (options.invalidate !== false) this.syncGeneration += 1;
     this.stopNativeInputMirror();
-    this.unsubscribeMasterClose?.(); this.unsubscribeMasterClose = null;
+    this.unsubscribeMasterClose?.();
+    this.unsubscribeMasterClose = null;
     this.syncSession = null;
-    this.tabMap?.clear(); this.desiredUrlMap?.clear(); this.geometryPending?.clear(); this.fullscreenByTab?.clear(); this.fullscreenSessions?.clear(); this.fullscreenActiveSessions?.clear(); this.mappingReady = false; this.activeMasterTab = null; this.geometryPausedUntil = 0; this.browserOwnedUntil = 0;
+    this.tabMap?.clear();
+    this.desiredUrlMap?.clear();
+    this.geometryPending?.clear();
+    this.fullscreenByTab?.clear();
+    this.fullscreenSessions?.clear();
+    this.fullscreenActiveSessions?.clear();
+    this.mappingReady = false;
+    this.activeMasterTab = null;
+    this.geometryPausedUntil = 0;
+    this.browserOwnedUntil = 0;
     for (const value of this.extensionConnections.values()) value.connection.close();
-    this.extensionConnections.clear(); this.extensionMap.clear();
+    this.extensionConnections.clear();
+    this.extensionMap.clear();
     super.stop();
   }
 
@@ -585,7 +786,9 @@ class LiveSyncController extends LiveSyncV4 {
     const value = { tab, connection, scroll: { x: 0, y: 0 } };
     this.connections.set(tab.id, value);
     try {
-      await connection.command('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }).catch(() => {});
+      await connection
+        .command('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true })
+        .catch(() => {});
       await connection.command('Runtime.addBinding', { name: 'openBrowserSync' });
       await connection.command('Page.addScriptToEvaluateOnNewDocument', { source: injection });
       await connection.command('Runtime.enable');
@@ -598,10 +801,14 @@ class LiveSyncController extends LiveSyncV4 {
       await connection.command('Runtime.evaluate', { expression: environment });
       await connection.command('Page.addScriptToEvaluateOnNewDocument', { source: fullscreenInjection });
       await connection.command('Runtime.evaluate', { expression: fullscreenInjection });
-      const position = await connection.command('Runtime.evaluate', { expression: '({x:scrollX,y:scrollY})', returnByValue: true }).catch(() => null);
+      const position = await connection
+        .command('Runtime.evaluate', { expression: '({x:scrollX,y:scrollY})', returnByValue: true })
+        .catch(() => null);
       value.scroll = position?.result?.value || { x: 0, y: 0 };
     } catch (error) {
-      connection.close(); this.connections.delete(tab.id); throw error;
+      connection.close();
+      this.connections.delete(tab.id);
+      throw error;
     }
   }
 
@@ -609,9 +816,15 @@ class LiveSyncController extends LiveSyncV4 {
     if (!sessionId || !connection) return;
     const sessions = this.fullscreenSessions.get(tabId) || new Set();
     if (sessions.has(sessionId)) return;
-    sessions.add(sessionId); this.fullscreenSessions.set(tabId, sessions);
-    const command = (method, params = {}) => connection.command(method, params, { sessionId, timeout: 10000 });
-    await command('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }).catch(() => {});
+    sessions.add(sessionId);
+    this.fullscreenSessions.set(tabId, sessions);
+    const command = (method, params = {}) =>
+      connection.command(method, params, { sessionId, timeout: 10000 });
+    await command('Target.setAutoAttach', {
+      autoAttach: true,
+      waitForDebuggerOnStart: false,
+      flatten: true,
+    }).catch(() => {});
     await command('Runtime.addBinding', { name: 'openBrowserSync' }).catch(() => {});
     await command('Page.addScriptToEvaluateOnNewDocument', { source: fullscreenInjection }).catch(() => {});
     await command('Runtime.enable').catch(() => {});
@@ -643,11 +856,22 @@ class LiveSyncController extends LiveSyncV4 {
     if (event.method === 'Runtime.executionContextCreated') {
       const context = event.params?.context;
       const contextId = context?.id;
-      if (contextId && connection) connection.command('Runtime.evaluate', { expression: fullscreenInjection, contextId }, event.sessionId ? { sessionId: event.sessionId } : {}).catch(() => {});
+      if (contextId && connection)
+        connection
+          .command(
+            'Runtime.evaluate',
+            { expression: fullscreenInjection, contextId },
+            event.sessionId ? { sessionId: event.sessionId } : {}
+          )
+          .catch(() => {});
     }
     if (event.method === 'Runtime.bindingCalled' && event.params?.name === 'openBrowserSync') {
       let payload;
-      try { payload = JSON.parse(event.params.payload); } catch (_) { return; }
+      try {
+        payload = JSON.parse(event.params.payload);
+      } catch (_) {
+        return;
+      }
       if (payload?.type === 'fullscreen') {
         if (payload.error) {
           const cleared = this.clearFullscreenState(tabId, 'fullscreen-error');
@@ -684,7 +908,10 @@ class LiveSyncController extends LiveSyncV4 {
     const cleared = this.fullscreenByTab.delete(tabId);
     // A rejected fullscreen request must not leave the geometry guard waiting
     // on a state transition that will never produce fullscreenchange.
-    if (this.lastGeometryPauseReason === 'fullscreen-transition' || this.lastGeometryPauseReason === 'fullscreen-error') {
+    if (
+      this.lastGeometryPauseReason === 'fullscreen-transition' ||
+      this.lastGeometryPauseReason === 'fullscreen-error'
+    ) {
       const recoveryUntil = Date.now() + 250;
       this.geometryPausedUntil = this.geometryPausedUntil
         ? Math.min(this.geometryPausedUntil, recoveryUntil)
@@ -718,7 +945,7 @@ class LiveSyncController extends LiveSyncV4 {
 
   async refreshMasterTabs(refreshGeneration = null) {
     if (!this.isRefreshGenerationCurrent(refreshGeneration) || !this.master) return;
-    const tick = (this.tickCount || 0);
+    const tick = this.tickCount || 0;
     // Heavy work (extension pages / geometry / zoom) only every N ticks to cut CDP load.
     const doHeavy = tick % 3 === 0;
     const allMasterTargets = await cdp.targets(this.master.item.port);
@@ -729,29 +956,42 @@ class LiveSyncController extends LiveSyncV4 {
 
     for (const [id, value] of this.connections) {
       if (!live.has(id) || value.connection.socket?.readyState !== 1) {
-        value.connection.close(); this.connections.delete(id);
-        if (!live.has(id)) { await this.closeMappedTabs(id); this.tabMap.delete(id); this.fullscreenByTab.delete(id); }
+        value.connection.close();
+        this.connections.delete(id);
+        if (!live.has(id)) {
+          await this.closeMappedTabs(id);
+          this.tabMap.delete(id);
+          this.fullscreenByTab.delete(id);
+        }
       }
     }
 
-    for (const id of [...this.tabMap.keys()]) if (!live.has(id)) { await this.closeMappedTabs(id); this.tabMap.delete(id); this.fullscreenByTab.delete(id); }
+    for (const id of [...this.tabMap.keys()])
+      if (!live.has(id)) {
+        await this.closeMappedTabs(id);
+        this.tabMap.delete(id);
+        this.fullscreenByTab.delete(id);
+      }
     this.masterTabs = tabs;
-    const slaveLists = new Map(); const slaveExtensionLists = new Map();
+    const slaveLists = new Map();
+    const slaveExtensionLists = new Map();
     // Parallel slave target fetch (was sequential). Each slave is isolated: a closed or
     // hung environment throws ECONNREFUSED here, and letting that reject the batch would
     // abort the whole pass — which handleWatchError then reads as a dead debug port and
     // stops the entire session. One slave going away must not desync the others, so skip
     // it for this tick and keep going. Master death still propagates (fetched above).
     const failedSlaves = [];
-    await Promise.all(this.slaves.map(async (slave) => {
-      try {
-        const targets = await cdp.targets(slave.port);
-        slaveLists.set(slave.id, normalTabs(targets.filter((target) => target.type === 'page')));
-        if (doHeavy) slaveExtensionLists.set(slave.id, extensionPages(targets));
-      } catch (error) {
-        failedSlaves.push({ id: slave.id, message: String(error?.message || error) });
-      }
-    }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        try {
+          const targets = await cdp.targets(slave.port);
+          slaveLists.set(slave.id, normalTabs(targets.filter((target) => target.type === 'page')));
+          if (doHeavy) slaveExtensionLists.set(slave.id, extensionPages(targets));
+        } catch (error) {
+          failedSlaves.push({ id: slave.id, message: String(error?.message || error) });
+        }
+      })
+    );
     if (!this.isRefreshGenerationCurrent(refreshGeneration)) return;
     if (failedSlaves.length) this.reportUnreachableSlaves(failedSlaves);
     for (let index = 0; index < tabs.length; index += 1) {
@@ -766,16 +1006,21 @@ class LiveSyncController extends LiveSyncV4 {
     if (doHeavy || tabCountChanged) await this.reconcileSlaveTabs(tabs, slaveLists);
     if (!this.isRefreshGenerationCurrent(refreshGeneration)) return;
     for (const tab of tabs) if (!this.connections.has(tab.id)) await this.attach(tab);
-    if (doHeavy && masterExtensionPages) await this.refreshExtensionConnections(masterExtensionPages, slaveExtensionLists);
+    if (doHeavy && masterExtensionPages)
+      await this.refreshExtensionConnections(masterExtensionPages, slaveExtensionLists);
     if (!this.isRefreshGenerationCurrent(refreshGeneration)) return;
-    await Promise.all([...this.connections.entries()].map(async ([id, value]) => {
-      try { await this.pollTabState(value, { heavy: doHeavy }); }
-      catch (error) {
-        if (this.connections.get(id) !== value) return;
-        value.connection.close(); this.connections.delete(id);
-        this.emit({ type: 'live-sync-reattach', targetId: id, message: String(error?.message || error) });
-      }
-    }));
+    await Promise.all(
+      [...this.connections.entries()].map(async ([id, value]) => {
+        try {
+          await this.pollTabState(value, { heavy: doHeavy });
+        } catch (error) {
+          if (this.connections.get(id) !== value) return;
+          value.connection.close();
+          this.connections.delete(id);
+          this.emit({ type: 'live-sync-reattach', targetId: id, message: String(error?.message || error) });
+        }
+      })
+    );
     if (doHeavy) await this.syncWindowGeometry().catch(() => {});
   }
 
@@ -783,7 +1028,8 @@ class LiveSyncController extends LiveSyncV4 {
     const live = new Set(masterTargets.map((target) => target.id));
     for (const [id, value] of this.extensionConnections) {
       if (!live.has(id) || value.connection.socket?.readyState !== 1) {
-        value.connection.close(); this.extensionConnections.delete(id);
+        value.connection.close();
+        this.extensionConnections.delete(id);
         if (!live.has(id)) this.extensionMap.delete(id);
       }
     }
@@ -796,11 +1042,15 @@ class LiveSyncController extends LiveSyncV4 {
         const current = mapping.get(slave.id);
         if (current && available.some((target) => target.id === current.id)) continue;
         if (current) mapping.delete(slave.id);
-        const used = new Set([...this.extensionMap.values()].map((value) => value.get(slave.id)?.id).filter(Boolean));
+        const used = new Set(
+          [...this.extensionMap.values()].map((value) => value.get(slave.id)?.id).filter(Boolean)
+        );
         const candidates = available.filter((target) => !used.has(target.id));
-        const exactKey = extensionPageKey(masterTarget); const host = extensionHost(masterTarget);
-        const target = candidates.find((candidate) => extensionPageKey(candidate) === exactKey)
-          || candidates.find((candidate) => extensionHost(candidate) === host);
+        const exactKey = extensionPageKey(masterTarget);
+        const host = extensionHost(masterTarget);
+        const target =
+          candidates.find((candidate) => extensionPageKey(candidate) === exactKey) ||
+          candidates.find((candidate) => extensionHost(candidate) === host);
         if (target) mapping.set(slave.id, target);
       }
       this.extensionMap.set(masterTarget.id, mapping);
@@ -812,28 +1062,47 @@ class LiveSyncController extends LiveSyncV4 {
   }
 
   async attachExtensionPage(tab) {
-    const connection = new PersistentCdp(tab.webSocketDebuggerUrl, (event) => this.handleExtensionPage(tab.id, event));
+    const connection = new PersistentCdp(tab.webSocketDebuggerUrl, (event) =>
+      this.handleExtensionPage(tab.id, event)
+    );
     await connection.open();
-    const value = { tab, connection }; this.extensionConnections.set(tab.id, value);
+    const value = { tab, connection };
+    this.extensionConnections.set(tab.id, value);
     try {
       await connection.command('Runtime.addBinding', { name: 'openBrowserSync' });
-      await connection.command('Page.addScriptToEvaluateOnNewDocument', { source: injection }).catch(() => {});
+      await connection
+        .command('Page.addScriptToEvaluateOnNewDocument', { source: injection })
+        .catch(() => {});
       await connection.command('Runtime.enable');
       await connection.command('Runtime.evaluate', { expression: injection });
       await connection.command('Page.enable').catch(() => {});
-      this.emit({ type: 'live-sync-extension-attached', targetId: tab.id, url: tab.url, targets: this.extensionMap.get(tab.id)?.size || 0 });
+      this.emit({
+        type: 'live-sync-extension-attached',
+        targetId: tab.id,
+        url: tab.url,
+        targets: this.extensionMap.get(tab.id)?.size || 0,
+      });
     } catch (error) {
-      connection.close(); this.extensionConnections.delete(tab.id); throw error;
+      connection.close();
+      this.extensionConnections.delete(tab.id);
+      throw error;
     }
   }
 
   async handleExtensionPage(tabId, event) {
     if (event.method === 'Runtime.executionContextCreated') {
-      const contextId = event.params?.context?.id; const connection = this.extensionConnections.get(tabId)?.connection;
-      if (contextId && connection) connection.command('Runtime.evaluate', { expression: injection, contextId }).catch(() => {});
+      const contextId = event.params?.context?.id;
+      const connection = this.extensionConnections.get(tabId)?.connection;
+      if (contextId && connection)
+        connection.command('Runtime.evaluate', { expression: injection, contextId }).catch(() => {});
     }
     if (event.method === 'Runtime.bindingCalled' && event.params?.name === 'openBrowserSync') {
-      let payload; try { payload = JSON.parse(event.params.payload); } catch (_) { return; }
+      let payload;
+      try {
+        payload = JSON.parse(event.params.payload);
+      } catch (_) {
+        return;
+      }
       // V13: extension documents (including side-panel/OOPIF content) are authoritative for
       // semantic mouse, focus and text events. The native bridge remains responsible for Chrome UI.
       this.enqueueForward(tabId, payload);
@@ -845,70 +1114,105 @@ class LiveSyncController extends LiveSyncV4 {
     if (!this.desiredUrlMap) this.desiredUrlMap = new Map();
     const isStart = isEnvironmentStartUrl;
     const isBlank = (url) => /^(about:blank|chrome:\/\/(newtab|new-tab-page)\/?)/i.test(String(url || ''));
-    const equivalent = (a, b) => this.urlsMatch(a, b) || (isStart(a) && isStart(b)) || (isBlank(a) && isBlank(b));
-    await Promise.all(this.slaves.map(async (slave) => {
-      const available = initialLists?.get(slave.id) || normalTabs(await cdp.tabs(slave.port));
-      const mappedId = mapping.get(slave.id);
-      const alreadyMapped = mappedId && available.some((tab) => tab.id === mappedId);
-      let target = alreadyMapped ? available.find((tab) => tab.id === mappedId) : null;
-      if (!alreadyMapped) {
-        if (mappedId) mapping.delete(slave.id);
-        const used = new Set([...this.tabMap.values()].map((value) => value.get(slave.id)).filter(Boolean));
-        const candidates = available.filter((tab) => !used.has(tab.id));
-        target = candidates.find((tab) => this.urlsMatch(tab.url, masterTab.url))
-          || (isStart(masterTab.url) ? candidates.find((tab) => isStart(tab.url)) : null)
-          || (isBlank(masterTab.url) ? candidates.find((tab) => isBlank(tab.url)) : null);
-        if (!target && index >= 0 && available[index] && !used.has(available[index].id)) target = available[index];
-        if (!target && candidates.length) target = candidates.find((tab) => isBlank(tab.url)) || candidates[candidates.length - 1];
-      }
-      const desiredUrl = isStart(masterTab.url) ? (environmentStartUrl(this.engine, slave.id) || masterTab.url) : masterTab.url;
-      if (!target) target = await cdp.newTab(slave.port, desiredUrl || 'about:blank');
-      mapping.set(slave.id, target.id);
-      if (!alreadyMapped) await this.markSlave(target, slave.id);
-      // Only navigate when the *master* desired URL changed. Re-driving navigation every tick
-      // (e.g. after a redirect) causes continuous slave reloads.
-      const desireKey = `${masterTab.id}:${slave.id}`;
-      const previousDesired = this.desiredUrlMap.get(desireKey);
-      const masterDesiredChanged = previousDesired !== this.urlKey(desiredUrl);
-      const needsNavigation = desiredUrl && !equivalent(target.url, desiredUrl) && (masterDesiredChanged || !alreadyMapped);
-      if (needsNavigation) {
-        await cdp.call(target.webSocketDebuggerUrl, 'Page.navigate', { url: desiredUrl }).catch(() => {});
-        this.desiredUrlMap.set(desireKey, this.urlKey(desiredUrl));
-      } else if (desiredUrl) {
-        this.desiredUrlMap.set(desireKey, this.urlKey(desiredUrl));
-      }
-    }));
+    const equivalent = (a, b) =>
+      this.urlsMatch(a, b) || (isStart(a) && isStart(b)) || (isBlank(a) && isBlank(b));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        const available = initialLists?.get(slave.id) || normalTabs(await cdp.tabs(slave.port));
+        const mappedId = mapping.get(slave.id);
+        const alreadyMapped = mappedId && available.some((tab) => tab.id === mappedId);
+        let target = alreadyMapped ? available.find((tab) => tab.id === mappedId) : null;
+        if (!alreadyMapped) {
+          if (mappedId) mapping.delete(slave.id);
+          const used = new Set([...this.tabMap.values()].map((value) => value.get(slave.id)).filter(Boolean));
+          const candidates = available.filter((tab) => !used.has(tab.id));
+          target =
+            candidates.find((tab) => this.urlsMatch(tab.url, masterTab.url)) ||
+            (isStart(masterTab.url) ? candidates.find((tab) => isStart(tab.url)) : null) ||
+            (isBlank(masterTab.url) ? candidates.find((tab) => isBlank(tab.url)) : null);
+          if (!target && index >= 0 && available[index] && !used.has(available[index].id))
+            target = available[index];
+          if (!target && candidates.length)
+            target = candidates.find((tab) => isBlank(tab.url)) || candidates[candidates.length - 1];
+        }
+        const desiredUrl = isStart(masterTab.url)
+          ? environmentStartUrl(this.engine, slave.id) || masterTab.url
+          : masterTab.url;
+        if (!target) target = await cdp.newTab(slave.port, desiredUrl || 'about:blank');
+        mapping.set(slave.id, target.id);
+        if (!alreadyMapped) await this.markSlave(target, slave.id);
+        // Only navigate when the *master* desired URL changed. Re-driving navigation every tick
+        // (e.g. after a redirect) causes continuous slave reloads.
+        const desireKey = `${masterTab.id}:${slave.id}`;
+        const previousDesired = this.desiredUrlMap.get(desireKey);
+        const masterDesiredChanged = previousDesired !== this.urlKey(desiredUrl);
+        const needsNavigation =
+          desiredUrl && !equivalent(target.url, desiredUrl) && (masterDesiredChanged || !alreadyMapped);
+        if (needsNavigation) {
+          await cdp.call(target.webSocketDebuggerUrl, 'Page.navigate', { url: desiredUrl }).catch(() => {});
+          this.desiredUrlMap.set(desireKey, this.urlKey(desiredUrl));
+        } else if (desiredUrl) {
+          this.desiredUrlMap.set(desireKey, this.urlKey(desiredUrl));
+        }
+      })
+    );
     this.tabMap.set(masterTab.id, mapping);
   }
 
   async reconcileSlaveTabs(masterTabs, knownLists = null) {
     if (!masterTabs.length) return;
     let closed = 0;
-    await Promise.all(this.slaves.map(async (slave) => {
-      const allowed = new Set(masterTabs.map((tab) => this.tabMap.get(tab.id)?.get(slave.id)).filter(Boolean));
-      const current = knownLists?.get(slave.id) || normalTabs(await cdp.tabs(slave.port));
-      const extras = current.filter((tab) => !allowed.has(tab.id));
-      for (const tab of extras) { await cdp.closeTab(slave.port, tab.id).catch(() => {}); closed += 1; }
-    }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        const allowed = new Set(
+          masterTabs.map((tab) => this.tabMap.get(tab.id)?.get(slave.id)).filter(Boolean)
+        );
+        const current = knownLists?.get(slave.id) || normalTabs(await cdp.tabs(slave.port));
+        const extras = current.filter((tab) => !allowed.has(tab.id));
+        for (const tab of extras) {
+          await cdp.closeTab(slave.port, tab.id).catch(() => {});
+          closed += 1;
+        }
+      })
+    );
     if (closed) this.emit({ type: 'live-sync-tab-reconcile', masterTabs: masterTabs.length, closed });
   }
 
-  async markSlave(tab, id) { const source = environmentMarker(environmentNumber(this.engine, id), false); await cdp.call(tab.webSocketDebuggerUrl, 'Page.addScriptToEvaluateOnNewDocument', { source }).catch(() => {}); await cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression: source }).catch(() => {}); }
+  async markSlave(tab, id) {
+    const source = environmentMarker(environmentNumber(this.engine, id), false);
+    await cdp
+      .call(tab.webSocketDebuggerUrl, 'Page.addScriptToEvaluateOnNewDocument', { source })
+      .catch(() => {});
+    await cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression: source }).catch(() => {});
+  }
 
   async closeMappedTabs(masterTabId) {
-    const mapping = this.tabMap.get(masterTabId); if (!mapping) return;
-    await Promise.all(this.slaves.map((slave) => { const targetId = mapping.get(slave.id); return targetId ? cdp.closeTab(slave.port, targetId).catch(() => {}) : Promise.resolve(); }));
+    const mapping = this.tabMap.get(masterTabId);
+    if (!mapping) return;
+    await Promise.all(
+      this.slaves.map((slave) => {
+        const targetId = mapping.get(slave.id);
+        return targetId ? cdp.closeTab(slave.port, targetId).catch(() => {}) : Promise.resolve();
+      })
+    );
   }
 
   async slaveTab(slave, masterTabId) {
     const masterTab = this.masterTabs.find((tab) => tab.id === masterTabId);
-    if (!this.tabMap.has(masterTabId)) await this.ensureMapping(masterTab || { id: masterTabId, url: 'about:blank' });
-    const mapping = this.tabMap.get(masterTabId); let targetId = mapping?.get(slave.id);
-    let tabs = await cdp.tabs(slave.port); let tab = tabs.find((item) => item.id === targetId);
+    if (!this.tabMap.has(masterTabId))
+      await this.ensureMapping(masterTab || { id: masterTabId, url: 'about:blank' });
+    const mapping = this.tabMap.get(masterTabId);
+    let targetId = mapping?.get(slave.id);
+    let tabs = await cdp.tabs(slave.port);
+    let tab = tabs.find((item) => item.id === targetId);
     if (!tab) {
-      const desiredUrl = isEnvironmentStartUrl(masterTab?.url) ? (environmentStartUrl(this.engine, slave.id) || masterTab.url) : masterTab?.url;
-      tab = await cdp.newTab(slave.port, desiredUrl || 'about:blank'); targetId = tab.id;
-      if (!mapping) this.tabMap.set(masterTabId, new Map([[slave.id, targetId]])); else mapping.set(slave.id, targetId);
+      const desiredUrl = isEnvironmentStartUrl(masterTab?.url)
+        ? environmentStartUrl(this.engine, slave.id) || masterTab.url
+        : masterTab?.url;
+      tab = await cdp.newTab(slave.port, desiredUrl || 'about:blank');
+      targetId = tab.id;
+      if (!mapping) this.tabMap.set(masterTabId, new Map([[slave.id, targetId]]));
+      else mapping.set(slave.id, targetId);
     }
     return tab;
   }
@@ -925,25 +1229,43 @@ class LiveSyncController extends LiveSyncV4 {
   async eachSlave(masterTabId, action) {
     const extensionTargets = this.extensionMap.get(masterTabId);
     if (extensionTargets) {
-      await Promise.all(this.slaves.map(async (slave) => { const target = extensionTargets.get(slave.id); if (target) await action(target, slave); }));
+      await Promise.all(
+        this.slaves.map(async (slave) => {
+          const target = extensionTargets.get(slave.id);
+          if (target) await action(target, slave);
+        })
+      );
       return;
     }
-    await Promise.all(this.slaves.map(async (slave) => { const tab = await this.slaveTab(slave, masterTabId); if (tab) await action(tab, slave); }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        const tab = await this.slaveTab(slave, masterTabId);
+        if (tab) await action(tab, slave);
+      })
+    );
   }
 
   async activateMapped(masterTabId) {
     // Target.activateTarget dismisses native menus/pickers. Keep activation out of
     // the way while browser chrome, DevTools, extension popups, or a page picker
     // owns the foreground.
-    if (this.nativePopupActive || this.nativeDevToolsMode
-      || Date.now() < (this.geometryPausedUntil || 0)
-      || Date.now() < (this.browserOwnedUntil || 0)
-      || await this.hasVisibleExtensionSurface()
-      || await this.hasBrowserOwnedInteraction()) {
+    if (
+      this.nativePopupActive ||
+      this.nativeDevToolsMode ||
+      Date.now() < (this.geometryPausedUntil || 0) ||
+      Date.now() < (this.browserOwnedUntil || 0) ||
+      (await this.hasVisibleExtensionSurface()) ||
+      (await this.hasBrowserOwnedInteraction())
+    ) {
       this.emit({ type: 'live-sync-tab', masterTabId, targets: this.slaves.length, native: true });
       return;
     }
-    await Promise.all(this.slaves.map(async (slave) => { const tab = await this.slaveTab(slave, masterTabId); if (tab) await cdp.activateTab(slave.port, tab.id); }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        const tab = await this.slaveTab(slave, masterTabId);
+        if (tab) await cdp.activateTab(slave.port, tab.id);
+      })
+    );
     this.emit({ type: 'live-sync-tab', masterTabId, targets: this.slaves.length });
   }
 
@@ -952,37 +1274,48 @@ class LiveSyncController extends LiveSyncV4 {
     const masterTab = this.masterTabs.find((tab) => tab.id === masterTabId);
     const isStartPage = (v) => {
       const s = String(v || '').toLowerCase();
-      return s.includes('openbrowser-start.html')
-        || s.includes('openbrowser-start')
-        || s.includes('openbrowser-native')
-        || /https?:\/\/127\.0\.0\.1:5032[6-9]\/?/.test(s);
+      return (
+        s.includes('openbrowser-start.html') ||
+        s.includes('openbrowser-start') ||
+        s.includes('openbrowser-native') ||
+        /https?:\/\/127\.0\.0\.1:5032[6-9]\/?/.test(s)
+      );
     };
     const equivalentUrl = (a, b) => {
-      const x = String(a || '').toLowerCase().replace(/\/$/, '');
-      const y = String(b || '').toLowerCase().replace(/\/$/, '');
+      const x = String(a || '')
+        .toLowerCase()
+        .replace(/\/$/, '');
+      const y = String(b || '')
+        .toLowerCase()
+        .replace(/\/$/, '');
       const newTab = (v) => v === 'chrome://newtab' || v === 'chrome://new-tab-page';
       return x === y || (newTab(x) && newTab(y)) || (isStartPage(x) && isStartPage(y));
     };
-    await Promise.all(this.slaves.map(async (slave) => {
-      const mapped = await this.slaveTab(slave, masterTabId);
-      const candidates = normalTabs(await cdp.tabs(slave.port));
-      const targets = new Map();
-      if (mapped) targets.set(mapped.id, mapped);
-      if (masterTab) for (const tab of candidates) if (equivalentUrl(tab.url, masterTab.url)) targets.set(tab.id, tab);
-      for (const tab of targets.values()) {
-        try {
-        const metrics = await cdp.call(tab.webSocketDebuggerUrl, 'Page.getLayoutMetrics');
-        const viewport = metrics.cssVisualViewport || metrics.visualViewport || {};
-        const browserZoom = Number(viewport.zoom) || 1;
-        const currentScale = Number(viewport.scale) || 1;
-        const effective = browserZoom * currentScale;
-        if (Math.abs(effective - factor) <= 0.01) continue;
-        const correctedScale = Math.max(0.25, Math.min(5, factor / browserZoom));
-        await cdp.call(tab.webSocketDebuggerUrl, 'Emulation.setPageScaleFactor', { pageScaleFactor: correctedScale });
-        corrected += 1;
-        } catch (_) {}
-      }
-    }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        const mapped = await this.slaveTab(slave, masterTabId);
+        const candidates = normalTabs(await cdp.tabs(slave.port));
+        const targets = new Map();
+        if (mapped) targets.set(mapped.id, mapped);
+        if (masterTab)
+          for (const tab of candidates) if (equivalentUrl(tab.url, masterTab.url)) targets.set(tab.id, tab);
+        for (const tab of targets.values()) {
+          try {
+            const metrics = await cdp.call(tab.webSocketDebuggerUrl, 'Page.getLayoutMetrics');
+            const viewport = metrics.cssVisualViewport || metrics.visualViewport || {};
+            const browserZoom = Number(viewport.zoom) || 1;
+            const currentScale = Number(viewport.scale) || 1;
+            const effective = browserZoom * currentScale;
+            if (Math.abs(effective - factor) <= 0.01) continue;
+            const correctedScale = Math.max(0.25, Math.min(5, factor / browserZoom));
+            await cdp.call(tab.webSocketDebuggerUrl, 'Emulation.setPageScaleFactor', {
+              pageScaleFactor: correctedScale,
+            });
+            corrected += 1;
+          } catch (_) {}
+        }
+      })
+    );
     if (corrected) this.emit({ type: 'live-sync-zoom', masterTabId, factor, corrected });
   }
 
@@ -994,9 +1327,10 @@ class LiveSyncController extends LiveSyncV4 {
       userGesture: true,
     };
     const frameDepth = Number(payload?.frameDepth);
-    const frameRequested = Boolean(payload?.framePath || payload?.frameName)
-      || frameDepth > 0
-      || (payload?.frameDepth === undefined && Boolean(payload?.frameUrl));
+    const frameRequested =
+      Boolean(payload?.framePath || payload?.frameName) ||
+      frameDepth > 0 ||
+      (payload?.frameDepth === undefined && Boolean(payload?.frameUrl));
     if (!frameRequested) return cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', base, 10000);
 
     // Site-isolated iframe targets are not always present in Page.getFrameTree
@@ -1007,9 +1341,18 @@ class LiveSyncController extends LiveSyncV4 {
         const requestedUrl = frameUrlKey(payload.frameUrl);
         const targets = await cdp.targets(slavePort);
         const candidates = targets.filter((item) => String(item.type || '') === 'iframe');
-        const target = candidates.find((item) => requestedUrl && frameUrlKey(item.url) === requestedUrl)
-          || candidates.find((item) => requestedUrl && frameUrlKey(item.url).split('?')[0] === requestedUrl.split('?')[0])
-          || (!requestedUrl && !payload.framePath && !payload.frameName && Number(payload.frameDepth) <= 0 && candidates.length === 1 ? candidates[0] : null);
+        const target =
+          candidates.find((item) => requestedUrl && frameUrlKey(item.url) === requestedUrl) ||
+          candidates.find(
+            (item) => requestedUrl && frameUrlKey(item.url).split('?')[0] === requestedUrl.split('?')[0]
+          ) ||
+          (!requestedUrl &&
+          !payload.framePath &&
+          !payload.frameName &&
+          Number(payload.frameDepth) <= 0 &&
+          candidates.length === 1
+            ? candidates[0]
+            : null);
         if (target?.webSocketDebuggerUrl) {
           try {
             return await cdp.call(target.webSocketDebuggerUrl, 'Runtime.evaluate', base, 10000);
@@ -1061,7 +1404,12 @@ class LiveSyncController extends LiveSyncV4 {
     }
     if (!frame || !frame.parentId) {
       const error = new Error('Fullscreen target frame could not be resolved');
-      diagnostics.push({ stage: 'frame-target-not-found', severity: 'error', message: error.message, fallback: 'none' });
+      diagnostics.push({
+        stage: 'frame-target-not-found',
+        severity: 'error',
+        message: error.message,
+        fallback: 'none',
+      });
       throw error;
     }
 
@@ -1069,13 +1417,23 @@ class LiveSyncController extends LiveSyncV4 {
     // isolated world gives iframe/OOPIF content its own document while retaining
     // the userGesture flag required by the Fullscreen API.
     try {
-      const world = await cdp.call(tab.webSocketDebuggerUrl, 'Page.createIsolatedWorld', {
-        frameId: frame.id,
-        worldName: 'openbrowser-fullscreen-sync-v5',
-      }, 10000);
+      const world = await cdp.call(
+        tab.webSocketDebuggerUrl,
+        'Page.createIsolatedWorld',
+        {
+          frameId: frame.id,
+          worldName: 'openbrowser-fullscreen-sync-v5',
+        },
+        10000
+      );
       if (world?.executionContextId) {
         try {
-          return await cdp.call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', { ...base, contextId: world.executionContextId }, 10000);
+          return await cdp.call(
+            tab.webSocketDebuggerUrl,
+            'Runtime.evaluate',
+            { ...base, contextId: world.executionContextId },
+            10000
+          );
         } catch (error) {
           diagnostics.push({
             stage: 'frame-runtime-evaluate',
@@ -1098,7 +1456,13 @@ class LiveSyncController extends LiveSyncV4 {
       });
     }
     const error = new Error('Fullscreen frame runtime is unavailable');
-    diagnostics.push({ stage: 'frame-runtime-unavailable', severity: 'error', message: error.message, frameId: String(frame.id || ''), fallback: 'none' });
+    diagnostics.push({
+      stage: 'frame-runtime-unavailable',
+      severity: 'error',
+      message: error.message,
+      frameId: String(frame.id || ''),
+      fallback: 'none',
+    });
     throw error;
   }
 
@@ -1117,17 +1481,24 @@ class LiveSyncController extends LiveSyncV4 {
         else failed += 1;
       } catch (error) {
         failed += 1;
-        if (!diagnostics.length) diagnostics.push({ stage: 'fullscreen-evaluate', severity: 'error', message: String(error?.message || error), fallback: 'none' });
+        if (!diagnostics.length)
+          diagnostics.push({
+            stage: 'fullscreen-evaluate',
+            severity: 'error',
+            message: String(error?.message || error),
+            fallback: 'none',
+          });
       }
-      for (const diagnostic of diagnostics) this.emit({
-        type: 'live-sync-fullscreen-route-error',
-        masterTabId,
-        slaveId: String(slave?.id || ''),
-        tabId: String(tab?.id || ''),
-        frameUrl: String(payload?.frameUrl || ''),
-        frameDepth: Number.isInteger(payload?.frameDepth) ? payload.frameDepth : null,
-        ...diagnostic,
-      });
+      for (const diagnostic of diagnostics)
+        this.emit({
+          type: 'live-sync-fullscreen-route-error',
+          masterTabId,
+          slaveId: String(slave?.id || ''),
+          tabId: String(tab?.id || ''),
+          frameUrl: String(payload?.frameUrl || ''),
+          frameDepth: Number.isInteger(payload?.frameDepth) ? payload.frameDepth : null,
+          ...diagnostic,
+        });
     });
     this.markActivity?.();
     this.emit({ type: 'live-sync-fullscreen', masterTabId, active: desired, applied, failed });
@@ -1138,10 +1509,11 @@ class LiveSyncController extends LiveSyncV4 {
     const generation = this.syncGeneration;
     const masterId = this.master?.id;
     const slaveIds = (this.slaves || []).map((slave) => slave.id);
-    const sessionIsCurrent = () => generation === this.syncGeneration
-      && this.master?.id === masterId
-      && this.slaves.length === slaveIds.length
-      && this.slaves.every((slave, index) => slave.id === slaveIds[index]);
+    const sessionIsCurrent = () =>
+      generation === this.syncGeneration &&
+      this.master?.id === masterId &&
+      this.slaves.length === slaveIds.length &&
+      this.slaves.every((slave, index) => slave.id === slaveIds[index]);
 
     if (!sessionIsCurrent()) return;
     // Mirror only size (for coordinate mapping), never left/top — so tile/cascade layouts stay put.
@@ -1178,17 +1550,19 @@ class LiveSyncController extends LiveSyncV4 {
     const bounds = source.bounds || {};
     if (bounds.windowState === 'maximized') {
       this.lastWindowSync = now;
-      await Promise.all(this.slaves.map(async (slave) => {
-        if (!sessionIsCurrent()) return;
-        try {
-          const current = await cdp.windowForPort(slave.port);
+      await Promise.all(
+        this.slaves.map(async (slave) => {
           if (!sessionIsCurrent()) return;
-          const own = current.bounds || {};
-          if (own.windowState !== 'maximized') {
-            await cdp.setWindowBounds(slave.port, { windowState: 'maximized' }, { forceNormal: false });
-          }
-        } catch (_) {}
-      }));
+          try {
+            const current = await cdp.windowForPort(slave.port);
+            if (!sessionIsCurrent()) return;
+            const own = current.bounds || {};
+            if (own.windowState !== 'maximized') {
+              await cdp.setWindowBounds(slave.port, { windowState: 'maximized' }, { forceNormal: false });
+            }
+          } catch (_) {}
+        })
+      );
       return;
     }
     if (bounds.windowState && bounds.windowState !== 'normal') {
@@ -1199,52 +1573,71 @@ class LiveSyncController extends LiveSyncV4 {
     const targetWidth = Math.round(bounds.width);
     const targetHeight = Math.round(bounds.height);
     this.lastWindowSync = now;
-    await Promise.all(this.slaves.map(async (slave) => {
-      if (!sessionIsCurrent()) return;
-      const current = await cdp.windowForPort(slave.port);
-      if (!sessionIsCurrent()) return;
-      const own = current.bounds || {};
-      if (own.windowState && own.windowState !== 'normal') return;
-      if (Math.abs((own.width || 0) - targetWidth) < 8 && Math.abs((own.height || 0) - targetHeight) < 8) {
-        this.geometryPending.delete(slave.id);
-        return;
-      }
-      const pending = this.geometryPending.get(slave.id);
-      const desired = { width: targetWidth, height: targetHeight };
-      if (pending?.width === targetWidth && pending?.height === targetHeight && (pending.attempts || 0) >= 2 && now - (pending.at || 0) < 10000) return;
-      await cdp.setWindowBounds(slave.port, {
-        left: Number.isFinite(own.left) ? own.left : 0,
-        top: Number.isFinite(own.top) ? own.top : 0,
-        ...desired,
-      }, { forceNormal: false });
-      if (!sessionIsCurrent()) return;
-      // Chromium builds occasionally acknowledge setWindowBounds before the
-      // native widget has applied it. Remember the desired size so the next
-      // quiet tick can retry once, fixing the large blank viewport symptom
-      // without issuing a second resize while a menu/picker is open.
-      this.geometryPending.set(slave.id, {
-        ...desired,
-        attempts: pending?.width === targetWidth && pending?.height === targetHeight ? (pending.attempts || 0) + 1 : 1,
-        at: now,
-      });
-    }));
+    await Promise.all(
+      this.slaves.map(async (slave) => {
+        if (!sessionIsCurrent()) return;
+        const current = await cdp.windowForPort(slave.port);
+        if (!sessionIsCurrent()) return;
+        const own = current.bounds || {};
+        if (own.windowState && own.windowState !== 'normal') return;
+        if (Math.abs((own.width || 0) - targetWidth) < 8 && Math.abs((own.height || 0) - targetHeight) < 8) {
+          this.geometryPending.delete(slave.id);
+          return;
+        }
+        const pending = this.geometryPending.get(slave.id);
+        const desired = { width: targetWidth, height: targetHeight };
+        if (
+          pending?.width === targetWidth &&
+          pending?.height === targetHeight &&
+          (pending.attempts || 0) >= 2 &&
+          now - (pending.at || 0) < 10000
+        )
+          return;
+        await cdp.setWindowBounds(
+          slave.port,
+          {
+            left: Number.isFinite(own.left) ? own.left : 0,
+            top: Number.isFinite(own.top) ? own.top : 0,
+            ...desired,
+          },
+          { forceNormal: false }
+        );
+        if (!sessionIsCurrent()) return;
+        // Chromium builds occasionally acknowledge setWindowBounds before the
+        // native widget has applied it. Remember the desired size so the next
+        // quiet tick can retry once, fixing the large blank viewport symptom
+        // without issuing a second resize while a menu/picker is open.
+        this.geometryPending.set(slave.id, {
+          ...desired,
+          attempts:
+            pending?.width === targetWidth && pending?.height === targetHeight
+              ? (pending.attempts || 0) + 1
+              : 1,
+          at: now,
+        });
+      })
+    );
   }
 
   async hasBrowserOwnedInteraction() {
-    const value = this.connections.get(this.activeMasterTab)
-      || [...this.connections.values()].find((item) => item?.tab?.id === this.activeMasterTab)
-      || [...this.connections.values()][0];
+    const value =
+      this.connections.get(this.activeMasterTab) ||
+      [...this.connections.values()].find((item) => item?.tab?.id === this.activeMasterTab) ||
+      [...this.connections.values()][0];
     if (!value?.connection?.command) return false;
     try {
       const result = await value.connection.command('Runtime.evaluate', {
-        expression: "(() => { const e = document.activeElement; const tag = String(e?.tagName || '').toLowerCase(); const type = String(e?.type || '').toLowerCase(); const picker = tag === 'select' || (tag === 'input' && /^(date|datetime-local|month|time|week|color|file)$/.test(type)); return { focused: typeof document.hasFocus === 'function' ? document.hasFocus() : true, picker }; })()",
+        expression:
+          "(() => { const e = document.activeElement; const tag = String(e?.tagName || '').toLowerCase(); const type = String(e?.type || '').toLowerCase(); const picker = tag === 'select' || (tag === 'input' && /^(date|datetime-local|month|time|week|color|file)$/.test(type)); return { focused: typeof document.hasFocus === 'function' ? document.hasFocus() : true, picker }; })()",
         returnByValue: true,
       });
       const state = result.result?.value || {};
-      return state.focused === false
-        || (state.picker === true
-          && ((process.platform === 'win32' && this.nativePopupActive)
-            || Date.now() < (this.browserOwnedUntil || 0)));
+      return (
+        state.focused === false ||
+        (state.picker === true &&
+          ((process.platform === 'win32' && this.nativePopupActive) ||
+            Date.now() < (this.browserOwnedUntil || 0)))
+      );
     } catch (_) {
       // A page target that is changing focus/navigation is exactly when a
       // top-level resize is most likely to dismiss browser-owned UI.
@@ -1255,27 +1648,34 @@ class LiveSyncController extends LiveSyncV4 {
   async hasVisibleExtensionSurface() {
     const values = [...this.extensionConnections.values()];
     if (!values.length) return false;
-    const states = await Promise.all(values.map(async (value) => {
-      try {
-        const result = await value.connection.command('Runtime.evaluate', {
-          expression: "({visible:document.visibilityState==='visible',focused:typeof document.hasFocus==='function'&&document.hasFocus()})",
-          returnByValue: true,
-        });
-        const state = result.result?.value || {};
-        return state.visible === true || state.focused === true;
-      } catch (_) {
-        // A target that cannot be queried may be in the middle of opening or
-        // closing. Suppress one geometry pass rather than risking a popup tear.
-        return true;
-      }
-    }));
+    const states = await Promise.all(
+      values.map(async (value) => {
+        try {
+          const result = await value.connection.command('Runtime.evaluate', {
+            expression:
+              "({visible:document.visibilityState==='visible',focused:typeof document.hasFocus==='function'&&document.hasFocus()})",
+            returnByValue: true,
+          });
+          const state = result.result?.value || {};
+          return state.visible === true || state.focused === true;
+        } catch (_) {
+          // A target that cannot be queried may be in the middle of opening or
+          // closing. Suppress one geometry pass rather than risking a popup tear.
+          return true;
+        }
+      })
+    );
     return states.some(Boolean);
   }
 
   async pollTabState(value, options = {}) {
     const heavy = options.heavy !== false;
-    const result = await value.connection.command('Runtime.evaluate', { expression: "({x:scrollX,y:scrollY,visible:document.visibilityState==='visible',url:location.href})", returnByValue: true });
-    const state = result.result?.value; if (!state) return;
+    const result = await value.connection.command('Runtime.evaluate', {
+      expression: "({x:scrollX,y:scrollY,visible:document.visibilityState==='visible',url:location.href})",
+      returnByValue: true,
+    });
+    const state = result.result?.value;
+    if (!state) return;
     // LayoutMetrics + zoom sync only on heavy ticks (zoom rarely changes mid-session).
     if (heavy) {
       try {
@@ -1293,12 +1693,19 @@ class LiveSyncController extends LiveSyncV4 {
     if (state.visible) {
       // Drive navigation only when the master URL actually changed.
       const urlKey = this.urlKey(state.url);
-      if (state.url && !/^(chrome|edge|devtools|chrome-extension|edge-extension):/i.test(state.url) && value.lastSyncedUrl !== urlKey) {
+      if (
+        state.url &&
+        !/^(chrome|edge|devtools|chrome-extension|edge-extension):/i.test(state.url) &&
+        value.lastSyncedUrl !== urlKey
+      ) {
         value.lastSyncedUrl = urlKey;
         this.markActivity?.();
         await this.navigateSlaves(value.tab.id, state.url);
       }
-      if (this.activeMasterTab !== value.tab.id) { this.activeMasterTab = value.tab.id; await this.activateMapped(value.tab.id); }
+      if (this.activeMasterTab !== value.tab.id) {
+        this.activeMasterTab = value.tab.id;
+        await this.activateMapped(value.tab.id);
+      }
     }
     if (state.x !== value.scroll.x || state.y !== value.scroll.y) {
       value.scroll = { x: state.x, y: state.y };

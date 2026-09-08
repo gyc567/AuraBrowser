@@ -5,7 +5,12 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const os = require('os');
 const path = require('path');
-const { BrowserEngine, appendDiagnosticOutput, formatBrowserStartupError, writeBrowserStartupDiagnostic } = require('./engine');
+const {
+  BrowserEngine,
+  appendDiagnosticOutput,
+  formatBrowserStartupError,
+  writeBrowserStartupDiagnostic,
+} = require('./engine');
 
 async function main() {
   const output = appendDiagnosticOutput('', 'a'.repeat(20000));
@@ -23,11 +28,15 @@ async function main() {
   assert.match(message, /wayfern\.exe/);
   assert.match(message, /env-001/);
 
-  const spawnMessage = formatBrowserStartupError('Browser process could not start: spawn ENOENT', {
-    pid: 42,
-    exitCode: null,
-    signalCode: null,
-  }, { launchBinary: 'C:\\missing\\wayfern.exe', spawnError: 'spawn ENOENT' });
+  const spawnMessage = formatBrowserStartupError(
+    'Browser process could not start: spawn ENOENT',
+    {
+      pid: 42,
+      exitCode: null,
+      signalCode: null,
+    },
+    { launchBinary: 'C:\\missing\\wayfern.exe', spawnError: 'spawn ENOENT' }
+  );
   assert.match(spawnMessage, /spawn ENOENT/);
 
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'openbrowser-startup-log-'));
@@ -39,7 +48,11 @@ async function main() {
       stderr: 'WAYFERN - Terms and Conditions',
     });
     const logFile = path.join(root, 'logs', 'browser-startup.log');
-    const rows = fs.readFileSync(logFile, 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));
+    const rows = fs
+      .readFileSync(logFile, 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
     assert.strictEqual(rows.length, 1);
     assert.strictEqual(rows[0].profileId, 'env-001');
     assert.match(rows[0].stderr, /Terms and Conditions/);

@@ -54,9 +54,8 @@ function canonicalProxyRaw({ protocol, host, port, username, password }) {
   const authPassword = String(password || '');
   if (authUser.length > MAX_PROXY_CREDENTIAL_LENGTH) throw new Error('代理用户名过长');
   if (authPassword.length > MAX_PROXY_CREDENTIAL_LENGTH) throw new Error('代理密码过长');
-  const auth = authUser || authPassword
-    ? `${encodeURIComponent(authUser)}:${encodeURIComponent(authPassword)}@`
-    : '';
+  const auth =
+    authUser || authPassword ? `${encodeURIComponent(authUser)}:${encodeURIComponent(authPassword)}@` : '';
   const raw = `${String(protocol || 'socks5').toLowerCase()}://${auth}${String(host || '').trim()}:${Number(port)}`;
   if (raw.length > MAX_PROXY_URL_LENGTH) throw new Error('代理 URL 过长');
   return raw;
@@ -64,9 +63,14 @@ function canonicalProxyRaw({ protocol, host, port, username, password }) {
 
 function normalizeProxyRecord(input = {}, existing = null) {
   const isMigration = Boolean(existing && input === existing);
-  const name = String(input.name || existing?.name || '').trim().slice(0, 120);
+  const name = String(input.name || existing?.name || '')
+    .trim()
+    .slice(0, 120);
   const remark = String(input.remark || existing?.remark || '').slice(0, 500);
-  const refreshUrl = String(input.refreshUrl || input.refresh_url || existing?.refreshUrl || '').slice(0, 1000);
+  const refreshUrl = String(input.refreshUrl || input.refresh_url || existing?.refreshUrl || '').slice(
+    0,
+    1000
+  );
   const ipChannel = normalizeIpLookupChannel(input.ipChannel || existing?.ipChannel);
 
   const existingRaw = firstNonEmpty(existing, ['raw', 'proxy', 'proxy_url', 'proxyUrl']);
@@ -76,20 +80,29 @@ function normalizeProxyRecord(input = {}, existing = null) {
   }
   const existingParsed = parseStoredProxy(existingRaw);
   const explicitParsed = explicitRaw ? parseProxy(explicitRaw) : null;
-  const explicitAuthAction = String(input.proxyAuthAction || '').trim().toLowerCase();
+  const explicitAuthAction = String(input.proxyAuthAction || '')
+    .trim()
+    .toLowerCase();
   const clearExplicitAuth = explicitAuthAction === 'clear';
-  const rawIsAuthoritative = clearExplicitAuth || (Boolean(explicitParsed)
-    // A round-tripped copy of the current record is only the endpoint/base
-    // value. Explicit username/password fields in the same patch must still
-    // be able to replace its old credentials. A genuinely new raw value (new
-    // endpoint or embedded credentials) remains authoritative.
-    && (existingParsed
-      ? proxyKey(explicitParsed) !== proxyKey(existingParsed)
-      : Boolean(explicitParsed.authenticated)));
+  const rawIsAuthoritative =
+    clearExplicitAuth ||
+    (Boolean(explicitParsed) &&
+      // A round-tripped copy of the current record is only the endpoint/base
+      // value. Explicit username/password fields in the same patch must still
+      // be able to replace its old credentials. A genuinely new raw value (new
+      // endpoint or embedded credentials) remains authoritative.
+      (existingParsed
+        ? proxyKey(explicitParsed) !== proxyKey(existingParsed)
+        : Boolean(explicitParsed.authenticated)));
 
-  const base = explicitParsed || existingParsed || {
-    protocol: 'socks5', host: '', port: 0, username: '', password: '',
-  };
+  const base = explicitParsed ||
+    existingParsed || {
+      protocol: 'socks5',
+      host: '',
+      port: 0,
+      username: '',
+      password: '',
+    };
   let protocol = String(base.protocol || 'socks5').toLowerCase();
   let host = String(base.host || '').trim();
   let port = Number(base.port);
@@ -105,19 +118,36 @@ function normalizeProxyRecord(input = {}, existing = null) {
   // bare `raw` address. Preserve those fields during migration/restart unless a
   // new raw URL explicitly replaces the existing proxy record.
   if (!rawIsAuthoritative) {
-    if (!username) username = firstNonEmpty(existing, ['username', 'user', 'proxy_user', 'proxy_username', 'proxyUsername']);
-    if (!password) password = firstNonEmpty(existing, ['password', 'pass', 'proxy_password', 'proxyPassword']);
+    if (!username)
+      username = firstNonEmpty(existing, [
+        'username',
+        'user',
+        'proxy_user',
+        'proxy_username',
+        'proxyUsername',
+      ]);
+    if (!password)
+      password = firstNonEmpty(existing, ['password', 'pass', 'proxy_password', 'proxyPassword']);
   }
 
   if (!rawIsAuthoritative) {
     const protocolInput = ownValue(input, ['protocol', 'type', 'proxy_type', 'proxyType']);
     const hostInput = ownValue(input, ['host', 'proxy_host', 'proxyHost', 'server']);
     const portInput = ownValue(input, ['port', 'proxy_port', 'proxyPort']);
-    const usernameInput = ownValue(input, ['username', 'user', 'proxy_user', 'proxy_username', 'proxyUsername']);
+    const usernameInput = ownValue(input, [
+      'username',
+      'user',
+      'proxy_user',
+      'proxy_username',
+      'proxyUsername',
+    ]);
     const passwordInput = ownValue(input, ['password', 'pass', 'proxy_password', 'proxyPassword']);
-    const blankAuthPatch = usernameInput.present && passwordInput.present
-      && String(usernameInput.value) === '' && String(passwordInput.value) === ''
-      && !clearExplicitAuth;
+    const blankAuthPatch =
+      usernameInput.present &&
+      passwordInput.present &&
+      String(usernameInput.value) === '' &&
+      String(passwordInput.value) === '' &&
+      !clearExplicitAuth;
 
     if (protocolInput.present && String(protocolInput.value).trim()) {
       protocol = String(protocolInput.value).trim().toLowerCase();
@@ -158,7 +188,7 @@ function normalizeProxyRecord(input = {}, existing = null) {
     lastErrorClass: existing?.lastErrorClass || '',
     lastCheckOk: existing?.lastCheckOk ?? null,
     create_time: existing?.create_time || now,
-    update_time: isMigration ? (existing?.update_time || now) : now,
+    update_time: isMigration ? existing?.update_time || now : now,
   };
 }
 
@@ -193,9 +223,10 @@ function decodeStoredData(raw) {
   });
   return {
     data: { version: 2, items },
-    migrated: Array.isArray(parsed)
-      || Number(parsed.version) !== 2
-      || JSON.stringify(sourceItems) !== JSON.stringify(items),
+    migrated:
+      Array.isArray(parsed) ||
+      Number(parsed.version) !== 2 ||
+      JSON.stringify(sourceItems) !== JSON.stringify(items),
   };
 }
 
@@ -286,10 +317,7 @@ class ProxyStore {
   }
 
   async _readCandidate(candidatePath) {
-    const [raw, stat] = await Promise.all([
-      fsp.readFile(candidatePath, 'utf8'),
-      fsp.stat(candidatePath),
-    ]);
+    const [raw, stat] = await Promise.all([fsp.readFile(candidatePath, 'utf8'), fsp.stat(candidatePath)]);
     return { path: candidatePath, raw, stat, ...decodeStoredData(raw) };
   }
 
@@ -396,10 +424,16 @@ class ProxyStore {
 
   list(filter = {}) {
     let items = cloneData(this.data.items);
-    const q = String(filter.q || filter.keyword || '').trim().toLowerCase();
+    const q = String(filter.q || filter.keyword || '')
+      .trim()
+      .toLowerCase();
     if (q) {
-      items = items.filter((item) => [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)]
-        .join(' ').toLowerCase().includes(q));
+      items = items.filter((item) =>
+        [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)]
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      );
     }
     if (filter.protocol) {
       items = items.filter((item) => item.protocol === String(filter.protocol).toLowerCase());

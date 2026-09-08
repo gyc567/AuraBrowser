@@ -11,11 +11,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const { spawn } = require('child_process');
-const {
-  CFT_META,
-  downloadFile,
-  extractZip,
-} = require('../automation/browser-kernel');
+const { CFT_META, downloadFile, extractZip } = require('../automation/browser-kernel');
 
 const appRoot = path.resolve(__dirname, '..');
 const kernelsRoot = path.join(appRoot, 'kernels');
@@ -58,11 +54,28 @@ function configuredProxy() {
 
 function downloadWithConfiguredProxy(url, destination, proxy) {
   return new Promise((resolve, reject) => {
-    const child = spawn('curl', [
-      '--fail', '--location', '--retry', '3', '--connect-timeout', '30', '--silent', '--show-error',
-      '--proxy', proxy, '--output', destination, url,
-    ], { stdio: 'inherit' });
-    child.on('error', (error) => reject(new Error(`Unable to start curl for proxy download: ${error.message}`)));
+    const child = spawn(
+      'curl',
+      [
+        '--fail',
+        '--location',
+        '--retry',
+        '3',
+        '--connect-timeout',
+        '30',
+        '--silent',
+        '--show-error',
+        '--proxy',
+        proxy,
+        '--output',
+        destination,
+        url,
+      ],
+      { stdio: 'inherit' }
+    );
+    child.on('error', (error) =>
+      reject(new Error(`Unable to start curl for proxy download: ${error.message}`))
+    );
     child.on('exit', (code, signal) => {
       if (code === 0) resolve();
       else reject(new Error(`Proxy kernel download failed (exit=${code == null ? signal : code})`));
@@ -79,7 +92,7 @@ async function main() {
   const url = String(entry?.url || '').trim();
   if (!version || !url) throw new Error('Chrome for Testing stable linux64 download is unavailable');
 
-  if (await existingVersion() === version) {
+  if ((await existingVersion()) === version) {
     console.log(`[kernel] Linux Chrome for Testing ${version} is already prepared`);
     return;
   }
@@ -119,12 +132,20 @@ async function main() {
     await fsp.rm(stage, { recursive: true, force: true });
     await fsp.mkdir(stage, { recursive: true });
     await fsp.rename(extractedRoot, path.join(stage, 'chrome-linux64'));
-    await fsp.writeFile(path.join(stage, 'kernel.json'), JSON.stringify({
-      version,
-      source: 'chrome-for-testing',
-      platform: 'linux-x64',
-      downloadUrl: url,
-    }, null, 2) + '\n', 'utf8');
+    await fsp.writeFile(
+      path.join(stage, 'kernel.json'),
+      JSON.stringify(
+        {
+          version,
+          source: 'chrome-for-testing',
+          platform: 'linux-x64',
+          downloadUrl: url,
+        },
+        null,
+        2
+      ) + '\n',
+      'utf8'
+    );
     await fsp.rm(targetRoot, { recursive: true, force: true });
     await fsp.rename(stage, targetRoot);
     console.log(`[kernel] prepared Linux Chrome for Testing ${version} at ${targetBinary}`);

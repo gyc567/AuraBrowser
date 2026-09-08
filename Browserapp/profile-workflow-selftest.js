@@ -22,26 +22,36 @@ async function main() {
   try {
     const first = new BrowserEngine(app);
     await first.init(null);
-    first.syncProfiles([{
-      ...base,
-      exitIp: '203.0.113.8',
-      exitCountryCode: 'SG',
-      exitTimezone: 'Asia/Singapore',
-      exitLatitude: 1.3521,
-      exitLongitude: 103.8198,
-      exitCheckedAt: '2026-08-05T00:00:00.000Z',
-      exitLatencyMs: 42,
-      exitNetworkType: 'proxy',
-    }]);
+    first.syncProfiles([
+      {
+        ...base,
+        exitIp: '203.0.113.8',
+        exitCountryCode: 'SG',
+        exitTimezone: 'Asia/Singapore',
+        exitLatitude: 1.3521,
+        exitLongitude: 103.8198,
+        exitCheckedAt: '2026-08-05T00:00:00.000Z',
+        exitLatencyMs: 42,
+        exitNetworkType: 'proxy',
+      },
+    ]);
     await first.persist();
 
     const restarted = new BrowserEngine(app);
     await restarted.init(null);
     let profile = restarted.status().find((item) => item.id === base.id);
     assert.equal(profile.exitIp, '203.0.113.8', 'exit IP must survive engine restart');
-    assert.equal(profile.exitCheckedAt, '2026-08-05T00:00:00.000Z', 'exit check time must survive engine restart');
+    assert.equal(
+      profile.exitCheckedAt,
+      '2026-08-05T00:00:00.000Z',
+      'exit check time must survive engine restart'
+    );
     assert.equal(profile.exitLatencyMs, 42, 'exit latency must survive engine restart');
-    assert.equal(profile.platform.startUrl, 'https://example.com/', 'startup URL must survive engine restart');
+    assert.equal(
+      profile.platform.startUrl,
+      'https://example.com/',
+      'startup URL must survive engine restart'
+    );
 
     restarted.syncProfiles([base]);
     profile = restarted.status().find((item) => item.id === base.id);
@@ -61,17 +71,52 @@ async function main() {
     assert.ok(html.includes('name="startUrl"'), 'create dialog must expose startup URL');
     assert.ok(html.includes('id="batch-add-template"'), 'batch create must expose preference template');
     assert.ok(html.includes('id="copy-selected"'), 'selection bar must expose copy action');
-    assert.ok(renderer.includes('delete privacy.fingerprint'), 'copied preferences must create an independent fingerprint identity');
-    assert.ok(renderer.includes('assignedExtensions || []'), 'copied profiles must inherit source extension assignments');
-    assert.ok(renderer.includes("platform: { type: 'other', startUrl }"), 'create flow must persist startup URL');
-    assert.ok(main.includes("engine.checkProxy(profile, { persist: true })"), 'manual exit checks must persist in engine state');
-    assert.ok(fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8').includes('if (options.persist) await this.persist()'), 'manual exit check must await durable persistence');
-    assert.ok(fingerprint.includes("Emulation.clearDeviceMetricsOverride"), 'desktop viewport must remain resize-responsive');
-    assert.ok(!fingerprint.includes("softOverride('Emulation.setDeviceMetricsOverride'"), 'desktop viewport must not be fixed by device metrics');
-    assert.ok(fingerprint.includes("Object.defineProperty(window, 'innerWidth'"), 'native fixed viewport must be bridged to the live DOM viewport');
-    assert.ok(liveSync.includes('this.nativePopupActive'), 'window geometry sync must pause for native popups');
-    assert.ok(liveSync.includes('hasVisibleExtensionSurface'), 'window geometry sync must inspect extension popup visibility');
-    assert.ok(nativeMirror.includes('NATIVE_POPUP_ACTIVE='), 'native bridge must report popup foreground state');
+    assert.ok(
+      renderer.includes('delete privacy.fingerprint'),
+      'copied preferences must create an independent fingerprint identity'
+    );
+    assert.ok(
+      renderer.includes('assignedExtensions || []'),
+      'copied profiles must inherit source extension assignments'
+    );
+    assert.ok(
+      renderer.includes("platform: { type: 'other', startUrl }"),
+      'create flow must persist startup URL'
+    );
+    assert.ok(
+      main.includes('engine.checkProxy(profile, { persist: true })'),
+      'manual exit checks must persist in engine state'
+    );
+    assert.ok(
+      fs
+        .readFileSync(path.join(__dirname, 'engine.js'), 'utf8')
+        .includes('if (options.persist) await this.persist()'),
+      'manual exit check must await durable persistence'
+    );
+    assert.ok(
+      fingerprint.includes('Emulation.clearDeviceMetricsOverride'),
+      'desktop viewport must remain resize-responsive'
+    );
+    assert.ok(
+      !fingerprint.includes("softOverride('Emulation.setDeviceMetricsOverride'"),
+      'desktop viewport must not be fixed by device metrics'
+    );
+    assert.ok(
+      fingerprint.includes("Object.defineProperty(window, 'innerWidth'"),
+      'native fixed viewport must be bridged to the live DOM viewport'
+    );
+    assert.ok(
+      liveSync.includes('this.nativePopupActive'),
+      'window geometry sync must pause for native popups'
+    );
+    assert.ok(
+      liveSync.includes('hasVisibleExtensionSurface'),
+      'window geometry sync must inspect extension popup visibility'
+    );
+    assert.ok(
+      nativeMirror.includes('NATIVE_POPUP_ACTIVE='),
+      'native bridge must report popup foreground state'
+    );
 
     process.stdout.write(JSON.stringify({ success: true, checks: 18 }, null, 2));
   } finally {

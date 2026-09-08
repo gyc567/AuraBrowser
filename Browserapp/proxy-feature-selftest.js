@@ -47,7 +47,11 @@ async function main() {
     }
     if (req.url.startsWith('/extract-json')) {
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ data: { host: '10.20.30.50', port: 9090, username: 'j', password: 'k', protocol: 'http' } }));
+      res.end(
+        JSON.stringify({
+          data: { host: '10.20.30.50', port: 9090, username: 'j', password: 'k', protocol: 'http' },
+        })
+      );
       return;
     }
     if (req.url.startsWith('/refresh')) {
@@ -94,7 +98,10 @@ async function main() {
   assert.strictEqual(sanitized.proxyMeta.ipChannel, 'ifconfig-me');
   assert.strictEqual(sanitized.proxyMeta.refreshOnStart, true);
   assert.strictEqual(sanitized.proxyMeta.fillFingerprint, false);
-  assert.deepStrictEqual(sanitized.proxyMeta.backupProxies, ['socks5://127.0.0.1:1081', 'http://127.0.0.1:8080']);
+  assert.deepStrictEqual(sanitized.proxyMeta.backupProxies, [
+    'socks5://127.0.0.1:1081',
+    'http://127.0.0.1:8080',
+  ]);
   assert.ok(sanitized.proxyMeta.apiExtractUrl.includes('/extract-text'));
 
   // --- prepare without check flags must not throw for static proxy ---
@@ -123,7 +130,7 @@ async function main() {
   // extract succeeds; check skipped if no checkOnStart and no refreshOnStart - wait, extractUrl forces shouldCheck true
   // So prepare with extract will try testProxy which needs real network - mock testProxy
   const engine2 = makeEngineStub();
-  let tested = [];
+  const tested = [];
   engine2.testProxy = async (profile, options = {}) => {
     const forced = String(options.proxy || options.forcedProxy || '').trim();
     const target = forced || profile.proxy;
@@ -166,10 +173,22 @@ async function main() {
     privacy: { languageMode: 'ip', timezoneMode: 'ip', geoMode: 'ip' },
   });
   // extract replaces primary with 10.20.30.40, that fails, backup 1081 succeeds
-  assert.ok(String(failedOver.proxy).includes('1081'), 'backup proxy should be selected, got ' + failedOver.proxy);
-  assert.ok(tested.some((p) => String(p.target).includes('10.20.30.40')), 'extracted primary should be tested');
-  assert.ok(tested.some((p) => String(p.target).includes('1081') && p.forced), 'backup must be forced-tested, not re-resolved');
-  assert.ok(tested.every((p) => p.forced), 'every candidate must use forced proxy option');
+  assert.ok(
+    String(failedOver.proxy).includes('1081'),
+    'backup proxy should be selected, got ' + failedOver.proxy
+  );
+  assert.ok(
+    tested.some((p) => String(p.target).includes('10.20.30.40')),
+    'extracted primary should be tested'
+  );
+  assert.ok(
+    tested.some((p) => String(p.target).includes('1081') && p.forced),
+    'backup must be forced-tested, not re-resolved'
+  );
+  assert.ok(
+    tested.every((p) => p.forced),
+    'every candidate must use forced proxy option'
+  );
   const net = engine2.networkInfo.get('prof_proxy_feature_4');
   assert.strictEqual(net.ip, '198.51.100.2');
   assert.strictEqual(net.timezone, 'America/New_York');
@@ -201,9 +220,16 @@ async function main() {
     endpoint: '1.1.1.1:1',
     proxySource: 'primary',
     proxyRaw: profile.proxy,
-    appliedFingerprint: engine3.fingerprintPatchFromNetwork({
-      ip: '203.0.113.9', countryCode: 'JP', timezone: 'Asia/Tokyo', latitude: 35, longitude: 139,
-    }, profile),
+    appliedFingerprint: engine3.fingerprintPatchFromNetwork(
+      {
+        ip: '203.0.113.9',
+        countryCode: 'JP',
+        timezone: 'Asia/Tokyo',
+        latitude: 35,
+        longitude: 139,
+      },
+      profile
+    ),
     profile,
   });
   const refreshWithWarn = await engine3.refreshProfileProxy({
@@ -231,7 +257,12 @@ async function main() {
   await store.load();
   const item = await store.create({ raw: 'socks5://127.0.0.1:9', name: 'x', ipChannel: 'ifconfig.me' });
   assert.strictEqual(store.get(item.id).ipChannel, 'ifconfig-me');
-  await store.markCheck(item.id, { ip: '8.8.8.8', countryCode: 'US', latencyMs: 12, networkType: 'broadband' });
+  await store.markCheck(item.id, {
+    ip: '8.8.8.8',
+    countryCode: 'US',
+    latencyMs: 12,
+    networkType: 'broadband',
+  });
   assert.strictEqual(store.get(item.id).lastLatencyMs, 12);
   assert.strictEqual(store.get(item.id).lastCheckOk, true);
   await store.markCheckError(item.id, { errorClass: 'auth', latencyMs: 9 });
@@ -256,15 +287,23 @@ async function main() {
     proxy: 'http://14.224.225.102:19125/',
   });
   const restored = credEngine.restoreStoredProxyCredentials(redacted);
-  assert.ok(restored.proxy.includes('user:secret@'), 'redacted UI proxy must restore stored credentials, got ' + restored.proxy);
+  assert.ok(
+    restored.proxy.includes('user:secret@'),
+    'redacted UI proxy must restore stored credentials, got ' + restored.proxy
+  );
   assert.strictEqual(restored.networkMode, 'proxy');
-  const otherHost = credEngine.restoreStoredProxyCredentials(credEngine.sanitizeProfile({
-    id: stored.id,
-    name: stored.name,
-    networkMode: 'proxy',
-    proxy: 'http://10.0.0.1:8080',
-  }));
-  assert.ok(!otherHost.proxy.includes('user:secret@'), 'must not copy credentials onto a different host:port');
+  const otherHost = credEngine.restoreStoredProxyCredentials(
+    credEngine.sanitizeProfile({
+      id: stored.id,
+      name: stored.name,
+      networkMode: 'proxy',
+      proxy: 'http://10.0.0.1:8080',
+    })
+  );
+  assert.ok(
+    !otherHost.proxy.includes('user:secret@'),
+    'must not copy credentials onto a different host:port'
+  );
 
   // --- renderer wiring integrity ---
   const renderer = fs.readFileSync(path.join(__dirname, 'renderer.js'), 'utf8');
@@ -288,19 +327,51 @@ async function main() {
     assert.ok(html.includes(`id="${id}"`), 'missing html id ' + id);
   }
   assert.ok(html.includes('value="ifconfig-me"'), 'ifconfig.me must be selectable as an IP query channel');
-  assert.ok(renderer.includes("requireReady: $('#editor-proxy-require-ready')"), 'editor draft must collect requireReady');
-  assert.ok(renderer.includes("notReadyPolicy: $('#editor-proxy-not-ready-policy')"), 'editor draft must collect notReadyPolicy');
-  assert.ok(renderer.includes("tlsProfile: $('#editor-proxy-tls-profile')"), 'editor draft must collect tlsProfile');
-  assert.ok(renderer.includes("apiExtractUrl: String(proxyMeta.apiExtractUrl || '')"), 'normalize must not bleed refreshUrl into apiExtractUrl');
-  assert.strictEqual((renderer.match(/\$\('#editor-test-proxy'\)\?\.addEventListener\('click', testEditorProxy\);/g) || []).length, 1, 'test proxy listener should be single');
-  assert.strictEqual((renderer.match(/\$\('#editor-apply-proxy-fp'\)\?\.addEventListener\('click', applyEditorProxyFingerprint\);/g) || []).length, 1);
-  assert.strictEqual((renderer.match(/\$\('#editor-refresh-proxy'\)\?\.addEventListener\('click', refreshEditorProxy\);/g) || []).length, 1);
+  assert.ok(
+    renderer.includes("requireReady: $('#editor-proxy-require-ready')"),
+    'editor draft must collect requireReady'
+  );
+  assert.ok(
+    renderer.includes("notReadyPolicy: $('#editor-proxy-not-ready-policy')"),
+    'editor draft must collect notReadyPolicy'
+  );
+  assert.ok(
+    renderer.includes("tlsProfile: $('#editor-proxy-tls-profile')"),
+    'editor draft must collect tlsProfile'
+  );
+  assert.ok(
+    renderer.includes("apiExtractUrl: String(proxyMeta.apiExtractUrl || '')"),
+    'normalize must not bleed refreshUrl into apiExtractUrl'
+  );
+  assert.strictEqual(
+    (renderer.match(/\$\('#editor-test-proxy'\)\?\.addEventListener\('click', testEditorProxy\);/g) || [])
+      .length,
+    1,
+    'test proxy listener should be single'
+  );
+  assert.strictEqual(
+    (
+      renderer.match(
+        /\$\('#editor-apply-proxy-fp'\)\?\.addEventListener\('click', applyEditorProxyFingerprint\);/g
+      ) || []
+    ).length,
+    1
+  );
+  assert.strictEqual(
+    (
+      renderer.match(/\$\('#editor-refresh-proxy'\)\?\.addEventListener\('click', refreshEditorProxy\);/g) ||
+      []
+    ).length,
+    1
+  );
   // table headers vs cells: latency + type
   assert.ok(html.includes('<th>延迟</th>') && html.includes('<th>类型</th>'));
-  assert.ok(renderer.includes("element('td', '', latency)") && renderer.includes("element('td', '', netType)"));
-  assert.ok(preload.includes("profiles:refresh-proxy"));
-  assert.ok(preload.includes("profiles:apply-proxy-fingerprint"));
-  assert.ok(preload.includes("proxy:check-many"));
+  assert.ok(
+    renderer.includes("element('td', '', latency)") && renderer.includes("element('td', '', netType)")
+  );
+  assert.ok(preload.includes('profiles:refresh-proxy'));
+  assert.ok(preload.includes('profiles:apply-proxy-fingerprint'));
+  assert.ok(preload.includes('proxy:check-many'));
   assert.ok(main.includes("registerTrustedIpc('profiles:refresh-proxy'"));
   assert.ok(main.includes("registerTrustedIpc('profiles:apply-proxy-fingerprint'"));
   assert.ok(main.includes("registerTrustedIpc('proxy:check-many'"));
@@ -312,10 +383,24 @@ async function main() {
 
   // forced proxy option must bypass resolveProfileProxyConfig
   const engineSrc = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8');
-  assert.ok(engineSrc.includes('options.proxy || options.forcedProxy'), 'testProxy must accept forced proxy option');
-  assert.ok(engineSrc.includes("proxySource: index === 0 ? 'primary' : 'backup'"), 'prepare must force-test each candidate');
-  assert.ok(engineSrc.includes('extractError: extractError ? String(extractError.message || extractError) : null'), 'refresh must surface extract errors');
-  assert.ok(!engineSrc.includes("apiExtractUrl: String(proxyMetaValue.apiExtractUrl || proxyMetaValue.refreshUrl || '')"), 'sanitize must not bleed refreshUrl into apiExtractUrl');
+  assert.ok(
+    engineSrc.includes('options.proxy || options.forcedProxy'),
+    'testProxy must accept forced proxy option'
+  );
+  assert.ok(
+    engineSrc.includes("proxySource: index === 0 ? 'primary' : 'backup'"),
+    'prepare must force-test each candidate'
+  );
+  assert.ok(
+    engineSrc.includes('extractError: extractError ? String(extractError.message || extractError) : null'),
+    'refresh must surface extract errors'
+  );
+  assert.ok(
+    !engineSrc.includes(
+      "apiExtractUrl: String(proxyMetaValue.apiExtractUrl || proxyMetaValue.refreshUrl || '')"
+    ),
+    'sanitize must not bleed refreshUrl into apiExtractUrl'
+  );
 
   const engine4 = makeEngineStub();
   let resolveCalled = 0;
@@ -326,14 +411,17 @@ async function main() {
   // Exercise forced branch without network: invalid forced proxy should fail parse before resolve.
   let forcedParseError = null;
   try {
-    await engine4.testProxy({
-      id: 'prof_proxy_feature_7',
-      name: 'forced',
-      networkMode: 'proxy',
-      proxy: 'socks5://primary:pw@1.1.1.1:1',
-      privacy: {},
-      proxyMeta: {},
-    }, { proxy: 'not-a-proxy', proxySource: 'backup', allowExtract: false });
+    await engine4.testProxy(
+      {
+        id: 'prof_proxy_feature_7',
+        name: 'forced',
+        networkMode: 'proxy',
+        proxy: 'socks5://primary:pw@1.1.1.1:1',
+        privacy: {},
+        proxyMeta: {},
+      },
+      { proxy: 'not-a-proxy', proxySource: 'backup', allowExtract: false }
+    );
   } catch (error) {
     forcedParseError = error;
   }
@@ -341,7 +429,9 @@ async function main() {
   assert.strictEqual(resolveCalled, 0, 'forced proxy must skip resolve even on parse failure');
 
   server.close();
-  console.log('PROXY_FEATURE_SELFTEST_OK extract=1 failover=1 sanitize=1 wiring=1 store=1 refresh=1 forced=1');
+  console.log(
+    'PROXY_FEATURE_SELFTEST_OK extract=1 failover=1 sanitize=1 wiring=1 store=1 refresh=1 forced=1'
+  );
 }
 
 main().catch((error) => {

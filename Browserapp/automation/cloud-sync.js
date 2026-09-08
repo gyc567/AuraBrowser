@@ -45,13 +45,7 @@ function encryptPayload(plainBuf, passphrase) {
   const tag = cipher.getAuthTag();
   return {
     encrypted: true,
-    data: Buffer.concat([
-      Buffer.from('OBE1'),
-      salt,
-      iv,
-      tag,
-      enc,
-    ]),
+    data: Buffer.concat([Buffer.from('OBE1'), salt, iv, tag, enc]),
   };
 }
 
@@ -103,7 +97,11 @@ async function collectProfileDataFiles(profileRoot, profile, limits = {}) {
 
   async function walk(rel, abs) {
     let st;
-    try { st = await fsp.lstat(abs); } catch (_) { return; }
+    try {
+      st = await fsp.lstat(abs);
+    } catch (_) {
+      return;
+    }
     if (st.isSymbolicLink()) return;
     if (st.isFile()) {
       if (st.size > maxFile || total + st.size > maxTotal) return;
@@ -237,7 +235,8 @@ function mergeProfiles(localList = [], remoteList = [], mode = 'merge') {
         number: localItem.number || remoteItem.number,
         name: localItem.name || remoteItem.name,
         // cookies/platform/proxy from remote if present
-        cookies: remoteItem.cookies != null && remoteItem.cookies !== '' ? remoteItem.cookies : localItem.cookies,
+        cookies:
+          remoteItem.cookies != null && remoteItem.cookies !== '' ? remoteItem.cookies : localItem.cookies,
         platform: remoteItem.platform || localItem.platform,
         proxy: remoteItem.proxy != null ? remoteItem.proxy : localItem.proxy,
         proxyMeta: { ...(localItem.proxyMeta || {}), ...(remoteItem.proxyMeta || {}) },
@@ -280,7 +279,8 @@ function mergeGroups(localGroups = [], remoteGroups = [], mode = 'merge') {
 }
 
 function mergeProxies(localProxies = [], remoteProxies = [], mode = 'merge') {
-  if (mode === 'overwrite' || mode === 'remote-wins') return Array.isArray(remoteProxies) ? remoteProxies : [];
+  if (mode === 'overwrite' || mode === 'remote-wins')
+    return Array.isArray(remoteProxies) ? remoteProxies : [];
   const map = new Map();
   const keyOf = (p) => p.id || `${p.protocol || ''}:${p.host || ''}:${p.port || ''}`;
   for (const p of localProxies || []) map.set(keyOf(p), p);
@@ -298,8 +298,11 @@ function profileRemoteName(id) {
 }
 
 function safeRemotePath(value, fallback = '') {
-  const raw = String(value || fallback).trim().replace(/\\/g, '/');
-  if (!raw || raw.includes('\0') || raw.startsWith('/') || /^[A-Za-z]:\//.test(raw)) throw new Error('远程备份路径无效');
+  const raw = String(value || fallback)
+    .trim()
+    .replace(/\\/g, '/');
+  if (!raw || raw.includes('\0') || raw.startsWith('/') || /^[A-Za-z]:\//.test(raw))
+    throw new Error('远程备份路径无效');
   const parts = raw.split('/').filter(Boolean);
   if (!parts.length || parts.some((part) => part === '.' || part === '..' || part.length > 160)) {
     throw new Error('远程备份路径包含不安全片段');
@@ -311,7 +314,7 @@ function safeLocalTarget(root, remoteName) {
   const base = path.resolve(String(root || ''));
   const rel = safeRemotePath(remoteName, REMOTE_NAME);
   const target = path.resolve(base, ...rel.split('/'));
-  const normalize = (value) => process.platform === 'win32' ? value.toLowerCase() : value;
+  const normalize = (value) => (process.platform === 'win32' ? value.toLowerCase() : value);
   if (normalize(target) === normalize(base) || !normalize(target).startsWith(normalize(base) + path.sep)) {
     throw new Error('本地备份路径越过所选目录');
   }
@@ -359,8 +362,14 @@ function validatedGitHubConfig(config, remoteName) {
   const token = String(cfg.token || '').trim();
   const branch = String(cfg.branch || 'main').trim() || 'main';
   const filePath = safeRemotePath(cfg.path, `openbrowser/${remoteName}`);
-  if (!SAFE_GITHUB_NAME.test(owner) || !SAFE_GITHUB_NAME.test(repo) || !token) throw new Error('GitHub owner / repo / token 无效');
-  if (!SAFE_GITHUB_BRANCH.test(branch) || branch.includes('..') || branch.startsWith('/') || branch.endsWith('/')) {
+  if (!SAFE_GITHUB_NAME.test(owner) || !SAFE_GITHUB_NAME.test(repo) || !token)
+    throw new Error('GitHub owner / repo / token 无效');
+  if (
+    !SAFE_GITHUB_BRANCH.test(branch) ||
+    branch.includes('..') ||
+    branch.startsWith('/') ||
+    branch.endsWith('/')
+  ) {
     throw new Error('GitHub branch 无效');
   }
   if (token.length > 1024) throw new Error('GitHub token 长度无效');
@@ -398,7 +407,7 @@ async function buildBackupPackage({
         maxTotalBytes: Math.max(0, MAX_BROWSER_DATA_BYTES - browserDataBytes),
       });
       for (const encoded of Object.values(item._dataFiles)) {
-        browserDataBytes += Math.floor(String(encoded).length * 3 / 4);
+        browserDataBytes += Math.floor((String(encoded).length * 3) / 4);
       }
     }
     estimatedJsonBytes += Buffer.byteLength(JSON.stringify(item));
@@ -461,38 +470,43 @@ function request(urlString, options = {}, body) {
     const lib = u.protocol === 'http:' ? http : https;
     const maxBytes = Number(options.maxBytes) || MAX_REMOTE_RESPONSE_BYTES;
     if (body && body.length > MAX_REMOTE_RESPONSE_BYTES * 2) return reject(new Error('上传内容超过安全限制'));
-    const req = lib.request({
-      protocol: u.protocol,
-      hostname: u.hostname,
-      port: u.port || (u.protocol === 'http:' ? 80 : 443),
-      path: u.pathname + u.search,
-      method: options.method || 'GET',
-      headers: options.headers || {},
-      timeout: options.timeout || 60000,
-    }, (res) => {
-      const chunks = [];
-      let size = 0;
-      res.on('error', (error) => finish(reject, error));
-      res.on('data', (c) => {
-        if (settled) return;
-        size += c.length;
-        if (size > maxBytes) {
-          const error = new Error('远程响应超过安全限制');
-          finish(reject, error);
-          res.destroy(error);
-          req.destroy(error);
-          return;
-        }
-        chunks.push(c);
-      });
-      res.on('end', () => {
-        if (settled) return;
-        const buf = Buffer.concat(chunks);
-        finish(resolve, { status: res.statusCode || 0, headers: res.headers, body: buf });
-      });
-    });
+    const req = lib.request(
+      {
+        protocol: u.protocol,
+        hostname: u.hostname,
+        port: u.port || (u.protocol === 'http:' ? 80 : 443),
+        path: u.pathname + u.search,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+        timeout: options.timeout || 60000,
+      },
+      (res) => {
+        const chunks = [];
+        let size = 0;
+        res.on('error', (error) => finish(reject, error));
+        res.on('data', (c) => {
+          if (settled) return;
+          size += c.length;
+          if (size > maxBytes) {
+            const error = new Error('远程响应超过安全限制');
+            finish(reject, error);
+            res.destroy(error);
+            req.destroy(error);
+            return;
+          }
+          chunks.push(c);
+        });
+        res.on('end', () => {
+          if (settled) return;
+          const buf = Buffer.concat(chunks);
+          finish(resolve, { status: res.statusCode || 0, headers: res.headers, body: buf });
+        });
+      }
+    );
     req.on('error', (error) => finish(reject, error));
-    req.on('timeout', () => { req.destroy(new Error('request timeout')); });
+    req.on('timeout', () => {
+      req.destroy(new Error('request timeout'));
+    });
     if (body) req.write(body);
     req.end();
   });
@@ -522,7 +536,11 @@ async function ensureWebDavDir(baseUrl, user, pass, relativeDir) {
 
 function webDavTarget(config, remoteName = REMOTE_NAME) {
   let parsed;
-  try { parsed = new URL(String(config.url || '')); } catch (_) { throw new Error('请填写有效的 WebDAV 地址'); }
+  try {
+    parsed = new URL(String(config.url || ''));
+  } catch (_) {
+    throw new Error('请填写有效的 WebDAV 地址');
+  }
   const loopback = ['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname.toLowerCase());
   if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && loopback)) {
     throw new Error('WebDAV 必须使用 HTTPS；仅本机回环地址允许 HTTP');
@@ -545,14 +563,18 @@ async function uploadWebDav(config, buffer, remoteName = REMOTE_NAME) {
   if (!base || base === '/') throw new Error('请填写 WebDAV 地址');
   const parent = rel.includes('/') ? rel.replace(/\/[^/]+$/, '') : '';
   if (parent) await ensureWebDavDir(base, user, pass, parent);
-  const res = await request(target, {
-    method: 'PUT',
-    headers: {
-      Authorization: basicAuth(user, pass),
-      'Content-Type': 'application/octet-stream',
-      'Content-Length': buffer.length,
+  const res = await request(
+    target,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: basicAuth(user, pass),
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': buffer.length,
+      },
     },
-  }, buffer);
+    buffer
+  );
   if (res.status < 200 || res.status >= 300) {
     throw new Error(`WebDAV 上传失败 (${res.status})`);
   }
@@ -587,7 +609,9 @@ async function uploadGitHub(config, buffer, remoteName = REMOTE_NAME) {
     maxBytes: MAX_REMOTE_ERROR_BYTES,
   });
   if (getRes.status === 200) {
-    try { sha = JSON.parse(getRes.body.toString('utf8')).sha; } catch (_) {}
+    try {
+      sha = JSON.parse(getRes.body.toString('utf8')).sha;
+    } catch (_) {}
   }
   const payload = JSON.stringify({
     message: `OpenBrowser backup ${nowIso()} · ${remoteName}`,
@@ -595,17 +619,21 @@ async function uploadGitHub(config, buffer, remoteName = REMOTE_NAME) {
     branch,
     ...(sha ? { sha } : {}),
   });
-  const putRes = await request(apiBase, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'OpenBrowser-CloudSync',
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload),
+  const putRes = await request(
+    apiBase,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'OpenBrowser-CloudSync',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+      maxBytes: MAX_REMOTE_ERROR_BYTES,
     },
-    maxBytes: MAX_REMOTE_ERROR_BYTES,
-  }, Buffer.from(payload));
+    Buffer.from(payload)
+  );
   if (putRes.status < 200 || putRes.status >= 300) {
     throw new Error(`GitHub 上传失败 (${putRes.status})`);
   }
@@ -637,21 +665,28 @@ async function downloadGitHub(config, remoteName = REMOTE_NAME) {
  */
 async function uploadGoogleCloud(config, buffer, remoteName = REMOTE_NAME) {
   // Prefer WebDAV bridge fields; fall back to generic webdav keys.
-  return uploadWebDav({
-    url: config.url || config.webdavUrl,
-    username: config.username || config.user || '',
-    password: config.password || config.token || '',
-    dir: config.dir || 'OpenBrowser',
-  }, buffer, remoteName);
+  return uploadWebDav(
+    {
+      url: config.url || config.webdavUrl,
+      username: config.username || config.user || '',
+      password: config.password || config.token || '',
+      dir: config.dir || 'OpenBrowser',
+    },
+    buffer,
+    remoteName
+  );
 }
 
 async function downloadGoogleCloud(config, remoteName = REMOTE_NAME) {
-  return downloadWebDav({
-    url: config.url || config.webdavUrl,
-    username: config.username || config.user || '',
-    password: config.password || config.token || '',
-    dir: config.dir || 'OpenBrowser',
-  }, remoteName);
+  return downloadWebDav(
+    {
+      url: config.url || config.webdavUrl,
+      username: config.username || config.user || '',
+      password: config.password || config.token || '',
+      dir: config.dir || 'OpenBrowser',
+    },
+    remoteName
+  );
 }
 
 async function uploadLocal(config, buffer, remoteName = REMOTE_NAME) {
@@ -664,7 +699,9 @@ async function uploadLocal(config, buffer, remoteName = REMOTE_NAME) {
   await fsp.writeFile(file, buffer, { mode: 0o600 });
   if (rel === REMOTE_NAME || !rel.includes('/')) {
     const stamp = nowIso().replace(/[:.]/g, '-');
-    await fsp.writeFile(path.join(base, `openbrowser-backup-${stamp}.obpack`), buffer, { mode: 0o600 }).catch(() => {});
+    await fsp
+      .writeFile(path.join(base, `openbrowser-backup-${stamp}.obpack`), buffer, { mode: 0o600 })
+      .catch(() => {});
   }
   return { provider: 'local', path: file, bytes: buffer.length, remoteName: rel };
 }
@@ -679,10 +716,17 @@ async function downloadLocal(config, remoteName = REMOTE_NAME) {
 
 /** WebDAV-bridge providers: Alist / OpenList / rclone serve for consumer clouds */
 const WEBDAV_BRIDGE_PROVIDERS = new Set([
-  'gdrive', 'google', 'gcs',
-  'onedrive', 'microsoft', 'mscloud',
-  'quark', 'kuake',
-  'baidu', 'baiduyun', 'pan',
+  'gdrive',
+  'google',
+  'gcs',
+  'onedrive',
+  'microsoft',
+  'mscloud',
+  'quark',
+  'kuake',
+  'baidu',
+  'baiduyun',
+  'pan',
 ]);
 
 function isWebDavBridgeProvider(provider) {
@@ -692,8 +736,10 @@ function isWebDavBridgeProvider(provider) {
 async function upload(provider, config, buffer, remoteName = REMOTE_NAME) {
   const key = String(provider || 'local').toLowerCase();
   switch (key) {
-    case 'webdav': return uploadWebDav(config, buffer, remoteName);
-    case 'github': return uploadGitHub(config, buffer, remoteName);
+    case 'webdav':
+      return uploadWebDav(config, buffer, remoteName);
+    case 'github':
+      return uploadGitHub(config, buffer, remoteName);
     case 'local':
       return uploadLocal(config, buffer, remoteName);
     default:
@@ -705,8 +751,10 @@ async function upload(provider, config, buffer, remoteName = REMOTE_NAME) {
 async function download(provider, config, remoteName = REMOTE_NAME) {
   const key = String(provider || 'local').toLowerCase();
   switch (key) {
-    case 'webdav': return downloadWebDav(config, remoteName);
-    case 'github': return downloadGitHub(config, remoteName);
+    case 'webdav':
+      return downloadWebDav(config, remoteName);
+    case 'github':
+      return downloadGitHub(config, remoteName);
     case 'local':
       return downloadLocal(config, remoteName);
     default:

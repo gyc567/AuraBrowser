@@ -15,7 +15,11 @@ const { BrowserEngine } = require('../engine.js');
 const { LocalApiServer } = require('./local-api-server.js');
 
 let passed = 0;
-const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + name); passed += 1; };
+const ok = (name, cond) => {
+  assert.ok(cond, name);
+  console.log('  PASS  ' + name);
+  passed += 1;
+};
 
 (async () => {
   const userData = await fsp.mkdtemp(path.join(os.tmpdir(), 'ob-pr7-'));
@@ -42,8 +46,15 @@ const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + nam
 
   // ---- create 2: AdsPower proxy_config + privacy ----
   r = await route('POST', '/api/profiles/create', {
-    name: 'Env Two', language: 'ja-JP',
-    user_proxy_config: { proxy_type: 'http', proxy_host: '1.2.3.4', proxy_port: '8080', proxy_user: 'u', proxy_password: 'p' },
+    name: 'Env Two',
+    language: 'ja-JP',
+    user_proxy_config: {
+      proxy_type: 'http',
+      proxy_host: '1.2.3.4',
+      proxy_port: '8080',
+      proxy_user: 'u',
+      proxy_password: 'p',
+    },
     privacy: { languageMode: 'ja-JP', timezoneMode: 'ip', webrtc: 'disabled', geoMode: 'disabled' },
   });
   ok('create2 code 0', r && r.code === 0);
@@ -62,7 +73,11 @@ const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + nam
   ok('duplicate id rejected', r && r.code !== 0);
 
   // ---- create 4: explicit user_id + number ----
-  r = await route('POST', '/api/v1/user/create', { user_id: 'my-profile-42', number: '42', name: 'Explicit' });
+  r = await route('POST', '/api/v1/user/create', {
+    user_id: 'my-profile-42',
+    number: '42',
+    name: 'Explicit',
+  });
   ok('explicit id honored', r && r.code === 0 && r.data.user_id === 'my-profile-42');
   ok('explicit number honored', engine.profiles.get('my-profile-42').number === 42);
 
@@ -72,9 +87,15 @@ const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + nam
 
   // ---- missing name → auto-named (feature); non-string name coerced by String() ----
   r = await route('POST', '/api/v1/user/create', { user_id: 'auto-named' });
-  ok('missing name auto-names', r && r.code === 0 && engine.profiles.get('auto-named').name.startsWith('Environment'));
+  ok(
+    'missing name auto-names',
+    r && r.code === 0 && engine.profiles.get('auto-named').name.startsWith('Environment')
+  );
   r = await route('POST', '/api/v1/user/create', { user_id: 'coerced-name', name: 12345 });
-  ok('numeric name coerced to string', r && r.code === 0 && engine.profiles.get('coerced-name').name === '12345');
+  ok(
+    'numeric name coerced to string',
+    r && r.code === 0 && engine.profiles.get('coerced-name').name === '12345'
+  );
 
   // ---- delete unknown id → idempotent success (deleted:0); invalid id → 400 ----
   r = await route('POST', '/api/v1/user/delete', { user_id: 'nonexistent-profile' });
@@ -85,7 +106,8 @@ const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + nam
   // ---- privacy edge: AdsPower timezoneMode (string) maps ----
   // (real AdsPower sends "custom" + timezone string; verify both forms survive)
   r = await route('POST', '/api/v1/user/create', {
-    name: 'TZ Custom', privacy: { timezoneMode: 'custom', timezone: 'Asia/Tokyo' },
+    name: 'TZ Custom',
+    privacy: { timezoneMode: 'custom', timezone: 'Asia/Tokyo' },
   });
   const pTz = engine.profiles.get(r.data.user_id);
   ok('privacy.timezoneMode custom preserved', pTz && pTz.privacy.timezoneMode === 'custom');
@@ -112,4 +134,7 @@ const ok = (name, cond) => { assert.ok(cond, name); console.log('  PASS  ' + nam
 
   console.log(`\n${passed} assertions passed`);
   process.exit(0);
-})().catch((err) => { console.error('FAIL', err); process.exit(1); });
+})().catch((err) => {
+  console.error('FAIL', err);
+  process.exit(1);
+});

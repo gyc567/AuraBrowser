@@ -19,9 +19,8 @@ function esc(value) {
 
 function formatTime(ts) {
   const number = Number(ts);
-  const date = Number.isFinite(number) && number > 1e9
-    ? new Date(number > 1e12 ? number : number * 1000)
-    : new Date();
+  const date =
+    Number.isFinite(number) && number > 1e9 ? new Date(number > 1e12 ? number : number * 1000) : new Date();
   const pad = (value) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }

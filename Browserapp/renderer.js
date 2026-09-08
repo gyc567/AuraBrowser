@@ -1,5 +1,16 @@
 const UI_KEY = 'openbrowser-ui-state';
-const GROUP_COLORS = ['#245cff', '#22d3ee', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#fb7185', '#94a3b8', '#f97316', '#2dd4bf'];
+const GROUP_COLORS = [
+  '#245cff',
+  '#22d3ee',
+  '#34d399',
+  '#fbbf24',
+  '#f472b6',
+  '#a78bfa',
+  '#fb7185',
+  '#94a3b8',
+  '#f97316',
+  '#2dd4bf',
+];
 const UNGROUPED_ID = '';
 
 function t(key, params) {
@@ -11,9 +22,10 @@ function tx(s) {
   try {
     if (window.OpenBrowserI18n?.getLocale?.() === 'zh-CN') return String(s);
     return window.OpenBrowserI18n?.translateChineseUiText?.(String(s)) ?? String(s);
-  } catch (_) { return String(s); }
+  } catch (_) {
+    return String(s);
+  }
 }
-
 
 const appUpdateState = { status: 'idle', result: null, message: '', progress: null };
 
@@ -40,17 +52,19 @@ function applyVersionTrafficLight(payload) {
   if (payload?.currentVersion && versionEl) versionEl.textContent = `v${payload.currentVersion}`;
   let title = t('footer.versionChecking') || '正在检查版本…';
   if (light === 'green') {
-    title = t('footer.versionLatest', { version: payload.currentVersion || '' })
-      || `已是最新版本 v${payload.currentVersion || ''}`;
+    title =
+      t('footer.versionLatest', { version: payload.currentVersion || '' }) ||
+      `已是最新版本 v${payload.currentVersion || ''}`;
   } else if (light === 'red') {
-    title = t('footer.versionUpdateAvailable', {
-      current: payload.currentVersion || '',
-      version: payload.remoteVersion || '',
-    }) || `有新版本 v${payload.remoteVersion}（当前 v${payload.currentVersion}），点击查看更新`;
+    title =
+      t('footer.versionUpdateAvailable', {
+        current: payload.currentVersion || '',
+        version: payload.remoteVersion || '',
+      }) || `有新版本 v${payload.remoteVersion}（当前 v${payload.currentVersion}），点击查看更新`;
   } else if (light === 'unknown') {
     title = payload?.error
-      ? (t('footer.versionCheckFailed', { message: payload.error }) || `版本检查失败：${payload.error}`)
-      : (t('footer.versionUnknown') || '无法判断是否为最新版本');
+      ? t('footer.versionCheckFailed', { message: payload.error }) || `版本检查失败：${payload.error}`
+      : t('footer.versionUnknown') || '无法判断是否为最新版本';
   }
   wrap.title = title;
   wrap.setAttribute('aria-label', title);
@@ -65,7 +79,11 @@ function applyVersionTrafficLight(payload) {
       currentVersion: payload.currentVersion,
       remoteVersion: payload.remoteVersion,
     };
-    if (appUpdateState.status === 'idle' || appUpdateState.status === 'checking' || appUpdateState.status === 'ready') {
+    if (
+      appUpdateState.status === 'idle' ||
+      appUpdateState.status === 'checking' ||
+      appUpdateState.status === 'ready'
+    ) {
       if (payload.error && light === 'unknown') {
         /* keep settings card free unless user opened it */
       } else {
@@ -85,7 +103,6 @@ function openAppUpdatePanel() {
   } catch (_) {}
 }
 
-
 function renderAppUpdateState() {
   const status = document.getElementById('app-update-status');
   const version = document.getElementById('app-update-version');
@@ -95,7 +112,13 @@ function renderAppUpdateState() {
   const result = appUpdateState.result;
   version.textContent = result?.remoteVersion ? `v${result.remoteVersion}` : '—';
   check.disabled = appUpdateState.status === 'checking' || appUpdateState.status === 'downloading';
-  download.hidden = !(result && !result.upToDate && (result.canDownload !== false) && result.asset?.name && appUpdateState.status !== 'downloading');
+  download.hidden = !(
+    result &&
+    !result.upToDate &&
+    result.canDownload !== false &&
+    result.asset?.name &&
+    appUpdateState.status !== 'downloading'
+  );
   download.disabled = appUpdateState.status === 'checking' || appUpdateState.status === 'downloading';
   if (appUpdateState.message) {
     status.textContent = appUpdateState.message;
@@ -104,19 +127,34 @@ function renderAppUpdateState() {
   if (appUpdateState.status === 'checking') status.textContent = t('system.update.checking');
   else if (appUpdateState.status === 'downloading') {
     const progress = appUpdateState.progress;
-    if (progress?.percent != null) status.textContent = t('system.update.downloadingPercent', { percent: progress.percent });
-    else if (progress?.received && progress?.total) status.textContent = t('system.update.downloadingBytes', { received: formatBytes(progress.received), total: formatBytes(progress.total) });
+    if (progress?.percent != null)
+      status.textContent = t('system.update.downloadingPercent', { percent: progress.percent });
+    else if (progress?.received && progress?.total)
+      status.textContent = t('system.update.downloadingBytes', {
+        received: formatBytes(progress.received),
+        total: formatBytes(progress.total),
+      });
     else status.textContent = t('system.update.downloading');
-  }
-  else if (result?.supported && result.upToDate) status.textContent = t('system.update.latest', { version: result.currentVersion });
-  else if (result?.supported && !result.upToDate) status.textContent = t('system.update.available', { current: result.currentVersion, version: result.remoteVersion });
+  } else if (result?.supported && result.upToDate)
+    status.textContent = t('system.update.latest', { version: result.currentVersion });
+  else if (result?.supported && !result.upToDate)
+    status.textContent = t('system.update.available', {
+      current: result.currentVersion,
+      version: result.remoteVersion,
+    });
   else if (result && !result.supported) status.textContent = t('system.update.unsupported');
   else status.textContent = t('system.update.idle');
 }
 
 async function checkAppUpdate() {
-  appUpdateState.status = 'checking'; appUpdateState.result = null; appUpdateState.message = ''; appUpdateState.progress = null;
-  applyVersionTrafficLight({ light: 'checking', currentVersion: document.getElementById('app-version')?.textContent?.replace(/^v/i, '') });
+  appUpdateState.status = 'checking';
+  appUpdateState.result = null;
+  appUpdateState.message = '';
+  appUpdateState.progress = null;
+  applyVersionTrafficLight({
+    light: 'checking',
+    currentVersion: document.getElementById('app-version')?.textContent?.replace(/^v/i, ''),
+  });
   renderAppUpdateState();
   try {
     appUpdateState.result = await window.ops.checkAppUpdate();
@@ -137,7 +175,10 @@ async function checkAppUpdate() {
 }
 
 async function downloadAppUpdate() {
-  appUpdateState.status = 'downloading'; appUpdateState.message = ''; appUpdateState.progress = null; renderAppUpdateState();
+  appUpdateState.status = 'downloading';
+  appUpdateState.message = '';
+  appUpdateState.progress = null;
+  renderAppUpdateState();
   try {
     const result = await window.ops.downloadAppUpdate();
     appUpdateState.status = 'ready';
@@ -159,7 +200,11 @@ function formatBytes(value) {
 
 document.getElementById('github-link')?.addEventListener('click', async (event) => {
   event.preventDefault();
-  try { await window.ops.openGithub(); } catch (error) { toast(error.message); }
+  try {
+    await window.ops.openGithub();
+  } catch (error) {
+    toast(error.message);
+  }
 });
 document.getElementById('app-version-wrap')?.addEventListener('click', () => {
   const light = document.getElementById('app-version-wrap')?.dataset?.light;
@@ -170,7 +215,9 @@ document.getElementById('app-check-update')?.addEventListener('click', () => che
 document.getElementById('app-download-update')?.addEventListener('click', () => downloadAppUpdate());
 
 function afterUiRender(root) {
-  try { window.OpenBrowserI18n?.applyDom?.(root || document); } catch (_) {}
+  try {
+    window.OpenBrowserI18n?.applyDom?.(root || document);
+  } catch (_) {}
 }
 
 function refreshLocaleChrome() {
@@ -250,12 +297,31 @@ function createGroupId() {
 
 function defaultGroups() {
   return [
-    { id: 'grp-default', name: t('groups.default'), color: '#245cff', note: '', sort: 0, createdAt: new Date().toISOString() },
+    {
+      id: 'grp-default',
+      name: t('groups.default'),
+      color: '#245cff',
+      note: '',
+      sort: 0,
+      createdAt: new Date().toISOString(),
+    },
   ];
 }
 
 const defaultProfiles = () => [
-  { id: 'env-001', number: 1, name: '1', browser: 'Google Chrome', language: 'zh-CN', networkMode: 'direct', proxy: 'Direct', tag: '', groupId: 'grp-default', os: 'Windows', location: 'Local' },
+  {
+    id: 'env-001',
+    number: 1,
+    name: '1',
+    browser: 'Google Chrome',
+    language: 'zh-CN',
+    networkMode: 'direct',
+    proxy: 'Direct',
+    tag: '',
+    groupId: 'grp-default',
+    os: 'Windows',
+    location: 'Local',
+  },
 ];
 
 function positiveProfileNumber(value) {
@@ -271,10 +337,15 @@ function normalizeProfileSettings(profile) {
   const platform = value.platform && typeof value.platform === 'object' ? value.platform : {};
   const number = positiveProfileNumber(value.number);
   const rawProxy = String(value.proxy || '').trim();
-  const legacyDemoProxy = value.networkMode == null && value.id === 'env-004' && rawProxy === '127.0.0.1:7890';
-  const networkMode = value.networkMode === 'direct' || legacyDemoProxy || !rawProxy || /^(direct|offline|none)$/i.test(rawProxy)
-    ? 'direct'
-    : 'proxy';
+  const legacyDemoProxy =
+    value.networkMode == null && value.id === 'env-004' && rawProxy === '127.0.0.1:7890';
+  const networkMode =
+    value.networkMode === 'direct' ||
+    legacyDemoProxy ||
+    !rawProxy ||
+    /^(direct|offline|none)$/i.test(rawProxy)
+      ? 'direct'
+      : 'proxy';
   return {
     ...value,
     number,
@@ -289,7 +360,8 @@ function normalizeProfileSettings(profile) {
     cookies: String(value.cookies || ''),
     note: String(value.note || ''),
     tag: String(value.tag || ''),
-    groupId: value.groupId == null || value.groupId === undefined ? UNGROUPED_ID : String(value.groupId || ''),
+    groupId:
+      value.groupId == null || value.groupId === undefined ? UNGROUPED_ID : String(value.groupId || ''),
     width: Number(value.width) >= 640 ? Number(value.width) : 1280,
     height: Number(value.height) >= 480 ? Number(value.height) : 820,
     platform: {
@@ -309,14 +381,25 @@ function normalizeProfileSettings(profile) {
       bypassList: String(proxyMeta.bypassList || ''),
       apiExtractUrl: String(proxyMeta.apiExtractUrl || ''),
       backupProxies: Array.isArray(proxyMeta.backupProxies)
-        ? proxyMeta.backupProxies.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 8)
-        : String(proxyMeta.backupProxies || '').split(/[\r\n,;]+/).map((s) => s.trim()).filter(Boolean).slice(0, 8),
+        ? proxyMeta.backupProxies
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+            .slice(0, 8)
+        : String(proxyMeta.backupProxies || '')
+            .split(/[\r\n,;]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, 8),
       fillFingerprint: proxyMeta.fillFingerprint !== false,
       requireReady: proxyMeta.requireReady !== false,
       notReadyPolicy: ['block', 'direct', 'continue'].includes(String(proxyMeta.notReadyPolicy || ''))
         ? String(proxyMeta.notReadyPolicy)
-        : (proxyMeta.requireReady === false ? 'continue' : 'block'),
-      tlsProfile: ['auto', 'chrome', 'chrome_legacy', 'node', 'off'].includes(String(proxyMeta.tlsProfile || ''))
+        : proxyMeta.requireReady === false
+          ? 'continue'
+          : 'block',
+      tlsProfile: ['auto', 'chrome', 'chrome_legacy', 'node', 'off'].includes(
+        String(proxyMeta.tlsProfile || '')
+      )
         ? String(proxyMeta.tlsProfile)
         : 'auto',
       tlsChromeMajor: (() => {
@@ -333,7 +416,14 @@ function normalizeProfileSettings(profile) {
       longitude: privacy.longitude ?? '',
       accuracy: Number(privacy.accuracy) || 100,
       uiLanguage: String(privacy.uiLanguage || 'profile'),
-      languageMode: String(privacy.languageMode || (privacy.langFromIp !== false ? 'ip' : (privacy.uiLanguage && privacy.uiLanguage !== 'profile' ? privacy.uiLanguage : 'ip'))),
+      languageMode: String(
+        privacy.languageMode ||
+          (privacy.langFromIp !== false
+            ? 'ip'
+            : privacy.uiLanguage && privacy.uiLanguage !== 'profile'
+              ? privacy.uiLanguage
+              : 'ip')
+      ),
       langFromIp: privacy.langFromIp !== false,
       timezoneFromIp: privacy.timezoneFromIp !== false,
       geoFromIp: privacy.geoFromIp !== false,
@@ -349,11 +439,23 @@ function normalizeProfileSettings(profile) {
       audio: String(privacy.audio || 'noise'),
       media: String(privacy.media || 'noise'),
       mediaDevices: String(privacy.mediaDevices || ''),
-      mediaLabels: privacy.mediaLabels && typeof privacy.mediaLabels === 'object' ? {
-        audioinput: String(privacy.mediaLabels.audioinput || privacy.mediaLabels.input || '').slice(0, 200),
-        videoinput: String(privacy.mediaLabels.videoinput || privacy.mediaLabels.video || '').slice(0, 200),
-        audiooutput: String(privacy.mediaLabels.audiooutput || privacy.mediaLabels.output || '').slice(0, 200),
-      } : { audioinput: '', videoinput: '', audiooutput: '' },
+      mediaLabels:
+        privacy.mediaLabels && typeof privacy.mediaLabels === 'object'
+          ? {
+              audioinput: String(privacy.mediaLabels.audioinput || privacy.mediaLabels.input || '').slice(
+                0,
+                200
+              ),
+              videoinput: String(privacy.mediaLabels.videoinput || privacy.mediaLabels.video || '').slice(
+                0,
+                200
+              ),
+              audiooutput: String(privacy.mediaLabels.audiooutput || privacy.mediaLabels.output || '').slice(
+                0,
+                200
+              ),
+            }
+          : { audioinput: '', videoinput: '', audiooutput: '' },
       battery: String(privacy.battery || 'noise'),
       clientRects: String(privacy.clientRects || 'noise'),
       speech: String(privacy.speech || 'noise'),
@@ -373,11 +475,25 @@ function normalizeProfileSettings(profile) {
       stabilityMaxHeight: Math.min(4096, Math.max(64, Number(privacy.stabilityMaxHeight) || 600)),
       stabilitySquare: Math.min(64, Math.max(2, Number(privacy.stabilitySquare) || 8)),
       stabilityHosts: Array.isArray(privacy.stabilityHosts)
-        ? privacy.stabilityHosts.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 800)
-        : String(privacy.stabilityHosts || '').split(/[\r\n,;\s]+/).map((s) => s.trim()).filter(Boolean).slice(0, 800),
+        ? privacy.stabilityHosts
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+            .slice(0, 800)
+        : String(privacy.stabilityHosts || '')
+            .split(/[\r\n,;\s]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, 800),
       stabilitySkipHosts: Array.isArray(privacy.stabilitySkipHosts)
-        ? privacy.stabilitySkipHosts.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 200)
-        : String(privacy.stabilitySkipHosts || '').split(/[\r\n,;\s]+/).map((s) => s.trim()).filter(Boolean).slice(0, 200),
+        ? privacy.stabilitySkipHosts
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+            .slice(0, 200)
+        : String(privacy.stabilitySkipHosts || '')
+            .split(/[\r\n,;\s]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, 200),
       // Preserve 0 (= 真实). Empty = 自动. Never use `||` which turns 0 into 自动.
       cores: (() => {
         const raw = privacy.cores ?? privacy.fingerprint?.cores;
@@ -391,21 +507,25 @@ function normalizeProfileSettings(profile) {
         const n = Number(raw);
         return Number.isFinite(n) ? n : '';
       })(),
-      fingerprint: privacy.fingerprint && typeof privacy.fingerprint === 'object' ? {
-        ...privacy.fingerprint,
-        cores: (() => {
-          const raw = privacy.cores ?? privacy.fingerprint?.cores;
-          if (raw === '' || raw === null || raw === undefined) return privacy.fingerprint.cores ?? null;
-          const n = Number(raw);
-          return Number.isFinite(n) ? n : (privacy.fingerprint.cores ?? null);
-        })(),
-        memory: (() => {
-          const raw = privacy.memory ?? privacy.fingerprint?.memory;
-          if (raw === '' || raw === null || raw === undefined) return privacy.fingerprint.memory ?? null;
-          const n = Number(raw);
-          return Number.isFinite(n) ? n : (privacy.fingerprint.memory ?? null);
-        })(),
-      } : {},
+      fingerprint:
+        privacy.fingerprint && typeof privacy.fingerprint === 'object'
+          ? {
+              ...privacy.fingerprint,
+              cores: (() => {
+                const raw = privacy.cores ?? privacy.fingerprint?.cores;
+                if (raw === '' || raw === null || raw === undefined) return privacy.fingerprint.cores ?? null;
+                const n = Number(raw);
+                return Number.isFinite(n) ? n : (privacy.fingerprint.cores ?? null);
+              })(),
+              memory: (() => {
+                const raw = privacy.memory ?? privacy.fingerprint?.memory;
+                if (raw === '' || raw === null || raw === undefined)
+                  return privacy.fingerprint.memory ?? null;
+                const n = Number(raw);
+                return Number.isFinite(n) ? n : (privacy.fingerprint.memory ?? null);
+              })(),
+            }
+          : {},
     },
     advanced: {
       saveCookies: advanced.saveCookies !== false,
@@ -450,8 +570,13 @@ function normalizeOptionalWebUrl(value) {
   if (/^about:(blank|newtab)$/i.test(raw)) return raw.toLowerCase();
   const normalized = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
   let parsed;
-  try { parsed = new URL(normalized); } catch (_) { throw new Error(tx('打开网页地址无效')); }
-  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error(tx('打开网页仅支持 HTTP 或 HTTPS 地址'));
+  try {
+    parsed = new URL(normalized);
+  } catch (_) {
+    throw new Error(tx('打开网页地址无效'));
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol))
+    throw new Error(tx('打开网页仅支持 HTTP 或 HTTPS 地址'));
   return parsed.href;
 }
 
@@ -484,7 +609,16 @@ function cloneProfilePreferences(profile) {
 function mergeEngineExitState(values) {
   if (!Array.isArray(values) || !values.length) return false;
   const byId = new Map(values.map((item) => [item.id, item]));
-  const exitFields = ['exitIp', 'exitCountryCode', 'exitTimezone', 'exitLatitude', 'exitLongitude', 'exitCheckedAt', 'exitLatencyMs', 'exitNetworkType'];
+  const exitFields = [
+    'exitIp',
+    'exitCountryCode',
+    'exitTimezone',
+    'exitLatitude',
+    'exitLongitude',
+    'exitCheckedAt',
+    'exitLatencyMs',
+    'exitNetworkType',
+  ];
   let changed = false;
   ui.profiles = ui.profiles.map((local) => {
     const remote = byId.get(local.id);
@@ -492,7 +626,10 @@ function mergeEngineExitState(values) {
     const next = { ...local };
     for (const field of exitFields) {
       if (remote[field] === undefined || remote[field] === null || remote[field] === '') continue;
-      if (next[field] !== remote[field]) { next[field] = remote[field]; changed = true; }
+      if (next[field] !== remote[field]) {
+        next[field] = remote[field];
+        changed = true;
+      }
     }
     return next;
   });
@@ -510,14 +647,20 @@ function loadUi() {
 
 function normalizeGroup(raw, index = 0) {
   const value = raw && typeof raw === 'object' ? raw : {};
-  const id = String(value.id || createGroupId()).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48) || createGroupId();
+  const id =
+    String(value.id || createGroupId())
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 48) || createGroupId();
   const savedColor = String(value.color || '').trim();
   const color = /^#[0-9a-fA-F]{6}$/.test(savedColor)
     ? savedColor.toUpperCase()
     : GROUP_COLORS[index % GROUP_COLORS.length];
   return {
     id,
-    name: String(value.name || t('groups.unnamed')).trim().slice(0, 40) || t('groups.unnamed'),
+    name:
+      String(value.name || t('groups.unnamed'))
+        .trim()
+        .slice(0, 40) || t('groups.unnamed'),
     color,
     note: String(value.note || '').slice(0, 200),
     sort: Number.isFinite(Number(value.sort)) ? Number(value.sort) : index,
@@ -543,7 +686,10 @@ function migrateGroups(rawGroups, profiles) {
     if (legacyName) {
       let found = groups.find((g) => g.name === legacyName);
       if (!found) {
-        found = normalizeGroup({ id: createGroupId(), name: legacyName, color: GROUP_COLORS[groups.length % GROUP_COLORS.length] }, groups.length);
+        found = normalizeGroup(
+          { id: createGroupId(), name: legacyName, color: GROUP_COLORS[groups.length % GROUP_COLORS.length] },
+          groups.length
+        );
         groups.push(found);
         validIds.add(found.id);
       }
@@ -554,20 +700,28 @@ function migrateGroups(rawGroups, profiles) {
       profile.groupId = UNGROUPED_ID;
     }
   }
-  groups.sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name, 'zh'));
+  groups.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'zh'));
   return groups;
 }
 
 function migrateProfileNumbers(profiles, savedNextNumber) {
-  const used = new Set(); let cursor = 1;
+  const used = new Set();
+  let cursor = 1;
   const migrated = profiles.map((profile) => {
     let number = positiveProfileNumber(profile?.number);
-    if (!number || used.has(number)) { while (used.has(cursor)) cursor += 1; number = cursor; }
-    used.add(number); cursor = Math.max(cursor, number + 1);
+    if (!number || used.has(number)) {
+      while (used.has(cursor)) cursor += 1;
+      number = cursor;
+    }
+    used.add(number);
+    cursor = Math.max(cursor, number + 1);
     return normalizeProfileSettings({ ...profile, number, name: String(number) });
   });
   const maximum = used.size ? Math.max(...used) : 0;
-  return { profiles: migrated, nextProfileNumber: Math.max(positiveProfileNumber(savedNextNumber), maximum + 1, 1) };
+  return {
+    profiles: migrated,
+    nextProfileNumber: Math.max(positiveProfileNumber(savedNextNumber), maximum + 1, 1),
+  };
 }
 
 const loadedUi = loadUi();
@@ -576,16 +730,19 @@ const migratedGroups = migrateGroups(loadedUi.groups, migratedUi.profiles);
 let ui = { ...loadedUi, ...migratedUi, groups: migratedGroups };
 // Immediate migration: purge secrets from any older localStorage dumps.
 try {
-  localStorage.setItem(UI_KEY, JSON.stringify({
-    ...ui,
-    profiles: (ui.profiles || []).map((item) => redactProfileForStorage(item)),
-  }));
+  localStorage.setItem(
+    UI_KEY,
+    JSON.stringify({
+      ...ui,
+      profiles: (ui.profiles || []).map((item) => redactProfileForStorage(item)),
+    })
+  );
 } catch (_) {}
 
 let activeGroupFilter = 'all'; // 'all' | 'ungrouped' | groupId
 
 function listGroups() {
-  return [...(ui.groups || [])].sort((a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name, 'zh'));
+  return [...(ui.groups || [])].sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'zh'));
 }
 
 function findGroup(id) {
@@ -656,7 +813,8 @@ function fillGroupSelect(selectEl, selectedId = '', { includeAll = false, includ
     selectEl.append(opt);
   }
   if (selectedId === 'all' && includeAll) selectEl.value = 'all';
-  else if (selectedId && [...selectEl.options].some((o) => o.value === selectedId)) selectEl.value = selectedId;
+  else if (selectedId && [...selectEl.options].some((o) => o.value === selectedId))
+    selectEl.value = selectedId;
   else if (includeUngrouped) selectEl.value = UNGROUPED_ID;
 }
 
@@ -679,9 +837,10 @@ const ENV_ICON_PALETTE = [
 ];
 
 function envBadgeColors(profileOrNumber) {
-  const n = typeof profileOrNumber === 'object'
-    ? positiveProfileNumber(profileOrNumber?.number) || 0
-    : Number(profileOrNumber) || 0;
+  const n =
+    typeof profileOrNumber === 'object'
+      ? positiveProfileNumber(profileOrNumber?.number) || 0
+      : Number(profileOrNumber) || 0;
   return ENV_ICON_PALETTE[Math.abs(n) % ENV_ICON_PALETTE.length];
 }
 
@@ -752,14 +911,16 @@ function buildEnvIdentity(profile) {
   box.append(buildEnvBadge(profile, UI_MARK_SIZE));
   const text = document.createElement('div');
   text.className = 'env-identity-text';
-  const titleText = (profile.title && String(profile.title).trim() && String(profile.title) !== String(n))
-    ? String(profile.title).trim()
-    : t('profiles.envName', { n });
+  const titleText =
+    profile.title && String(profile.title).trim() && String(profile.title) !== String(n)
+      ? String(profile.title).trim()
+      : t('profiles.envName', { n });
   text.append(element('strong', '', titleText));
-  const sub = (profile.tag ? localizeSystemLabel(profile.tag) : '')
-    || (profile.platform?.startUrl ? String(profile.platform.startUrl).slice(0, 42) : '')
-    || (profile.platform?.type && profile.platform.type !== 'other' ? String(profile.platform.type) : '')
-    || t('profiles.envName', { n });
+  const sub =
+    (profile.tag ? localizeSystemLabel(profile.tag) : '') ||
+    (profile.platform?.startUrl ? String(profile.platform.startUrl).slice(0, 42) : '') ||
+    (profile.platform?.type && profile.platform.type !== 'other' ? String(profile.platform.type) : '') ||
+    t('profiles.envName', { n });
   text.append(element('small', '', sub));
   box.append(text);
   return box;
@@ -774,7 +935,9 @@ function buildEnvBrowserCell(profile) {
   const label = document.createElement('div');
   label.className = 'env-browser-label';
   label.append(element('strong', '', t('profiles.envName', { n })));
-  const kernel = String(profile.browser || '').replace(/^Google\s+/i, '').trim();
+  const kernel = String(profile.browser || '')
+    .replace(/^Google\s+/i, '')
+    .trim();
   // Neutral kernel label — avoid "Chrome" product branding in list
   let kernelLabel = t('profiles.kernel.independent');
   if (/edge/i.test(kernel)) kernelLabel = t('profiles.kernel.edge');
@@ -787,13 +950,19 @@ function buildEnvBrowserCell(profile) {
 }
 
 function nextProfileNumber() {
-  const maximum = ui.profiles.reduce((value, profile) => Math.max(value, positiveProfileNumber(profile.number)), 0);
+  const maximum = ui.profiles.reduce(
+    (value, profile) => Math.max(value, positiveProfileNumber(profile.number)),
+    0
+  );
   return Math.max(positiveProfileNumber(ui.nextProfileNumber), maximum + 1, 1);
 }
 
 function createInternalProfileId(number, usedIds = new Set(ui.profiles.map((profile) => profile.id))) {
-  const base = 'env-' + String(number).padStart(3, '0'); if (!usedIds.has(base)) return base;
-  let suffix = 2; while (usedIds.has(base + '-' + suffix)) suffix += 1; return base + '-' + suffix;
+  const base = 'env-' + String(number).padStart(3, '0');
+  if (!usedIds.has(base)) return base;
+  let suffix = 2;
+  while (usedIds.has(base + '-' + suffix)) suffix += 1;
+  return base + '-' + suffix;
 }
 
 let engineProfiles = [];
@@ -821,16 +990,36 @@ let selectedSessions = new Set();
 let currentExtension = null;
 let syncState = { active: false, master: null, selected: [] };
 const SYNC_SETTINGS_KEY = 'openbrowser-sync-settings-v13';
-const DEFAULT_SYNC_SETTINGS = Object.freeze({ keyboard: true, click: true, scroll: true, track: true, delayClick: false, delayInput: false, inputMinMs: 300, inputMaxMs: 300, clickMinMs: 100, clickMaxMs: 300 });
+const DEFAULT_SYNC_SETTINGS = Object.freeze({
+  keyboard: true,
+  click: true,
+  scroll: true,
+  track: true,
+  delayClick: false,
+  delayInput: false,
+  inputMinMs: 300,
+  inputMaxMs: 300,
+  clickMinMs: 100,
+  clickMaxMs: 300,
+});
 function normalizeSyncSettings(value = {}) {
   const number = (name, fallback) => Math.max(0, Math.min(5000, Number(value[name] ?? fallback) || 0));
   const result = { ...DEFAULT_SYNC_SETTINGS, ...value };
-  for (const name of ['keyboard', 'click', 'scroll', 'track', 'delayClick', 'delayInput']) result[name] = value[name] === undefined ? DEFAULT_SYNC_SETTINGS[name] : value[name] !== false;
-  result.inputMinMs = number('inputMinMs', 300); result.inputMaxMs = Math.max(result.inputMinMs, number('inputMaxMs', result.inputMinMs));
-  result.clickMinMs = number('clickMinMs', 100); result.clickMaxMs = Math.max(result.clickMinMs, number('clickMaxMs', result.clickMinMs));
+  for (const name of ['keyboard', 'click', 'scroll', 'track', 'delayClick', 'delayInput'])
+    result[name] = value[name] === undefined ? DEFAULT_SYNC_SETTINGS[name] : value[name] !== false;
+  result.inputMinMs = number('inputMinMs', 300);
+  result.inputMaxMs = Math.max(result.inputMinMs, number('inputMaxMs', result.inputMinMs));
+  result.clickMinMs = number('clickMinMs', 100);
+  result.clickMaxMs = Math.max(result.clickMinMs, number('clickMaxMs', result.clickMinMs));
   return result;
 }
-let syncSettings = (() => { try { return normalizeSyncSettings(JSON.parse(localStorage.getItem(SYNC_SETTINGS_KEY) || '{}')); } catch (_) { return { ...DEFAULT_SYNC_SETTINGS }; } })();
+let syncSettings = (() => {
+  try {
+    return normalizeSyncSettings(JSON.parse(localStorage.getItem(SYNC_SETTINGS_KEY) || '{}'));
+  } catch (_) {
+    return { ...DEFAULT_SYNC_SETTINGS };
+  }
+})();
 let pendingDeleteProfiles = [];
 let editingProfileId = null;
 let editorNetworkResult = null;
@@ -850,7 +1039,13 @@ let specifiedTextGroupSerial = 0;
 
 function createSpecifiedTextGroup(index = 0) {
   specifiedTextGroupSerial += 1;
-  return { id: 'text-group-' + Date.now().toString(36) + '-' + specifiedTextGroupSerial, mode: 'sequence', text: '', cursor: 0, index };
+  return {
+    id: 'text-group-' + Date.now().toString(36) + '-' + specifiedTextGroupSerial,
+    mode: 'sequence',
+    text: '',
+    cursor: 0,
+    index,
+  };
 }
 
 function normalizeSpecifiedTextGroups(value) {
@@ -858,14 +1053,25 @@ function normalizeSpecifiedTextGroups(value) {
   return value.slice(0, SPECIFIED_TEXT_GROUP_LIMIT).map((group, index) => {
     const source = group && typeof group === 'object' ? group : {};
     const fallback = createSpecifiedTextGroup(index);
-    const id = String(source.id || fallback.id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || fallback.id;
-    return { id, mode: source.mode === 'random' ? 'random' : 'sequence', text: String(source.text || '').slice(0, 500000), cursor: Math.max(0, Number.parseInt(source.cursor, 10) || 0), index };
+    const id =
+      String(source.id || fallback.id)
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 80) || fallback.id;
+    return {
+      id,
+      mode: source.mode === 'random' ? 'random' : 'sequence',
+      text: String(source.text || '').slice(0, 500000),
+      cursor: Math.max(0, Number.parseInt(source.cursor, 10) || 0),
+      index,
+    };
   });
 }
 
 function loadSpecifiedTextGroups() {
   try {
-    const groups = normalizeSpecifiedTextGroups(JSON.parse(localStorage.getItem(SPECIFIED_TEXT_GROUPS_KEY) || '[]'));
+    const groups = normalizeSpecifiedTextGroups(
+      JSON.parse(localStorage.getItem(SPECIFIED_TEXT_GROUPS_KEY) || '[]')
+    );
     if (groups.length) return groups;
   } catch (_) {}
   return [createSpecifiedTextGroup(0)];
@@ -875,7 +1081,12 @@ let specifiedTextGroups = loadSpecifiedTextGroups();
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
-const element = (tag, className, text) => { const value = document.createElement(tag); if (className) value.className = className; if (text !== undefined) value.textContent = text; return value; };
+const element = (tag, className, text) => {
+  const value = document.createElement(tag);
+  if (className) value.className = className;
+  if (text !== undefined) value.textContent = text;
+  return value;
+};
 function redactProxyForStorage(proxy) {
   const raw = String(proxy || '').trim();
   if (!raw || /^(direct|offline|none)$/i.test(raw)) return raw || 'Direct';
@@ -919,22 +1130,58 @@ const save = () => {
     localStorage.setItem(UI_KEY, JSON.stringify(safe));
   } catch (_) {}
 };
-function textDelayRange() { return syncSettings.delayInput ? [syncSettings.inputMinMs / 1000, syncSettings.inputMaxMs / 1000] : [0, 0]; }
+function textDelayRange() {
+  return syncSettings.delayInput ? [syncSettings.inputMinMs / 1000, syncSettings.inputMaxMs / 1000] : [0, 0];
+}
 function fillSyncSettingsForm() {
-  const checks = { '#settings-sync-keyboard': 'keyboard', '#settings-sync-click': 'click', '#settings-sync-scroll': 'scroll', '#settings-sync-track': 'track', '#settings-delay-click': 'delayClick', '#settings-delay-input': 'delayInput' };
-  for (const [selector, name] of Object.entries(checks)) { const input = $(selector); if (input) input.checked = Boolean(syncSettings[name]); }
-  const values = { '#settings-input-min': 'inputMinMs', '#settings-input-max': 'inputMaxMs', '#settings-click-min': 'clickMinMs', '#settings-click-max': 'clickMaxMs' };
-  for (const [selector, name] of Object.entries(values)) { const input = $(selector); if (input) input.value = syncSettings[name]; }
+  const checks = {
+    '#settings-sync-keyboard': 'keyboard',
+    '#settings-sync-click': 'click',
+    '#settings-sync-scroll': 'scroll',
+    '#settings-sync-track': 'track',
+    '#settings-delay-click': 'delayClick',
+    '#settings-delay-input': 'delayInput',
+  };
+  for (const [selector, name] of Object.entries(checks)) {
+    const input = $(selector);
+    if (input) input.checked = Boolean(syncSettings[name]);
+  }
+  const values = {
+    '#settings-input-min': 'inputMinMs',
+    '#settings-input-max': 'inputMaxMs',
+    '#settings-click-min': 'clickMinMs',
+    '#settings-click-max': 'clickMaxMs',
+  };
+  for (const [selector, name] of Object.entries(values)) {
+    const input = $(selector);
+    if (input) input.value = syncSettings[name];
+  }
   if ($('#delay-input')) $('#delay-input').checked = syncSettings.delayInput;
   if ($('#delay-click')) $('#delay-click').checked = syncSettings.delayClick;
 }
 function syncSettingsFromForm() {
-  return normalizeSyncSettings({ keyboard: $('#settings-sync-keyboard').checked, click: $('#settings-sync-click').checked, scroll: $('#settings-sync-scroll').checked, track: $('#settings-sync-track').checked, delayClick: $('#settings-delay-click').checked, delayInput: $('#settings-delay-input').checked, inputMinMs: $('#settings-input-min').value, inputMaxMs: $('#settings-input-max').value, clickMinMs: $('#settings-click-min').value, clickMaxMs: $('#settings-click-max').value });
+  return normalizeSyncSettings({
+    keyboard: $('#settings-sync-keyboard').checked,
+    click: $('#settings-sync-click').checked,
+    scroll: $('#settings-sync-scroll').checked,
+    track: $('#settings-sync-track').checked,
+    delayClick: $('#settings-delay-click').checked,
+    delayInput: $('#settings-delay-input').checked,
+    inputMinMs: $('#settings-input-min').value,
+    inputMaxMs: $('#settings-input-max').value,
+    clickMinMs: $('#settings-click-min').value,
+    clickMaxMs: $('#settings-click-max').value,
+  });
 }
 async function applySyncSettings(value, announce = false) {
-  syncSettings = normalizeSyncSettings(value); localStorage.setItem(SYNC_SETTINGS_KEY, JSON.stringify(syncSettings)); fillSyncSettingsForm();
+  syncSettings = normalizeSyncSettings(value);
+  localStorage.setItem(SYNC_SETTINGS_KEY, JSON.stringify(syncSettings));
+  fillSyncSettingsForm();
   await window.ops.setSyncSettings(syncSettings);
-  if (announce) toast('\u540c\u6b65\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff0c\u9f20\u6807\u548c\u952e\u76d8\u5f00\u5173\u5df2\u7acb\u5373\u751f\u6548');
+  if (announce)
+    toast(
+      '\u540c\u6b65\u8bbe\u7f6e\u5df2\u4fdd\u5b58\uff0c\u9f20\u6807\u548c\u952e\u76d8\u5f00\u5173\u5df2\u7acb\u5373\u751f\u6548'
+    );
 }
 const UI_THEME_KEY = 'openbrowser-ui-skin-v1';
 const UI_COLOR_MODE_KEY = 'openbrowser-ui-color-mode-v1';
@@ -992,7 +1239,10 @@ function syncThemedSelect(select) {
   if (!button) return;
   button.querySelector('.themed-select-value').textContent = selectLabel(select);
   button.disabled = select.disabled;
-  button.setAttribute('aria-label', select.getAttribute('aria-label') || select.labels?.[0]?.textContent?.trim() || selectLabel(select));
+  button.setAttribute(
+    'aria-label',
+    select.getAttribute('aria-label') || select.labels?.[0]?.textContent?.trim() || selectLabel(select)
+  );
   if (openSelectMenu?.select === select) {
     const focusedIndex = Number(openSelectMenu.menu.querySelector(':focus')?.dataset.optionIndex);
     openThemedSelect(select, button, Number.isInteger(focusedIndex) ? focusedIndex : null);
@@ -1003,10 +1253,7 @@ function positionSelectMenu(menu, button) {
   const rect = button.getBoundingClientRect();
   const gap = 4;
   const viewportPadding = 8;
-  const menuWidth = Math.min(
-    Math.max(rect.width, 160),
-    window.innerWidth - viewportPadding * 2
-  );
+  const menuWidth = Math.min(Math.max(rect.width, 160), window.innerWidth - viewportPadding * 2);
   const menuLeft = Math.min(
     Math.max(rect.left, viewportPadding),
     window.innerWidth - menuWidth - viewportPadding
@@ -1089,7 +1336,10 @@ function openThemedSelect(select, button, focusIndex = null) {
       const requested = Number.isInteger(focusIndex)
         ? menu.querySelector(`[data-option-index="${focusIndex}"]:not(:disabled)`)
         : null;
-      const active = requested || menu.querySelector('.selected:not(:disabled)') || menu.querySelector('.themed-select-option:not(:disabled)');
+      const active =
+        requested ||
+        menu.querySelector('.selected:not(:disabled)') ||
+        menu.querySelector('.themed-select-option:not(:disabled)');
       active?.scrollIntoView({ block: 'nearest' });
       active?.focus({ preventScroll: true });
     } catch (_) {}
@@ -1140,17 +1390,19 @@ function enhanceSelect(select) {
     const current = enabled.findIndex(({ index }) => index === select.selectedIndex);
     let target = 0;
     if (event.key === 'End') target = enabled.length - 1;
-    else if (event.key === 'ArrowUp') target = current < 0 ? enabled.length - 1 : (current - 1 + enabled.length) % enabled.length;
+    else if (event.key === 'ArrowUp')
+      target = current < 0 ? enabled.length - 1 : (current - 1 + enabled.length) % enabled.length;
     else if (event.key === 'ArrowDown') target = current < 0 ? 0 : (current + 1) % enabled.length;
     openThemedSelect(select, button, enabled[target].index);
   });
   select.addEventListener('change', () => syncThemedSelect(select));
   new MutationObserver((mutations) => {
-    const needsSync = mutations.some((mutation) =>
-      mutation.type === 'childList'
-      || mutation.type === 'characterData'
-      || mutation.target === select
-      || mutation.target instanceof HTMLOptionElement
+    const needsSync = mutations.some(
+      (mutation) =>
+        mutation.type === 'childList' ||
+        mutation.type === 'characterData' ||
+        mutation.target === select ||
+        mutation.target instanceof HTMLOptionElement
     );
     if (needsSync) syncThemedSelect(select);
   }).observe(select, {
@@ -1174,7 +1426,10 @@ function syncThemedMultiSelect(select, { rebuild = false } = {}) {
       item.type = 'button';
       item.dataset.optionIndex = String(index);
       item.setAttribute('role', 'option');
-      item.append(element('span', 'themed-multiselect-check', '✓'), element('span', 'themed-multiselect-label', option.textContent.trim()));
+      item.append(
+        element('span', 'themed-multiselect-check', '✓'),
+        element('span', 'themed-multiselect-label', option.textContent.trim())
+      );
       list.append(item);
     });
   }
@@ -1191,8 +1446,11 @@ function syncThemedMultiSelect(select, { rebuild = false } = {}) {
   const focusedItem = Number.isInteger(focusedIndex)
     ? list.querySelector(`[data-option-index="${focusedIndex}"]:not(:disabled)`)
     : null;
-  const tabStop = focusedItem || enabledItems.find((item) => item.classList.contains('selected')) || enabledItems[0];
-  [...list.children].forEach((item) => { item.tabIndex = item === tabStop ? 0 : -1; });
+  const tabStop =
+    focusedItem || enabledItems.find((item) => item.classList.contains('selected')) || enabledItems[0];
+  [...list.children].forEach((item) => {
+    item.tabIndex = item === tabStop ? 0 : -1;
+  });
   if (focusedItem) focusedItem.focus({ preventScroll: true });
 }
 
@@ -1204,7 +1462,10 @@ function enhanceMultiSelect(select) {
   list.id = `${controlId}-list`;
   list.setAttribute('role', 'listbox');
   list.setAttribute('aria-multiselectable', 'true');
-  list.setAttribute('aria-label', select.getAttribute('aria-label') || select.labels?.[0]?.textContent?.trim() || tx('选择多个选项'));
+  list.setAttribute(
+    'aria-label',
+    select.getAttribute('aria-label') || select.labels?.[0]?.textContent?.trim() || tx('选择多个选项')
+  );
   select.before(wrap);
   wrap.append(select, list);
   select.classList.add('themed-select-native');
@@ -1245,15 +1506,24 @@ function enhanceMultiSelect(select) {
       return;
     } else return;
     event.preventDefault();
-    enabled.forEach((entry) => { entry.tabIndex = entry === enabled[next] ? 0 : -1; });
+    enabled.forEach((entry) => {
+      entry.tabIndex = entry === enabled[next] ? 0 : -1;
+    });
     enabled[next]?.focus({ preventScroll: true });
     enabled[next]?.scrollIntoView({ block: 'nearest' });
   });
   select.addEventListener('change', () => syncThemedMultiSelect(select));
   new MutationObserver((mutations) => {
-    const rebuild = mutations.some((mutation) => mutation.type === 'childList' || mutation.target instanceof HTMLOptionElement);
+    const rebuild = mutations.some(
+      (mutation) => mutation.type === 'childList' || mutation.target instanceof HTMLOptionElement
+    );
     syncThemedMultiSelect(select, { rebuild });
-  }).observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'label', 'selected'] });
+  }).observe(select, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['disabled', 'label', 'selected'],
+  });
   syncThemedMultiSelect(select, { rebuild: true });
 }
 
@@ -1269,13 +1539,18 @@ function syncThemedSelects(root = document) {
 }
 
 function systemPrefersDark() {
-  try { return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches); } catch (_) { return false; }
+  try {
+    return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches);
+  } catch (_) {
+    return false;
+  }
 }
 
 // Preference is 'light' | 'dark' | 'auto'; 'auto' follows the OS appearance.
 // Returns the effective mode 'light' | 'dark'. prefersDark is injectable for testing.
 function resolveColorMode(pref, prefersDark) {
-  if (pref === 'auto') return (prefersDark === undefined ? systemPrefersDark() : prefersDark) ? 'dark' : 'light';
+  if (pref === 'auto')
+    return (prefersDark === undefined ? systemPrefersDark() : prefersDark) ? 'dark' : 'light';
   return pref === 'dark' ? 'dark' : 'light';
 }
 
@@ -1294,9 +1569,13 @@ let uiColorMode = resolveColorMode(uiColorPreference);
 try {
   const uiAppearanceQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
   if (uiAppearanceQuery) {
-    const onSystemAppearanceChange = () => { if (uiColorPreference === 'auto') applyColorMode('auto', false); };
-    if (typeof uiAppearanceQuery.addEventListener === 'function') uiAppearanceQuery.addEventListener('change', onSystemAppearanceChange);
-    else if (typeof uiAppearanceQuery.addListener === 'function') uiAppearanceQuery.addListener(onSystemAppearanceChange);
+    const onSystemAppearanceChange = () => {
+      if (uiColorPreference === 'auto') applyColorMode('auto', false);
+    };
+    if (typeof uiAppearanceQuery.addEventListener === 'function')
+      uiAppearanceQuery.addEventListener('change', onSystemAppearanceChange);
+    else if (typeof uiAppearanceQuery.addListener === 'function')
+      uiAppearanceQuery.addListener(onSystemAppearanceChange);
   }
 } catch (_) {}
 
@@ -1315,11 +1594,13 @@ function syncAppearanceControls(theme) {
 }
 
 function applyColorMode(pref, persist = true) {
-  uiColorPreference = (pref === 'dark' || pref === 'light' || pref === 'auto') ? pref : 'auto';
+  uiColorPreference = pref === 'dark' || pref === 'light' || pref === 'auto' ? pref : 'auto';
   uiColorMode = resolveColorMode(uiColorPreference);
   document.documentElement.dataset.colorMode = uiColorMode;
   if (persist) {
-    try { localStorage.setItem(UI_COLOR_MODE_KEY, uiColorPreference); } catch (_) {}
+    try {
+      localStorage.setItem(UI_COLOR_MODE_KEY, uiColorPreference);
+    } catch (_) {}
   }
   const theme = document.documentElement.dataset.uiTheme || 'pixel-workstation';
   const definition = UI_THEMES[theme];
@@ -1330,7 +1611,10 @@ function applyColorMode(pref, persist = true) {
   }
   syncAppearanceControls(theme);
   try {
-    window.ops?.setUiChrome?.({ themeId: theme, colorMode: theme === 'element-admin' ? uiColorMode : definition?.colorScheme || 'light' });
+    window.ops?.setUiChrome?.({
+      themeId: theme,
+      colorMode: theme === 'element-admin' ? uiColorMode : definition?.colorScheme || 'light',
+    });
   } catch (_) {}
   requestAnimationFrame(() => {
     refreshIcons();
@@ -1347,13 +1631,19 @@ function applyUiTheme(value, persist = true) {
   document.documentElement.dataset.uiTheme = theme;
   const effectiveScheme = theme === 'element-admin' ? uiColorMode : definition.colorScheme;
   document.documentElement.style.colorScheme = effectiveScheme;
-  document.documentElement.dataset.colorMode = theme === 'element-admin' ? uiColorMode : definition.colorScheme;
-  if (persist) { try { localStorage.setItem(UI_THEME_KEY, theme); } catch (_) {} }
+  document.documentElement.dataset.colorMode =
+    theme === 'element-admin' ? uiColorMode : definition.colorScheme;
+  if (persist) {
+    try {
+      localStorage.setItem(UI_THEME_KEY, theme);
+    } catch (_) {}
+  }
   const current = $('#theme-current');
   if (current) {
-    current.textContent = theme === 'element-admin'
-      ? `${themeDisplayName(theme)} · ${uiColorPreference === 'auto' ? t('theme.auto') : (uiColorMode === 'dark' ? t('theme.dark') : t('theme.light'))}`
-      : themeDisplayName(theme);
+    current.textContent =
+      theme === 'element-admin'
+        ? `${themeDisplayName(theme)} · ${uiColorPreference === 'auto' ? t('theme.auto') : uiColorMode === 'dark' ? t('theme.dark') : t('theme.light')}`
+        : themeDisplayName(theme);
   }
   $$('[data-ui-theme-option]').forEach((button) => {
     const active = button.dataset.uiThemeOption === theme;
@@ -1409,7 +1699,10 @@ try {
       } catch (_) {}
     }
     // Re-read engine badge with new locale
-    window.ops?.getInfo?.().then((info) => updateEngineBadge(info)).catch(() => {});
+    window.ops
+      ?.getInfo?.()
+      .then((info) => updateEngineBadge(info))
+      .catch(() => {});
     if (typeof refreshIcons === 'function') refreshIcons();
     if (typeof syncThemedSelects === 'function') syncThemedSelects();
     document.documentElement.dataset.uiLocale = resolved;
@@ -1426,14 +1719,34 @@ try {
 } catch (_) {}
 enhanceSelects();
 new MutationObserver((records) => {
-  records.forEach((record) => record.addedNodes.forEach((node) => {
-    if (node instanceof Element) enhanceSelects(node);
-  }));
+  records.forEach((record) =>
+    record.addedNodes.forEach((node) => {
+      if (node instanceof Element) enhanceSelects(node);
+    })
+  );
 }).observe(document.body, { childList: true, subtree: true });
 
-function toast(message) { const value = $('#toast'); value.textContent = message; value.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => value.classList.remove('show'), 2400); }
-function log(module, message) { ui.logs.unshift({ time: new Date().toLocaleTimeString('zh-CN', { hour12: false }), module, message }); ui.logs = ui.logs.slice(0, 200); save(); renderLogs(); }
-function initials(name) { return name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(); }
+function toast(message) {
+  const value = $('#toast');
+  value.textContent = message;
+  value.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => value.classList.remove('show'), 2400);
+}
+function log(module, message) {
+  ui.logs.unshift({ time: new Date().toLocaleTimeString('zh-CN', { hour12: false }), module, message });
+  ui.logs = ui.logs.slice(0, 200);
+  save();
+  renderLogs();
+}
+function initials(name) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 function isDirectProxy(value) {
   return !value || /^(direct|offline|none)$/i.test(String(value).trim());
 }
@@ -1443,7 +1756,15 @@ function maskProxy(value) {
   if (isDirectProxy(raw)) return t('net.localDirect');
   try {
     const parsed = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? new URL(raw) : null;
-    if (parsed) return parsed.protocol.replace(':', '').toUpperCase() + ' · ' + parsed.hostname + ':' + parsed.port + (parsed.username ? ' · ' + t('net.auth') : '');
+    if (parsed)
+      return (
+        parsed.protocol.replace(':', '').toUpperCase() +
+        ' · ' +
+        parsed.hostname +
+        ':' +
+        parsed.port +
+        (parsed.username ? ' · ' + t('net.auth') : '')
+      );
   } catch (_) {}
   const parts = raw.split(':');
   return parts.length >= 4 ? 'SOCKS5 · ' + parts[0] + ':' + parts[1] + ' · ' + t('net.auth') : raw;
@@ -1463,20 +1784,48 @@ function networkModeBadge(proxy) {
   }
   return wrap;
 }
-function countryFlag(code) { const value = String(code || '').toUpperCase(); return /^[A-Z]{2}$/.test(value) ? String.fromCodePoint(...[...value].map((char) => 127397 + char.charCodeAt(0))) : '🌐'; }
+function countryFlag(code) {
+  const value = String(code || '').toUpperCase();
+  return /^[A-Z]{2}$/.test(value)
+    ? String.fromCodePoint(...[...value].map((char) => 127397 + char.charCodeAt(0)))
+    : '🌐';
+}
 function countryName(code) {
-  const locale = window.OpenBrowserI18n?.getLocale?.() === 'zh-CN' ? 'zh-CN' : (window.OpenBrowserI18n?.getLocale?.() || 'en');
-  try { return new Intl.DisplayNames([locale], { type: 'region' }).of(String(code || '').toUpperCase()) || code; } catch (_) { return code || ''; }
+  const locale =
+    window.OpenBrowserI18n?.getLocale?.() === 'zh-CN'
+      ? 'zh-CN'
+      : window.OpenBrowserI18n?.getLocale?.() || 'en';
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(String(code || '').toUpperCase()) || code;
+  } catch (_) {
+    return code || '';
+  }
 }
 function parseEditorProxy(value) {
   const raw = String(value || '').trim();
-  if (!raw || /^(direct|offline|none)$/i.test(raw)) return { mode: 'direct', type: 'socks5', host: '', port: '', username: '', password: '' };
+  if (!raw || /^(direct|offline|none)$/i.test(raw))
+    return { mode: 'direct', type: 'socks5', host: '', port: '', username: '', password: '' };
   try {
     const parsed = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? new URL(raw) : null;
-    if (parsed) return { mode: 'custom', type: parsed.protocol.replace(':', '').toLowerCase(), host: parsed.hostname, port: parsed.port, username: decodeURIComponent(parsed.username || ''), password: decodeURIComponent(parsed.password || '') };
+    if (parsed)
+      return {
+        mode: 'custom',
+        type: parsed.protocol.replace(':', '').toLowerCase(),
+        host: parsed.hostname,
+        port: parsed.port,
+        username: decodeURIComponent(parsed.username || ''),
+        password: decodeURIComponent(parsed.password || ''),
+      };
   } catch (_) {}
   const parts = raw.split(':');
-  return { mode: 'custom', type: parts.length >= 4 ? 'socks5' : 'http', host: parts[0] || '', port: parts[1] || '', username: parts[2] || '', password: parts.slice(3).join(':') };
+  return {
+    mode: 'custom',
+    type: parts.length >= 4 ? 'socks5' : 'http',
+    host: parts[0] || '',
+    port: parts[1] || '',
+    username: parts[2] || '',
+    password: parts.slice(3).join(':'),
+  };
 }
 
 function proxyHasCredentials(value) {
@@ -1498,53 +1847,99 @@ function proxyAuthActionForUpdate(currentValue, nextValue, networkMode = 'proxy'
   if (networkMode === 'direct') return null;
   const current = parseEditorProxy(currentValue);
   const next = parseEditorProxy(nextValue);
-  const sameEndpoint = current.mode === 'custom'
-    && next.mode === 'custom'
-    && current.type === next.type
-    && current.host === next.host
-    && String(current.port || '') === String(next.port || '');
-  if (sameEndpoint
-    && (String(current.username || '') || String(current.password || ''))
-    && !String(next.username || '')
-    && !String(next.password || '')) return 'clear';
+  const sameEndpoint =
+    current.mode === 'custom' &&
+    next.mode === 'custom' &&
+    current.type === next.type &&
+    current.host === next.host &&
+    String(current.port || '') === String(next.port || '');
+  if (
+    sameEndpoint &&
+    (String(current.username || '') || String(current.password || '')) &&
+    !String(next.username || '') &&
+    !String(next.password || '')
+  )
+    return 'clear';
   return null;
 }
 
-function editorSet(id, value) { const field = $(id); if (field) field.value = value ?? ''; }
-function editorCheck(id, value) { const field = $(id); if (field) field.checked = Boolean(value); }
-function editorSelectedNetwork() { return document.querySelector('input[name="editor-network"]:checked')?.value || 'direct'; }
+function editorSet(id, value) {
+  const field = $(id);
+  if (field) field.value = value ?? '';
+}
+function editorCheck(id, value) {
+  const field = $(id);
+  if (field) field.checked = Boolean(value);
+}
+function editorSelectedNetwork() {
+  return document.querySelector('input[name="editor-network"]:checked')?.value || 'direct';
+}
 
 function serializeEditorProxy(strict = true) {
   if (editorSelectedNetwork() === 'direct') return 'Direct';
-  const protocol = $('#editor-proxy-type').value; const host = $('#editor-proxy-host').value.trim(); const port = Number($('#editor-proxy-port').value);
-  const username = $('#editor-proxy-user').value; const password = $('#editor-proxy-password').value;
+  const protocol = $('#editor-proxy-type').value;
+  const host = $('#editor-proxy-host').value.trim();
+  const port = Number($('#editor-proxy-port').value);
+  const username = $('#editor-proxy-user').value;
+  const password = $('#editor-proxy-password').value;
   if (!host && !$('#editor-proxy-port').value.trim() && !username && !password) return 'Direct';
   if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
     if (strict) throw new Error(tx('请填写有效的代理主机和端口'));
     return protocol.toUpperCase() + ' · 待完善';
   }
-  const auth = (username || password) ? encodeURIComponent(username || '') + ':' + encodeURIComponent(password || '') + '@' : '';
+  const auth =
+    username || password
+      ? encodeURIComponent(username || '') + ':' + encodeURIComponent(password || '') + '@'
+      : '';
   return protocol + '://' + auth + host + ':' + port;
 }
 
 function editorResolution() {
   const selected = $('#editor-resolution').value;
-  if (selected !== 'custom') { const [width, height] = selected.split('x').map(Number); return { width, height }; }
-  const width = Number($('#editor-width').value); const height = Number($('#editor-height').value);
-  if (!Number.isInteger(width) || width < 640 || width > 7680 || !Number.isInteger(height) || height < 480 || height > 4320) throw new Error(tx('请填写有效的窗口宽度和高度'));
+  if (selected !== 'custom') {
+    const [width, height] = selected.split('x').map(Number);
+    return { width, height };
+  }
+  const width = Number($('#editor-width').value);
+  const height = Number($('#editor-height').value);
+  if (
+    !Number.isInteger(width) ||
+    width < 640 ||
+    width > 7680 ||
+    !Number.isInteger(height) ||
+    height < 480 ||
+    height > 4320
+  )
+    throw new Error(tx('请填写有效的窗口宽度和高度'));
   return { width, height };
 }
 
 function editorCookies() {
-  const raw = $('#editor-cookies').value.trim(); if (!raw) return '';
-  let values; try { values = JSON.parse(raw); } catch (_) { throw new Error(tx('Cookie JSON 格式错误')); }
-  if (!Array.isArray(values) || values.some((item) => !item || typeof item !== 'object' || typeof item.name !== 'string' || typeof item.value !== 'string')) throw new Error(tx('Cookie 必须是包含 name 和 value 的 JSON 数组'));
+  const raw = $('#editor-cookies').value.trim();
+  if (!raw) return '';
+  let values;
+  try {
+    values = JSON.parse(raw);
+  } catch (_) {
+    throw new Error(tx('Cookie JSON 格式错误'));
+  }
+  if (
+    !Array.isArray(values) ||
+    values.some(
+      (item) =>
+        !item || typeof item !== 'object' || typeof item.name !== 'string' || typeof item.value !== 'string'
+    )
+  )
+    throw new Error(tx('Cookie 必须是包含 name 和 value 的 JSON 数组'));
   return JSON.stringify(values);
 }
 
 function editorDraft(strict = true) {
   const current = ui.profiles.find((item) => item.id === editingProfileId) || {};
-  let resolution = { width: Number($('#editor-width')?.value) || current.width || 1280, height: Number($('#editor-height')?.value) || current.height || 820 };
+  let resolution = {
+    width: Number($('#editor-width')?.value) || current.width || 1280,
+    height: Number($('#editor-height')?.value) || current.height || 820,
+  };
   if (strict) resolution = editorResolution();
   else if ($('#editor-resolution')?.value && $('#editor-resolution').value !== 'custom') {
     const values = $('#editor-resolution').value.split('x').map(Number);
@@ -1589,7 +1984,7 @@ function editorDraft(strict = true) {
     speech: $('#editor-speech')?.value || 'noise',
     deviceNameMode: $('#editor-device-name-mode')?.value || 'noise',
     deviceName: ($('#editor-device-name')?.value || '').trim(),
-    dnt: dntMode === 'on' || ($('#editor-dnt')?.checked === true),
+    dnt: dntMode === 'on' || $('#editor-dnt')?.checked === true,
     dntMode,
     portScanProtect: Boolean($('#editor-port-scan')?.checked),
     portScanAllow: ($('#editor-port-scan-allow')?.value || '').trim(),
@@ -1600,8 +1995,16 @@ function editorDraft(strict = true) {
     stabilityMaxWidth: Number($('#editor-stability-max-width')?.value) || 600,
     stabilityMaxHeight: Number($('#editor-stability-max-height')?.value) || 600,
     stabilitySquare: Number($('#editor-stability-square')?.value) || 8,
-    stabilityHosts: ($('#editor-stability-hosts')?.value || '').split(/[\r\n,;\s]+/).map((s) => s.trim()).filter(Boolean).slice(0, 800),
-    stabilitySkipHosts: ($('#editor-stability-skip-hosts')?.value || '').split(/[\r\n,;\s]+/).map((s) => s.trim()).filter(Boolean).slice(0, 200),
+    stabilityHosts: ($('#editor-stability-hosts')?.value || '')
+      .split(/[\r\n,;\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 800),
+    stabilitySkipHosts: ($('#editor-stability-skip-hosts')?.value || '')
+      .split(/[\r\n,;\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 200),
     cores: (() => {
       const v = $('#editor-cores')?.value;
       if (v === '' || v == null) return '';
@@ -1631,28 +2034,42 @@ function editorDraft(strict = true) {
     },
   };
   if (strict && privacy.timezoneMode === 'custom' && privacy.timezone) {
-    try { new Intl.DateTimeFormat('en-US', { timeZone: privacy.timezone }).format(); }
-    catch (_) { throw new Error(tx('自定义时区无效，请使用 Asia/Shanghai 这类 IANA 时区名称')); }
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: privacy.timezone }).format();
+    } catch (_) {
+      throw new Error(tx('自定义时区无效，请使用 Asia/Shanghai 这类 IANA 时区名称'));
+    }
   }
   if (strict && privacy.geoMode === 'custom') {
-    const latitude = Number(privacy.latitude); const longitude = Number(privacy.longitude);
-    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    const latitude = Number(privacy.latitude);
+    const longitude = Number(privacy.longitude);
+    if (
+      !Number.isFinite(latitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      !Number.isFinite(longitude) ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
       throw new Error(tx('自定义地理位置经纬度无效'));
     }
-    privacy.latitude = latitude; privacy.longitude = longitude;
+    privacy.latitude = latitude;
+    privacy.longitude = longitude;
   }
   const proxy = serializeEditorProxy(strict);
   const proxyAuthAction = proxyAuthActionForUpdate(current.proxy, proxy, editorSelectedNetwork());
   return normalizeProfileSettings({
     ...current,
-    ...(editorNetworkResult ? {
-      exitIp: editorNetworkResult.ip,
-      exitCountryCode: editorNetworkResult.countryCode,
-      exitTimezone: editorNetworkResult.timezone || '',
-      exitLatitude: editorNetworkResult.latitude,
-      exitLongitude: editorNetworkResult.longitude,
-      exitCheckedAt: editorNetworkResult.checkedAt,
-    } : {}),
+    ...(editorNetworkResult
+      ? {
+          exitIp: editorNetworkResult.ip,
+          exitCountryCode: editorNetworkResult.countryCode,
+          exitTimezone: editorNetworkResult.timezone || '',
+          exitLatitude: editorNetworkResult.latitude,
+          exitLongitude: editorNetworkResult.longitude,
+          exitCheckedAt: editorNetworkResult.checkedAt,
+        }
+      : {}),
     id: editingProfileId,
     number: current.number,
     name: displayProfileNumber(current),
@@ -1670,7 +2087,36 @@ function editorDraft(strict = true) {
         if (cc) {
           try {
             // 与 engine locale-from-country 对齐的轻量映射（渲染进程不 require 该模块）
-            const map = { JP: 'ja-JP', CN: 'zh-CN', TW: 'zh-TW', HK: 'zh-HK', KR: 'ko-KR', US: 'en-US', GB: 'en-GB', DE: 'de-DE', FR: 'fr-FR', ES: 'es-ES', BR: 'pt-BR', RU: 'ru-RU', TH: 'th-TH', VN: 'vi-VN', ID: 'id-ID', SA: 'ar-SA', SG: 'en-SG', AU: 'en-AU', CA: 'en-CA', IN: 'en-IN', PH: 'en-PH', MX: 'es-MX', IT: 'it-IT', NL: 'nl-NL', PL: 'pl-PL', TR: 'tr-TR', UA: 'uk-UA', MY: 'ms-MY' };
+            const map = {
+              JP: 'ja-JP',
+              CN: 'zh-CN',
+              TW: 'zh-TW',
+              HK: 'zh-HK',
+              KR: 'ko-KR',
+              US: 'en-US',
+              GB: 'en-GB',
+              DE: 'de-DE',
+              FR: 'fr-FR',
+              ES: 'es-ES',
+              BR: 'pt-BR',
+              RU: 'ru-RU',
+              TH: 'th-TH',
+              VN: 'vi-VN',
+              ID: 'id-ID',
+              SA: 'ar-SA',
+              SG: 'en-SG',
+              AU: 'en-AU',
+              CA: 'en-CA',
+              IN: 'en-IN',
+              PH: 'en-PH',
+              MX: 'es-MX',
+              IT: 'it-IT',
+              NL: 'nl-NL',
+              PL: 'pl-PL',
+              TR: 'tr-TR',
+              UA: 'uk-UA',
+              MY: 'ms-MY',
+            };
             const code = String(cc).toUpperCase();
             if (map[code]) return map[code];
           } catch (_) {}
@@ -1678,7 +2124,11 @@ function editorDraft(strict = true) {
         return current.language || 'en-US';
       }
       if (mode === 'system') {
-        try { return Intl.DateTimeFormat().resolvedOptions().locale || 'en-US'; } catch (_) { return 'en-US'; }
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().locale || 'en-US';
+        } catch (_) {
+          return 'en-US';
+        }
       }
       if (/^[a-z]{2}(-[A-Za-z]{2})?$/i.test(mode)) return mode;
       return current.language || 'en-US';
@@ -1707,7 +2157,11 @@ function editorDraft(strict = true) {
       directBypass: Boolean($('#editor-direct-bypass')?.checked),
       bypassList: ($('#editor-bypass-list')?.value || '').trim(),
       apiExtractUrl: ($('#editor-api-extract-url')?.value || '').trim(),
-      backupProxies: ($('#editor-backup-proxies')?.value || '').split(/[\r\n,;]+/).map((s) => s.trim()).filter(Boolean).slice(0, 8),
+      backupProxies: ($('#editor-backup-proxies')?.value || '')
+        .split(/[\r\n,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 8),
       fillFingerprint: $('#editor-proxy-fill-fingerprint')?.checked !== false,
       requireReady: $('#editor-proxy-require-ready')?.checked !== false,
       notReadyPolicy: $('#editor-proxy-not-ready-policy')?.value || 'block',
@@ -1766,73 +2220,136 @@ function updateEditorVisibility() {
   }
   $('#editor-timezone').hidden = $('#editor-timezone-mode').value !== 'custom';
   $('.geo-custom').hidden = $('#editor-geo-mode').value !== 'custom';
-  const customResolution = $('#editor-resolution').value === 'custom'; $('#editor-width').hidden = !customResolution; $('#editor-height').hidden = !customResolution;
+  const customResolution = $('#editor-resolution').value === 'custom';
+  $('#editor-width').hidden = !customResolution;
+  $('#editor-height').hidden = !customResolution;
   $('#editor-font-size').hidden = $('#editor-font-mode').value !== 'custom';
 }
 
 function renderEditorSummary() {
   if (!editingProfileId) return;
-  const draft = editorDraft(false); const privacy = draft.privacy; const summary = $('#editor-summary'); summary.replaceChildren();
+  const draft = editorDraft(false);
+  const privacy = draft.privacy;
+  const summary = $('#editor-summary');
+  summary.replaceChildren();
   const labels = {
-    webrtc: { proxy: tx('仅代理连接'), disabled: tx('禁用非代理 UDP'), real: tx('真实网络') }, timezoneMode: { ip: '基于出口 IP', real: '系统真实', custom: privacy.timezone || '自定义' },
-    geoMode: { ip: '基于出口 IP', disabled: '禁止访问', custom: '自定义坐标' }, canvas: { real: '真实', blocked: '禁止读取' }, webgl: { real: '真实', blocked: '禁用' },
-    audio: { real: '真实', muted: '静音输出' }, media: { real: '按网站询问', blocked: '禁止访问' }, speech: { real: '真实', blocked: '禁用' }
+    webrtc: { proxy: tx('仅代理连接'), disabled: tx('禁用非代理 UDP'), real: tx('真实网络') },
+    timezoneMode: { ip: '基于出口 IP', real: '系统真实', custom: privacy.timezone || '自定义' },
+    geoMode: { ip: '基于出口 IP', disabled: '禁止访问', custom: '自定义坐标' },
+    canvas: { real: '真实', blocked: '禁止读取' },
+    webgl: { real: '真实', blocked: '禁用' },
+    audio: { real: '真实', muted: '静音输出' },
+    media: { real: '按网站询问', blocked: '禁止访问' },
+    speech: { real: '真实', blocked: '禁用' },
   };
   const values = [
-    [tx('浏览器'), 'Google Chrome'], [tx('分组'), groupNameOf(draft)], ['User-Agent', draft.userAgent || 'Chrome 默认'], [tx('网络'), maskProxy(draft.proxy)], ['WebRTC', labels.webrtc[privacy.webrtc]],
-    [tx('时区'), labels.timezoneMode[privacy.timezoneMode]], [tx('地理位置'), labels.geoMode[privacy.geoMode]], [tx('语言'), draft.language], [tx('界面语言'), privacy.uiLanguage === 'profile' ? '跟随语言' : privacy.uiLanguage],
-    [tx('分辨率'), draft.width + ' × ' + draft.height], [tx('字体'), privacy.fontMode === 'custom' ? privacy.fontSize + 'px' : '默认'], ['Canvas', labels.canvas[privacy.canvas]],
-    ['WebGL', labels.webgl[privacy.webgl]], ['WebGPU', privacy.webgpu === 'blocked' ? '禁用' : (privacy.webgpu === 'webgl' ? '基于 WebGL' : '真实')], ['AudioContext', labels.audio[privacy.audio]], [tx('媒体设备'), labels.media[privacy.media]],
-    [tx('电池'), privacy.battery === 'blocked' ? '关闭' : (privacy.battery === 'real' ? '真实' : '随机')],
-    [tx('站点稳定性'), privacy.stabilityMode === 'force' ? '强制' : (privacy.stabilityMode === 'off' ? '关闭' : '自动')],
-    [tx('代理未就绪'), draft.proxyMeta?.notReadyPolicy === 'direct' ? '回退直连' : (draft.proxyMeta?.notReadyPolicy === 'continue' ? '继续' : '阻断')],
+    [tx('浏览器'), 'Google Chrome'],
+    [tx('分组'), groupNameOf(draft)],
+    ['User-Agent', draft.userAgent || 'Chrome 默认'],
+    [tx('网络'), maskProxy(draft.proxy)],
+    ['WebRTC', labels.webrtc[privacy.webrtc]],
+    [tx('时区'), labels.timezoneMode[privacy.timezoneMode]],
+    [tx('地理位置'), labels.geoMode[privacy.geoMode]],
+    [tx('语言'), draft.language],
+    [tx('界面语言'), privacy.uiLanguage === 'profile' ? '跟随语言' : privacy.uiLanguage],
+    [tx('分辨率'), draft.width + ' × ' + draft.height],
+    [tx('字体'), privacy.fontMode === 'custom' ? privacy.fontSize + 'px' : '默认'],
+    ['Canvas', labels.canvas[privacy.canvas]],
+    ['WebGL', labels.webgl[privacy.webgl]],
+    ['WebGPU', privacy.webgpu === 'blocked' ? '禁用' : privacy.webgpu === 'webgl' ? '基于 WebGL' : '真实'],
+    ['AudioContext', labels.audio[privacy.audio]],
+    [tx('媒体设备'), labels.media[privacy.media]],
+    [tx('电池'), privacy.battery === 'blocked' ? '关闭' : privacy.battery === 'real' ? '真实' : '随机'],
+    [
+      tx('站点稳定性'),
+      privacy.stabilityMode === 'force' ? '强制' : privacy.stabilityMode === 'off' ? '关闭' : '自动',
+    ],
+    [
+      tx('代理未就绪'),
+      draft.proxyMeta?.notReadyPolicy === 'direct'
+        ? '回退直连'
+        : draft.proxyMeta?.notReadyPolicy === 'continue'
+          ? '继续'
+          : '阻断',
+    ],
     [tx('TLS 配置'), draft.proxyMeta?.tlsProfile || 'auto'],
     ['ClientRects', privacy.clientRects === 'real' ? '真实' : '随机'],
     ['SpeechVoices', labels.speech[privacy.speech]],
     // Must read the profile editor value — never the host Electron navigator.
-    ['CPU', (() => {
-      const raw = privacy.cores ?? privacy.fingerprint?.cores;
-      if (raw === '' || raw === null || raw === undefined) return tx('自动');
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return tx('自动');
-      if (n === 0) return tx('真实');
-      return `${n} 核`;
-    })()],
-    ['RAM', (() => {
-      const raw = privacy.memory ?? privacy.fingerprint?.memory;
-      if (raw === '' || raw === null || raw === undefined) return tx('自动');
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return tx('自动');
-      if (n === 0) return tx('真实');
-      return `${n} GB`;
-    })()],
+    [
+      'CPU',
+      (() => {
+        const raw = privacy.cores ?? privacy.fingerprint?.cores;
+        if (raw === '' || raw === null || raw === undefined) return tx('自动');
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return tx('自动');
+        if (n === 0) return tx('真实');
+        return `${n} 核`;
+      })(),
+    ],
+    [
+      'RAM',
+      (() => {
+        const raw = privacy.memory ?? privacy.fingerprint?.memory;
+        if (raw === '' || raw === null || raw === undefined) return tx('自动');
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return tx('自动');
+        if (n === 0) return tx('真实');
+        return `${n} GB`;
+      })(),
+    ],
     ['Do Not Track', privacy.dnt ? '启用' : '默认'],
-    [tx('每次打开刷新指纹'), privacy.refreshFingerprintOnStart ? '开启' : '关闭']
+    [tx('每次打开刷新指纹'), privacy.refreshFingerprintOnStart ? '开启' : '关闭'],
   ];
-  for (const [name, value] of values) { const row = document.createElement('div'); row.append(element('dt', '', name), element('dd', '', value || '默认')); summary.append(row); }
+  for (const [name, value] of values) {
+    const row = document.createElement('div');
+    row.append(element('dt', '', name), element('dd', '', value || '默认'));
+    summary.append(row);
+  }
   const auditTarget = $('#editor-audit');
   if (auditTarget && window.EnvironmentAudit) {
-    const report = window.EnvironmentAudit.build(draft, { systemTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    const report = window.EnvironmentAudit.build(draft, {
+      systemTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
     auditTarget.replaceChildren();
     const head = element('div', 'audit-head');
-    head.append(element('strong', '', tx('环境一致性检查')), element('span', report.status, report.warnings ? `${report.warnings} 项需确认` : '配置一致'));
+    head.append(
+      element('strong', '', tx('环境一致性检查')),
+      element('span', report.status, report.warnings ? `${report.warnings} 项需确认` : '配置一致')
+    );
     auditTarget.append(head);
     for (const check of report.checks) {
       const row = element('div', `audit-row ${check.state}`);
-      const body = element('div'); body.append(element('strong', '', check.label), element('small', '', check.detail));
-      row.append(element('i', '', ''), body); auditTarget.append(row);
+      const body = element('div');
+      body.append(element('strong', '', check.label), element('small', '', check.detail));
+      row.append(element('i', '', ''), body);
+      auditTarget.append(row);
     }
   }
 }
 
 function setEditorTab(tab) {
-  $$('[data-editor-tab]').forEach((button) => button.classList.toggle('active', button.dataset.editorTab === tab));
-  $$('[data-editor-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.editorPanel === tab));
+  $$('[data-editor-tab]').forEach((button) =>
+    button.classList.toggle('active', button.dataset.editorTab === tab)
+  );
+  $$('[data-editor-panel]').forEach((panel) =>
+    panel.classList.toggle('active', panel.dataset.editorPanel === tab)
+  );
 }
 
 function openProfileEditor(id) {
-  const profile = normalizeProfileSettings(ui.profiles.find((item) => item.id === id)); if (!profile?.id) return;
-  editorNetworkResult = profile.exitIp ? { ip: profile.exitIp, countryCode: profile.exitCountryCode, timezone: profile.exitTimezone, latitude: profile.exitLatitude, longitude: profile.exitLongitude, checkedAt: profile.exitCheckedAt } : null;
+  const profile = normalizeProfileSettings(ui.profiles.find((item) => item.id === id));
+  if (!profile?.id) return;
+  editorNetworkResult = profile.exitIp
+    ? {
+        ip: profile.exitIp,
+        countryCode: profile.exitCountryCode,
+        timezone: profile.exitTimezone,
+        latitude: profile.exitLatitude,
+        longitude: profile.exitLongitude,
+        checkedAt: profile.exitCheckedAt,
+      }
+    : null;
   editingProfileId = profile.id;
   editorSet('#editor-id', profile.id);
   $('#editor-profile-id').textContent = displayProfileNumber(profile);
@@ -1841,10 +2358,17 @@ function openProfileEditor(id) {
   editorSet('#editor-browser', 'Google Chrome');
   editorSet('#editor-os', profile.os);
   editorSet('#editor-user-agent', profile.userAgent);
-  editorSet('#editor-cookies', (() => {
-    if (!profile.cookies) return '';
-    try { return JSON.stringify(JSON.parse(profile.cookies), null, 2); } catch (_) { return profile.cookies; }
-  })());
+  editorSet(
+    '#editor-cookies',
+    (() => {
+      if (!profile.cookies) return '';
+      try {
+        return JSON.stringify(JSON.parse(profile.cookies), null, 2);
+      } catch (_) {
+        return profile.cookies;
+      }
+    })()
+  );
   editorSet('#editor-language', profile.language);
   editorSet('#editor-tag', profile.tag);
   editorSet('#editor-note', profile.note);
@@ -1867,20 +2391,31 @@ function openProfileEditor(id) {
   editorSet('#editor-ip-channel', profile.proxyMeta.ipChannel);
   editorSet('#editor-refresh-url', profile.proxyMeta.refreshUrl);
   editorSet('#editor-api-extract-url', profile.proxyMeta.apiExtractUrl || '');
-  editorSet('#editor-backup-proxies', Array.isArray(profile.proxyMeta.backupProxies) ? profile.proxyMeta.backupProxies.join('\n') : '');
+  editorSet(
+    '#editor-backup-proxies',
+    Array.isArray(profile.proxyMeta.backupProxies) ? profile.proxyMeta.backupProxies.join('\n') : ''
+  );
   editorCheck('#editor-proxy-check-start', profile.proxyMeta.checkOnStart);
   editorCheck('#editor-proxy-refresh-start', profile.proxyMeta.refreshOnStart);
   editorCheck('#editor-proxy-fill-fingerprint', profile.proxyMeta.fillFingerprint !== false);
   editorCheck('#editor-proxy-require-ready', profile.proxyMeta.requireReady !== false);
-  editorSet('#editor-proxy-not-ready-policy', profile.proxyMeta.notReadyPolicy || (profile.proxyMeta.requireReady === false ? 'continue' : 'block'));
+  editorSet(
+    '#editor-proxy-not-ready-policy',
+    profile.proxyMeta.notReadyPolicy || (profile.proxyMeta.requireReady === false ? 'continue' : 'block')
+  );
   editorSet('#editor-proxy-tls-profile', profile.proxyMeta.tlsProfile || 'auto');
-  editorSet('#editor-proxy-tls-chrome-major', profile.proxyMeta.tlsChromeMajor == null ? '' : profile.proxyMeta.tlsChromeMajor);
+  editorSet(
+    '#editor-proxy-tls-chrome-major',
+    profile.proxyMeta.tlsChromeMajor == null ? '' : profile.proxyMeta.tlsChromeMajor
+  );
   editorSet('#editor-system-proxy', profile.proxyMeta.systemProxy || 'global');
   editorCheck('#editor-direct-bypass', profile.proxyMeta.directBypass);
   editorSet('#editor-bypass-list', profile.proxyMeta.bypassList || '');
   if ($('#editor-proxy-result')) {
     $('#editor-proxy-result').className = 'proxy-test-result';
-    $('#editor-proxy-result').textContent = profile.exitIp ? tx('上次出口：') + profile.exitIp + ' · ' + countryName(profile.exitCountryCode) : tx('尚未检测');
+    $('#editor-proxy-result').textContent = profile.exitIp
+      ? tx('上次出口：') + profile.exitIp + ' · ' + countryName(profile.exitCountryCode)
+      : tx('尚未检测');
   }
   const privacy = profile.privacy;
   editorSet('#editor-webrtc', privacy.webrtc);
@@ -1891,17 +2426,22 @@ function openProfileEditor(id) {
   editorSet('#editor-longitude', privacy.longitude);
   editorSet('#editor-accuracy', privacy.accuracy);
   {
-    const mode = privacy.languageMode
-      || (privacy.langFromIp !== false && (!privacy.uiLanguage || privacy.uiLanguage === 'profile') ? 'ip' : null)
-      || (privacy.uiLanguage && privacy.uiLanguage !== 'profile' ? privacy.uiLanguage : null)
-      || 'ip';
+    const mode =
+      privacy.languageMode ||
+      (privacy.langFromIp !== false && (!privacy.uiLanguage || privacy.uiLanguage === 'profile')
+        ? 'ip'
+        : null) ||
+      (privacy.uiLanguage && privacy.uiLanguage !== 'profile' ? privacy.uiLanguage : null) ||
+      'ip';
     editorSet('#editor-language-mode', mode);
     editorSet('#editor-ui-language', mode === 'ip' || mode === 'system' ? 'profile' : mode);
     editorCheck('#editor-lang-from-ip', mode === 'ip');
   }
   editorCheck('#editor-geo-from-ip', privacy.geoFromIp !== false);
   const resolutionKey = profile.width + 'x' + profile.height;
-  const resolution = ['1280x820', '1366x768', '1440x900', '1920x1080'].includes(resolutionKey) ? resolutionKey : 'custom';
+  const resolution = ['1280x820', '1366x768', '1440x900', '1920x1080'].includes(resolutionKey)
+    ? resolutionKey
+    : 'custom';
   editorSet('#editor-resolution', resolution);
   editorSet('#editor-width', profile.width);
   editorSet('#editor-height', profile.height);
@@ -1918,20 +2458,29 @@ function openProfileEditor(id) {
   editorSet('#editor-battery', privacy.battery || 'noise');
   editorSet('#editor-media-label-audio', privacy.mediaLabels?.audioinput || privacy.mediaLabels?.input || '');
   editorSet('#editor-media-label-video', privacy.mediaLabels?.videoinput || privacy.mediaLabels?.video || '');
-  editorSet('#editor-media-label-output', privacy.mediaLabels?.audiooutput || privacy.mediaLabels?.output || '');
+  editorSet(
+    '#editor-media-label-output',
+    privacy.mediaLabels?.audiooutput || privacy.mediaLabels?.output || ''
+  );
   editorSet('#editor-client-rects', privacy.clientRects || 'noise');
   editorSet('#editor-speech', privacy.speech);
   // Select values are strings; 0 must stay "0" (真实), never fall through to "" (自动).
-  editorSet('#editor-cores', (() => {
-    const raw = privacy.cores ?? privacy.fingerprint?.cores;
-    if (raw === '' || raw === null || raw === undefined) return '';
-    return String(raw);
-  })());
-  editorSet('#editor-memory', (() => {
-    const raw = privacy.memory ?? privacy.fingerprint?.memory;
-    if (raw === '' || raw === null || raw === undefined) return '';
-    return String(raw);
-  })());
+  editorSet(
+    '#editor-cores',
+    (() => {
+      const raw = privacy.cores ?? privacy.fingerprint?.cores;
+      if (raw === '' || raw === null || raw === undefined) return '';
+      return String(raw);
+    })()
+  );
+  editorSet(
+    '#editor-memory',
+    (() => {
+      const raw = privacy.memory ?? privacy.fingerprint?.memory;
+      if (raw === '' || raw === null || raw === undefined) return '';
+      return String(raw);
+    })()
+  );
   editorSet('#editor-device-name-mode', privacy.deviceNameMode || 'noise');
   editorSet('#editor-device-name', privacy.deviceName || '');
   editorSet('#editor-dnt-mode', privacy.dntMode || (privacy.dnt ? 'on' : 'default'));
@@ -1945,8 +2494,16 @@ function openProfileEditor(id) {
   editorSet('#editor-stability-max-width', privacy.stabilityMaxWidth || 600);
   editorSet('#editor-stability-max-height', privacy.stabilityMaxHeight || 600);
   editorSet('#editor-stability-square', privacy.stabilitySquare || 8);
-  editorSet('#editor-stability-hosts', Array.isArray(privacy.stabilityHosts) ? privacy.stabilityHosts.join('\n') : (privacy.stabilityHosts || ''));
-  editorSet('#editor-stability-skip-hosts', Array.isArray(privacy.stabilitySkipHosts) ? privacy.stabilitySkipHosts.join('\n') : (privacy.stabilitySkipHosts || ''));
+  editorSet(
+    '#editor-stability-hosts',
+    Array.isArray(privacy.stabilityHosts) ? privacy.stabilityHosts.join('\n') : privacy.stabilityHosts || ''
+  );
+  editorSet(
+    '#editor-stability-skip-hosts',
+    Array.isArray(privacy.stabilitySkipHosts)
+      ? privacy.stabilitySkipHosts.join('\n')
+      : privacy.stabilitySkipHosts || ''
+  );
   const advanced = profile.advanced;
   for (const [sel, value] of [
     ['#editor-save-cookies', advanced.saveCookies],
@@ -1978,7 +2535,8 @@ function openProfileEditor(id) {
     ['#editor-load-global-bookmarks', advanced.loadGlobalBookmarks],
     ['#editor-show-bookmark-bar', advanced.showBookmarkBar],
     ['#editor-upload-bookmarks', advanced.uploadBookmarks],
-  ]) editorCheck(sel, value);
+  ])
+    editorCheck(sel, value);
   const tabMode = advanced.tabMode === 'restore' ? 'restore' : 'fixed';
   const tabRadio = document.querySelector('input[name="editor-tab-mode"][value="' + tabMode + '"]');
   if (tabRadio) tabRadio.checked = true;
@@ -1993,8 +2551,8 @@ function openProfileEditor(id) {
 function formatProxyCheckResult(result = {}) {
   const parts = [
     result.ip || '',
-    result.countryCode ? (countryFlag(result.countryCode) + ' ' + countryName(result.countryCode)) : '',
-    Number.isFinite(Number(result.latencyMs)) ? (Number(result.latencyMs) + 'ms') : '',
+    result.countryCode ? countryFlag(result.countryCode) + ' ' + countryName(result.countryCode) : '',
+    Number.isFinite(Number(result.latencyMs)) ? Number(result.latencyMs) + 'ms' : '',
     result.networkType || '',
     result.timezone || '',
   ].filter(Boolean);
@@ -2022,7 +2580,8 @@ async function testEditorProxy() {
   const output = $('#editor-proxy-result');
   try {
     const draft = editorDraft(true);
-    if (/^Direct$/i.test(draft.proxy) && !draft.proxyMeta?.apiExtractUrl) throw new Error(tx('本地直连无需代理检测'));
+    if (/^Direct$/i.test(draft.proxy) && !draft.proxyMeta?.apiExtractUrl)
+      throw new Error(tx('本地直连无需代理检测'));
     output.className = 'proxy-test-result';
     output.textContent = tx('正在检测代理出口...');
     const result = await window.ops.testProfileProxy(draft);
@@ -2041,7 +2600,8 @@ async function applyEditorProxyFingerprint() {
   const output = $('#editor-proxy-result');
   try {
     const draft = editorDraft(true);
-    if (/^Direct$/i.test(draft.proxy) && !draft.proxyMeta?.apiExtractUrl) throw new Error(tx('本地直连无需代理检测'));
+    if (/^Direct$/i.test(draft.proxy) && !draft.proxyMeta?.apiExtractUrl)
+      throw new Error(tx('本地直连无需代理检测'));
     output.className = 'proxy-test-result';
     output.textContent = tx('正在用代理对齐指纹...');
     const result = await window.ops.applyProxyFingerprint(draft);
@@ -2070,7 +2630,7 @@ async function refreshEditorProxy() {
     if (result.profile?.proxy) {
       try {
         const raw = String(result.profile.proxy);
-        const url = new URL(raw.includes('://') ? raw : ('socks5://' + raw));
+        const url = new URL(raw.includes('://') ? raw : 'socks5://' + raw);
         editorSet('#editor-proxy-type', (url.protocol || 'socks5:').replace(':', '') || 'socks5');
         editorSet('#editor-proxy-host', url.hostname || '');
         editorSet('#editor-proxy-port', url.port || '');
@@ -2078,14 +2638,16 @@ async function refreshEditorProxy() {
         editorSet('#editor-proxy-password', decodeURIComponent(url.password || ''));
       } catch (_) {}
     }
-    applyEditorNetworkResult(network, { fillFingerprint: $('#editor-proxy-fill-fingerprint')?.checked !== false });
+    applyEditorNetworkResult(network, {
+      fillFingerprint: $('#editor-proxy-fill-fingerprint')?.checked !== false,
+    });
     updateEditorVisibility();
     renderEditorSummary();
     output.className = 'proxy-test-result success';
     let msg = tx('刷新成功 · ') + formatProxyCheckResult(network);
     if (result.extractError) msg += ' · ' + tx('提取警告：') + result.extractError;
     output.textContent = msg;
-    toast(result.extractError ? (tx('代理已刷新（提取有警告）')) : tx('代理已刷新'));
+    toast(result.extractError ? tx('代理已刷新（提取有警告）') : tx('代理已刷新'));
   } catch (error) {
     output.className = 'proxy-test-result error';
     output.textContent = tx('刷新失败 · ') + error.message;
@@ -2094,10 +2656,24 @@ async function refreshEditorProxy() {
 }
 
 function useSystemEditorDefaults() {
-  editorSet('#editor-user-agent', ''); editorSet('#editor-timezone-mode', 'real'); editorSet('#editor-timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || ''); editorSet('#editor-geo-mode', 'disabled'); editorSet('#editor-ui-language', 'system');
-  editorSet('#editor-resolution', 'custom'); editorSet('#editor-width', Math.max(640, screen.availWidth || 1280)); editorSet('#editor-height', Math.max(480, screen.availHeight || 820));
-  editorSet('#editor-webrtc', 'real'); editorSet('#editor-canvas', 'real'); editorSet('#editor-webgl', 'real'); editorSet('#editor-webgpu', 'real'); editorSet('#editor-audio', 'real'); editorSet('#editor-media', 'real'); editorSet('#editor-speech', 'real');
-  updateEditorVisibility(); renderEditorSummary(); toast(tx('已读取本机安全默认值'));
+  editorSet('#editor-user-agent', '');
+  editorSet('#editor-timezone-mode', 'real');
+  editorSet('#editor-timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+  editorSet('#editor-geo-mode', 'disabled');
+  editorSet('#editor-ui-language', 'system');
+  editorSet('#editor-resolution', 'custom');
+  editorSet('#editor-width', Math.max(640, screen.availWidth || 1280));
+  editorSet('#editor-height', Math.max(480, screen.availHeight || 820));
+  editorSet('#editor-webrtc', 'real');
+  editorSet('#editor-canvas', 'real');
+  editorSet('#editor-webgl', 'real');
+  editorSet('#editor-webgpu', 'real');
+  editorSet('#editor-audio', 'real');
+  editorSet('#editor-media', 'real');
+  editorSet('#editor-speech', 'real');
+  updateEditorVisibility();
+  renderEditorSummary();
+  toast(tx('已读取本机安全默认值'));
   refreshUaMetaPreview().catch(() => {});
 }
 
@@ -2125,7 +2701,11 @@ async function applyBuiltUa(payload) {
 async function showUaMetaPreview(ua) {
   const el = document.getElementById('editor-ua-meta');
   if (!el) return;
-  if (!ua) { el.hidden = true; el.textContent = ''; return; }
+  if (!ua) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
   const meta = ua.metadata || ua.userAgentMetadata || {};
   const brands = (meta.brands || []).map((b) => `${b.brand} ${b.version}`).join(', ');
   el.hidden = false;
@@ -2165,7 +2745,9 @@ document.getElementById('editor-ua-generate')?.addEventListener('click', async (
       chromeMajor: Number($('#editor-ua-chrome-major')?.value) || 131,
     });
     toast(tx('已按系统生成 UA + Client Hints'));
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    toast(e.message);
+  }
 });
 document.getElementById('editor-ua-random')?.addEventListener('click', async () => {
   try {
@@ -2174,7 +2756,9 @@ document.getElementById('editor-ua-random')?.addEventListener('click', async () 
       chromeMajor: Number($('#editor-ua-chrome-major')?.value) || undefined,
     });
     toast(tx('已随机生成 UA'));
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    toast(e.message);
+  }
 });
 document.getElementById('editor-ua-clear')?.addEventListener('click', () => {
   editorSet('#editor-user-agent', '');
@@ -2186,9 +2770,13 @@ document.getElementById('editor-user-agent')?.addEventListener('input', () => {
   clearTimeout(window.__uaPreviewTimer);
   window.__uaPreviewTimer = setTimeout(() => refreshUaMetaPreview().catch(() => {}), 300);
 });
-document.getElementById('editor-os')?.addEventListener('change', () => refreshUaMetaPreview().catch(() => {}));
+document
+  .getElementById('editor-os')
+  ?.addEventListener('change', () => refreshUaMetaPreview().catch(() => {}));
 
-function profileEngine(id) { return engineProfiles.find((item) => item.id === id) || { running: false, assignedExtensions: [] }; }
+function profileEngine(id) {
+  return engineProfiles.find((item) => item.id === id) || { running: false, assignedExtensions: [] };
+}
 
 function viewMetaFor(view) {
   const map = {
@@ -2219,14 +2807,18 @@ function switchView(view) {
     }
     if (button.classList.contains('nav-child') && button.dataset.view === 'rpa') {
       // child active state is refined in showRpaPanel
-      button.classList.toggle('active', view === 'rpa' && button.dataset.rpaTab === (currentRpaTab || 'flows'));
+      button.classList.toggle(
+        'active',
+        view === 'rpa' && button.dataset.rpaTab === (currentRpaTab || 'flows')
+      );
       return;
     }
     button.classList.toggle('active', button.dataset.view === view);
   });
   $$('.view').forEach((section) => section.classList.toggle('active', section.id === `view-${view}`));
   const meta = viewMetaFor(view);
-  $('#page-title').textContent = meta[0]; $('#page-subtitle').textContent = meta[1];
+  $('#page-title').textContent = meta[0];
+  $('#page-subtitle').textContent = meta[1];
   if (view === 'sync') refreshSessions();
   if (view === 'extensions') refreshExtensions();
   if (view === 'proxies') refreshProxies();
@@ -2257,7 +2849,14 @@ function renderGroupsPage() {
     const row = document.createElement('tr');
     const n = countProfilesInGroup('ungrouped');
     const colorCell = document.createElement('td');
-    colorCell.append(buildSquareMark('—', { color: '#94a3b8', title: t('groups.ungrouped'), size: UI_MARK_SIZE, className: 'group-mark' }));
+    colorCell.append(
+      buildSquareMark('—', {
+        color: '#94a3b8',
+        title: t('groups.ungrouped'),
+        size: UI_MARK_SIZE,
+        className: 'group-mark',
+      })
+    );
     row.append(
       colorCell,
       element('td', '', t('groups.ungrouped')),
@@ -2270,13 +2869,18 @@ function renderGroupsPage() {
   for (const g of groups) {
     const row = document.createElement('tr');
     const colorCell = document.createElement('td');
-    const letter = String(g.name || '?').trim().charAt(0) || '?';
-    colorCell.append(buildSquareMark(letter, {
-      color: g.color || '#245cff',
-      title: g.name,
-      size: UI_MARK_SIZE,
-      className: 'group-mark',
-    }));
+    const letter =
+      String(g.name || '?')
+        .trim()
+        .charAt(0) || '?';
+    colorCell.append(
+      buildSquareMark(letter, {
+        color: g.color || '#245cff',
+        title: g.name,
+        size: UI_MARK_SIZE,
+        className: 'group-mark',
+      })
+    );
     const nameCell = document.createElement('td');
     const nameWrap = element('div', 'profile-name env-identity');
     nameWrap.append(element('strong', '', g.name));
@@ -2284,12 +2888,22 @@ function renderGroupsPage() {
     nameCell.append(nameWrap);
     const n = countProfilesInGroup(g.id);
     const actions = element('div', 'actions');
-    const edit = element('button', 'mini edit', t('action.edit')); edit.dataset.groupEdit = g.id;
-    const view = element('button', 'mini blue', t('action.use')); view.dataset.groupView = g.id;
-    const del = element('button', 'mini', t('action.delete')); del.dataset.groupDelete = g.id;
+    const edit = element('button', 'mini edit', t('action.edit'));
+    edit.dataset.groupEdit = g.id;
+    const view = element('button', 'mini blue', t('action.use'));
+    view.dataset.groupView = g.id;
+    const del = element('button', 'mini', t('action.delete'));
+    del.dataset.groupDelete = g.id;
     actions.append(view, edit, del);
-    const actionCell = document.createElement('td'); actionCell.append(actions);
-    row.append(colorCell, nameCell, element('td', '', String(n)), element('td', '', (g.createdAt || '').replace('T', ' ').slice(0, 16) || '—'), actionCell);
+    const actionCell = document.createElement('td');
+    actionCell.append(actions);
+    row.append(
+      colorCell,
+      nameCell,
+      element('td', '', String(n)),
+      element('td', '', (g.createdAt || '').replace('T', ' ').slice(0, 16) || '—'),
+      actionCell
+    );
     table.append(row);
   }
   if (empty) empty.hidden = true;
@@ -2335,13 +2949,18 @@ function saveGroupFromDialog() {
     ui.groups[idx] = normalizeGroup({ ...ui.groups[idx], name, color, note }, idx);
   } else {
     if (ui.groups.some((g) => g.name === name)) throw new Error(tx('已有同名分组'));
-    ui.groups.push(normalizeGroup({
-      id: createGroupId(),
-      name,
-      color,
-      note,
-      sort: listGroups().length,
-    }, listGroups().length));
+    ui.groups.push(
+      normalizeGroup(
+        {
+          id: createGroupId(),
+          name,
+          color,
+          note,
+          sort: listGroups().length,
+        },
+        listGroups().length
+      )
+    );
   }
   save();
   renderGroupsPage();
@@ -2382,13 +3001,16 @@ async function assignSelectedToGroup(groupId) {
 }
 
 // allow nav buttons to pass rpa tab via dataset
-document.addEventListener('click', (event) => {
-  const nav = event.target.closest('[data-view="rpa"][data-rpa-tab]');
-  if (!nav) return;
-  // switchView will be called by existing nav handler; stash tab
-  currentRpaTab = nav.dataset.rpaTab || 'flows';
-}, true);
-
+document.addEventListener(
+  'click',
+  (event) => {
+    const nav = event.target.closest('[data-view="rpa"][data-rpa-tab]');
+    if (!nav) return;
+    // switchView will be called by existing nav handler; stash tab
+    currentRpaTab = nav.dataset.rpaTab || 'flows';
+  },
+  true
+);
 
 function renderProxies() {
   const table = $('#proxy-table');
@@ -2396,7 +3018,14 @@ function renderProxies() {
   const countEl = $('#proxy-count');
   if (!table) return;
   const q = ($('#proxy-search')?.value || '').trim().toLowerCase();
-  const list = proxyLibrary.filter((item) => !q || [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)].join(' ').toLowerCase().includes(q));
+  const list = proxyLibrary.filter(
+    (item) =>
+      !q ||
+      [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+  );
   table.replaceChildren();
   for (const item of list) {
     const row = document.createElement('tr');
@@ -2410,18 +3039,26 @@ function renderProxies() {
     const auth = item.authenticated ? t('common.confirm') : t('common.cancel');
     const exit = item.lastIp
       ? `${item.lastIp}${item.lastCountryCode ? ' · ' + item.lastCountryCode : ''}${item.lastCheckOk === false ? ' · 失败' : ''}`
-      : (item.lastCheckOk === false ? (item.lastErrorClass || '失败') : '—');
+      : item.lastCheckOk === false
+        ? item.lastErrorClass || '失败'
+        : '—';
     const latency = Number.isFinite(Number(item.lastLatencyMs)) ? `${Number(item.lastLatencyMs)}ms` : '—';
     const netType = item.lastNetworkType || '—';
     const actions = element('div', 'actions');
-    const edit = element('button', 'mini edit', t('action.edit')); edit.dataset.proxyEdit = item.id;
-    const test = element('button', 'mini blue', t('action.check')); test.dataset.proxyTest = item.id;
-    const use = element('button', 'mini', t('action.use')); use.dataset.proxyUse = item.id;
-    const del = element('button', 'mini', t('action.delete')); del.dataset.proxyDelete = item.id;
+    const edit = element('button', 'mini edit', t('action.edit'));
+    edit.dataset.proxyEdit = item.id;
+    const test = element('button', 'mini blue', t('action.check'));
+    test.dataset.proxyTest = item.id;
+    const use = element('button', 'mini', t('action.use'));
+    use.dataset.proxyUse = item.id;
+    const del = element('button', 'mini', t('action.delete'));
+    del.dataset.proxyDelete = item.id;
     actions.append(edit, test, use, del);
-    const actionCell = document.createElement('td'); actionCell.append(actions);
+    const actionCell = document.createElement('td');
+    actionCell.append(actions);
     const proto = String(item.protocol || 'proxy').toUpperCase();
-    const protoLabel = proto === 'SOCKS5' ? 'S5' : proto === 'HTTPS' ? 'HS' : proto === 'HTTP' ? 'HT' : proto.slice(0, 2);
+    const protoLabel =
+      proto === 'SOCKS5' ? 'S5' : proto === 'HTTPS' ? 'HS' : proto === 'HTTP' ? 'HT' : proto.slice(0, 2);
     const nameCell = document.createElement('td');
     const nameWrap = element('div', 'profile-name env-identity');
     nameWrap.append(
@@ -2430,7 +3067,7 @@ function renderProxies() {
         title: proto,
         size: UI_MARK_SIZE,
         className: 'proxy-mark',
-      }),
+      })
     );
     const nameText = document.createElement('div');
     nameText.className = 'env-identity-text';
@@ -2453,7 +3090,10 @@ function renderProxies() {
     table.append(row);
   }
   if (empty) empty.hidden = list.length !== 0;
-  if (countEl) countEl.textContent = t('rpa.store.count', { n: proxyLibrary.length }).replace('templates', tx('条')) + (q ? ` · ${t('profiles.search').split('/')[0].trim()} ${list.length}` : '');
+  if (countEl)
+    countEl.textContent =
+      t('rpa.store.count', { n: proxyLibrary.length }).replace('templates', tx('条')) +
+      (q ? ` · ${t('profiles.search').split('/')[0].trim()} ${list.length}` : '');
   const selectAll = $('#proxy-select-all');
   if (selectAll) {
     const ids = list.map((i) => i.id);
@@ -2550,7 +3190,9 @@ function updateProfileSelectionUi() {
     row.classList.toggle('selected-row', selectedProfiles.has(row.dataset.profileId));
   });
   const visibleCheckboxes = $$('#profile-table [data-profile-select]');
-  const selectedOnPage = visibleCheckboxes.filter((input) => selectedProfiles.has(input.dataset.profileSelect)).length;
+  const selectedOnPage = visibleCheckboxes.filter((input) =>
+    selectedProfiles.has(input.dataset.profileSelect)
+  ).length;
   const selectAll = $('#select-all-profiles');
   if (selectAll) {
     selectAll.checked = visibleCheckboxes.length > 0 && selectedOnPage === visibleCheckboxes.length;
@@ -2615,21 +3257,40 @@ function buildStartProgressCell(profileId, progress) {
 function renderProfiles() {
   renderGroupFilterChips();
   const filter = $('#profile-search').value.trim().toLowerCase();
-  const table = $('#profile-table'); table.replaceChildren();
+  const table = $('#profile-table');
+  table.replaceChildren();
   let filtered = ui.profiles.filter((profile) => {
     if (activeGroupFilter === 'ungrouped') return !profile.groupId;
     if (activeGroupFilter !== 'all' && profile.groupId !== activeGroupFilter) return false;
     return true;
   });
-  filtered = filtered.filter((profile) => [profile.id, displayProfileNumber(profile), profile.browser, profile.proxy, profile.tag, groupNameOf(profile)].join(' ').toLowerCase().includes(filter));
+  filtered = filtered.filter((profile) =>
+    [
+      profile.id,
+      displayProfileNumber(profile),
+      profile.browser,
+      profile.proxy,
+      profile.tag,
+      groupNameOf(profile),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(filter)
+  );
   const totalPages = Math.max(1, Math.ceil(filtered.length / profilePageSize));
   profilePage = Math.min(Math.max(1, profilePage), totalPages);
   const pageStart = (profilePage - 1) * profilePageSize;
   const visible = filtered.slice(pageStart, pageStart + profilePageSize);
   for (const profile of visible) {
-    const info = profileEngine(profile.id); const row = document.createElement('tr');
+    const info = profileEngine(profile.id);
+    const row = document.createElement('tr');
     row.dataset.profileId = profile.id;
-    const selectCell = document.createElement('td'); const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selectedProfiles.has(profile.id); checkbox.dataset.profileSelect = profile.id; selectCell.append(checkbox);
+    const selectCell = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selectedProfiles.has(profile.id);
+    checkbox.dataset.profileSelect = profile.id;
+    selectCell.append(checkbox);
     const idCell = element('td', 'col-num', displayProfileNumber(profile));
     const nameCell = document.createElement('td');
     nameCell.append(buildEnvIdentity(profile));
@@ -2647,15 +3308,30 @@ function renderProfiles() {
     proxyCell.append(networkModeBadge(profile.proxy));
     const networkCell = document.createElement('td');
     networkCell.className = 'col-exit';
-    const network = info.network || (profile.exitIp ? { ip: profile.exitIp, countryCode: profile.exitCountryCode, checkedAt: profile.exitCheckedAt } : null);
+    const network =
+      info.network ||
+      (profile.exitIp
+        ? { ip: profile.exitIp, countryCode: profile.exitCountryCode, checkedAt: profile.exitCheckedAt }
+        : null);
     const networkInfo = element('div', 'network-info network-info-compact');
     if (network?.ip) {
       const code = String(network.countryCode || '').toUpperCase();
-      const line = element('span', 'exit-compact', (code ? countryFlag(code) + ' ' + code : '🌐') + (network.ip ? ' · ' + String(network.ip).replace(/^(\d+\.\d+)\.\d+\.\d+$/, '$1.*.*') : ''));
+      const line = element(
+        'span',
+        'exit-compact',
+        (code ? countryFlag(code) + ' ' + code : '🌐') +
+          (network.ip ? ' · ' + String(network.ip).replace(/^(\d+\.\d+)\.\d+\.\d+$/, '$1.*.*') : '')
+      );
       line.title = (network.ip || '') + (code ? ' · ' + countryName(code) : '');
       networkInfo.append(line);
     } else {
-      networkInfo.append(element('span', 'network-pending', isDirectProxy(profile.proxy) ? t('net.localHost') : t('net.untested')));
+      networkInfo.append(
+        element(
+          'span',
+          'network-pending',
+          isDirectProxy(profile.proxy) ? t('net.localHost') : t('net.untested')
+        )
+      );
     }
     if (!isDirectProxy(profile.proxy)) {
       const inspect = element('button', 'network-check', t('action.check'));
@@ -2672,14 +3348,22 @@ function renderProfiles() {
       statusCell.append(buildStartProgressCell(profile.id, startingProfiles.get(profile.id)));
       row.classList.add('is-starting');
     } else {
-      const status = element('span', `status status-compact ${info.running ? 'running' : ''}`, info.running ? t('status.run') : t('status.stop'));
+      const status = element(
+        'span',
+        `status status-compact ${info.running ? 'running' : ''}`,
+        info.running ? t('status.run') : t('status.stop')
+      );
       if (info.running && info.port) status.title = t('status.runningCdp', { port: info.port });
       statusCell.append(status);
     }
     const actionCell = document.createElement('td');
     actionCell.className = 'col-actions';
     const actions = element('div', 'actions');
-    const toggle = element('button', 'mini', info.running ? t('action.stop') : (starting ? t('status.starting') : t('action.start')));
+    const toggle = element(
+      'button',
+      'mini',
+      info.running ? t('action.stop') : starting ? t('status.starting') : t('action.start')
+    );
     toggle.dataset.action = info.running ? 'stop' : 'start';
     toggle.dataset.id = profile.id;
     if (starting) {
@@ -2687,10 +3371,29 @@ function renderProfiles() {
       toggle.classList.add('is-starting');
       toggle.title = startProgressLabel(startingProfiles.get(profile.id));
     }
-    const sync = element('button', 'mini blue', t('action.sync')); sync.dataset.action = 'select-sync'; sync.dataset.id = profile.id; sync.disabled = !info.running || starting; sync.title = t('profiles.syncSelect');
-    const edit = element('button', 'mini edit', t('action.edit')); edit.dataset.action = 'edit'; edit.dataset.id = profile.id;
-    actions.append(toggle, sync, edit); actionCell.append(actions);
-    row.append(selectCell, idCell, nameCell, groupCell, browserCell, proxyCell, networkCell, extensionCell, statusCell, actionCell); table.append(row);
+    const sync = element('button', 'mini blue', t('action.sync'));
+    sync.dataset.action = 'select-sync';
+    sync.dataset.id = profile.id;
+    sync.disabled = !info.running || starting;
+    sync.title = t('profiles.syncSelect');
+    const edit = element('button', 'mini edit', t('action.edit'));
+    edit.dataset.action = 'edit';
+    edit.dataset.id = profile.id;
+    actions.append(toggle, sync, edit);
+    actionCell.append(actions);
+    row.append(
+      selectCell,
+      idCell,
+      nameCell,
+      groupCell,
+      browserCell,
+      proxyCell,
+      networkCell,
+      extensionCell,
+      statusCell,
+      actionCell
+    );
+    table.append(row);
   }
   $('#profile-empty').hidden = filtered.length !== 0;
   $('#profile-total').textContent = String(filtered.length);
@@ -2732,7 +3435,12 @@ function renderProfiles() {
 
 function visibleProfilePageIds() {
   const filter = $('#profile-search').value.trim().toLowerCase();
-  const filtered = ui.profiles.filter((profile) => [profile.id, displayProfileNumber(profile), profile.browser, profile.proxy, profile.tag].join(' ').toLowerCase().includes(filter));
+  const filtered = ui.profiles.filter((profile) =>
+    [profile.id, displayProfileNumber(profile), profile.browser, profile.proxy, profile.tag]
+      .join(' ')
+      .toLowerCase()
+      .includes(filter)
+  );
   const totalPages = Math.max(1, Math.ceil(filtered.length / profilePageSize));
   const page = Math.min(Math.max(1, profilePage), totalPages);
   const pageStart = (page - 1) * profilePageSize;
@@ -2740,7 +3448,9 @@ function visibleProfilePageIds() {
 }
 
 async function refreshStatus() {
-  engineProfiles = await window.ops.profileStatus(); mergeEngineExitState(engineProfiles); renderProfiles();
+  engineProfiles = await window.ops.profileStatus();
+  mergeEngineExitState(engineProfiles);
+  renderProfiles();
 }
 
 // --- Render/IPC coalescing (perf) --------------------------------------------------
@@ -2753,7 +3463,10 @@ async function refreshStatus() {
 let __rafPending = 0;
 function scheduleRenderProfiles() {
   if (__rafPending) return;
-  __rafPending = requestAnimationFrame(() => { __rafPending = 0; renderProfiles(); });
+  __rafPending = requestAnimationFrame(() => {
+    __rafPending = 0;
+    renderProfiles();
+  });
 }
 // Leading-guard throttle: fetch at most once per window during a burst (keeps progress
 // visible) instead of once per event; the trailing fetch captures the settled state.
@@ -2762,7 +3475,10 @@ function scheduleStatusRefresh() {
   if (__statusRefreshTimer) return;
   __statusRefreshTimer = setTimeout(async () => {
     __statusRefreshTimer = 0;
-    try { engineProfiles = await window.ops.profileStatus(); mergeEngineExitState(engineProfiles); } catch (_) {}
+    try {
+      engineProfiles = await window.ops.profileStatus();
+      mergeEngineExitState(engineProfiles);
+    } catch (_) {}
     scheduleRenderProfiles();
   }, 120);
 }
@@ -2778,7 +3494,8 @@ function scheduleSessionRefresh() {
 // -----------------------------------------------------------------------------------
 
 async function startProfile(id) {
-  const profile = ui.profiles.find((item) => item.id === id); if (!profile) return;
+  const profile = ui.profiles.find((item) => item.id === id);
+  if (!profile) return;
   if (profileEngine(id).running || startingProfiles.has(id)) return;
   const payload = {
     ...profile,
@@ -2789,7 +3506,10 @@ async function startProfile(id) {
   try {
     const result = await window.ops.startProfile(payload);
     setStartingProgress(id, { phase: 'ready', percent: 100, message: t('status.startPhase.ready') });
-    log('Browser', `${displayProfileNumber(profile)} 已启动 · ${result.browser} · CDP ${result.port || 'pending'}`);
+    log(
+      'Browser',
+      `${displayProfileNumber(profile)} 已启动 · ${result.browser} · CDP ${result.port || 'pending'}`
+    );
     toast(tx(`${displayProfileNumber(profile)} 已启动`));
     await refreshStatus();
     await refreshSessions();
@@ -2803,29 +3523,56 @@ async function startProfile(id) {
 }
 
 async function stopProfile(id) {
-  try { await window.ops.stopProfile(id); const profile = ui.profiles.find((item) => item.id === id); log('Browser', `${profile?.name || id} 已停止`); await refreshStatus(); await refreshSessions(); }
-  catch (error) { log('Error', error.message); toast(tx(`停止失败：${error.message}`)); }
+  try {
+    await window.ops.stopProfile(id);
+    const profile = ui.profiles.find((item) => item.id === id);
+    log('Browser', `${profile?.name || id} 已停止`);
+    await refreshStatus();
+    await refreshSessions();
+  } catch (error) {
+    log('Error', error.message);
+    toast(tx(`停止失败：${error.message}`));
+  }
 }
 
 async function checkProfileProxy(id) {
-  const profile = ui.profiles.find((item) => item.id === id); if (!profile) return;
+  const profile = ui.profiles.find((item) => item.id === id);
+  if (!profile) return;
   try {
     toast('正在通过环境 ' + displayProfileNumber(profile) + ' 的代理检测出口 IP...');
     const result = await window.ops.checkProfileProxy(profile);
-    profile.exitIp = result.ip; profile.exitCountryCode = result.countryCode; profile.exitTimezone = result.timezone || ''; profile.exitLatitude = result.latitude; profile.exitLongitude = result.longitude; profile.exitCheckedAt = result.checkedAt;
+    profile.exitIp = result.ip;
+    profile.exitCountryCode = result.countryCode;
+    profile.exitTimezone = result.timezone || '';
+    profile.exitLatitude = result.latitude;
+    profile.exitLongitude = result.longitude;
+    profile.exitCheckedAt = result.checkedAt;
     if (Number.isFinite(Number(result.latencyMs))) profile.exitLatencyMs = Number(result.latencyMs);
     if (result.networkType) profile.exitNetworkType = result.networkType;
     if (result.appliedFingerprint?.language) profile.language = result.appliedFingerprint.language;
-    if (result.appliedFingerprint?.privacy) profile.privacy = { ...(profile.privacy || {}), ...result.appliedFingerprint.privacy };
+    if (result.appliedFingerprint?.privacy)
+      profile.privacy = { ...(profile.privacy || {}), ...result.appliedFingerprint.privacy };
     save();
-    const number = displayProfileNumber(profile); await refreshStatus(); renderProfiles();
+    const number = displayProfileNumber(profile);
+    await refreshStatus();
+    renderProfiles();
     const detail = formatProxyCheckResult(result);
     log('Proxy', '环境 ' + number + ' 出口检测成功 · ' + detail);
     toast('环境 ' + number + ' 出口：' + detail);
-  } catch (error) { log('Proxy', '环境 ' + displayProfileNumber(profile) + ' 检测失败 · ' + error.message); toast('代理检测失败：' + error.message); }
+  } catch (error) {
+    log('Proxy', '环境 ' + displayProfileNumber(profile) + ' 检测失败 · ' + error.message);
+    toast('代理检测失败：' + error.message);
+  }
 }
 
-function extensionIcon(name) { return name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(); }
+function extensionIcon(name) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 function createExtensionIcon(item) {
   const label = extensionIcon(item.name || 'OB');
@@ -2842,25 +3589,34 @@ function createExtensionIcon(item) {
   image.loading = 'lazy';
   image.referrerPolicy = 'no-referrer';
   image.src = iconUrl;
-  image.addEventListener('error', () => {
-    icon.classList.remove('has-image');
-    icon.replaceChildren();
-    const num = document.createElement('span');
-    num.className = 'env-badge-num';
-    num.textContent = label;
-    if (label.length >= 3) num.classList.add('env-badge-num-sm');
-    icon.append(num);
-  }, { once: true });
+  image.addEventListener(
+    'error',
+    () => {
+      icon.classList.remove('has-image');
+      icon.replaceChildren();
+      const num = document.createElement('span');
+      num.className = 'env-badge-num';
+      num.textContent = label;
+      if (label.length >= 3) num.classList.add('env-badge-num-sm');
+      icon.append(num);
+    },
+    { once: true }
+  );
   icon.classList.add('has-image');
   icon.replaceChildren(image);
   return icon;
 }
 
 function renderAppCenterTabs() {
-  $$('#app-center-tabs button').forEach((button) => button.classList.toggle('active', button.dataset.appTab === appCenterTab));
+  $$('#app-center-tabs button').forEach((button) =>
+    button.classList.toggle('active', button.dataset.appTab === appCenterTab)
+  );
   const counts = appCenterData.counts || {};
   const countsEl = $('#extension-counts');
-  if (countsEl) countsEl.textContent = tx(`自带 ${counts.builtin || 0} · 推荐 ${counts.recommended || 0} · 本地 ${counts.local || counts.installed || 0}`);
+  if (countsEl)
+    countsEl.textContent = tx(
+      `自带 ${counts.builtin || 0} · 推荐 ${counts.recommended || 0} · 本地 ${counts.local || counts.installed || 0}`
+    );
 }
 
 function renderExtensions() {
@@ -2870,7 +3626,12 @@ function renderExtensions() {
   grid.replaceChildren();
 
   if (appCenterTab === 'recommended') {
-    const list = (appCenterData.recommended || []).filter((item) => [item.name, item.description, item.category, ...(item.tags || [])].join(' ').toLowerCase().includes(query));
+    const list = (appCenterData.recommended || []).filter((item) =>
+      [item.name, item.description, item.category, ...(item.tags || [])]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
     for (const app of list) {
       const card = element('article', 'extension-card recommended');
       const top = element('div', 'extension-top');
@@ -2878,7 +3639,10 @@ function renderExtensions() {
       if (app.installed) top.append(element('span', 'status running', tx('已安装')));
       card.append(top, element('h3', '', app.name), element('p', '', app.description || 'Chrome Web Store'));
       const meta = element('div', 'extension-meta');
-      meta.append(element('span', '', app.category || 'app'), element('span', '', app.installed ? `已启用环境 ${app.assigned_profiles || 0}` : '商店安装'));
+      meta.append(
+        element('span', '', app.category || 'app'),
+        element('span', '', app.installed ? `已启用环境 ${app.assigned_profiles || 0}` : '商店安装')
+      );
       card.append(meta);
       const actions = element('div', 'card-actions');
       if (app.installed && app.extension_id) {
@@ -2894,30 +3658,36 @@ function renderExtensions() {
       grid.append(card);
     }
     $('#extension-empty').hidden = list.length !== 0;
-    if (!list.length) $('#extension-empty').textContent = query ? tx('没有匹配的推荐应用') : tx('暂无推荐应用');
+    if (!list.length)
+      $('#extension-empty').textContent = query ? tx('没有匹配的推荐应用') : tx('暂无推荐应用');
     return;
   }
 
-  const sourceList = appCenterTab === 'builtin'
-    ? (appCenterData.builtin || []).map((item) => {
-      const full = extensions.find((ext) => ext.id === item.extension_id || ext.id === item.id);
-      return full || {
-        id: item.extension_id || item.id,
-        name: item.name,
-        description: item.description,
-        version: item.version || '-',
-        manifestVersion: item.manifest_version || 3,
-        source: item.source,
-        builtIn: item.source === 'builtin',
-        enabledAll: item.enabled_all,
-        assignedProfiles: item.assigned_profiles || 0,
-        assignedProfileIds: [],
-        iconUrl: item.icon_url || null,
-      };
-    })
-    : extensions;
+  const sourceList =
+    appCenterTab === 'builtin'
+      ? (appCenterData.builtin || []).map((item) => {
+          const full = extensions.find((ext) => ext.id === item.extension_id || ext.id === item.id);
+          return (
+            full || {
+              id: item.extension_id || item.id,
+              name: item.name,
+              description: item.description,
+              version: item.version || '-',
+              manifestVersion: item.manifest_version || 3,
+              source: item.source,
+              builtIn: item.source === 'builtin',
+              enabledAll: item.enabled_all,
+              assignedProfiles: item.assigned_profiles || 0,
+              assignedProfileIds: [],
+              iconUrl: item.icon_url || null,
+            }
+          );
+        })
+      : extensions;
 
-  const visible = sourceList.filter((item) => [item.name, item.description, item.version].join(' ').toLowerCase().includes(query));
+  const visible = sourceList.filter((item) =>
+    [item.name, item.description, item.version].join(' ').toLowerCase().includes(query)
+  );
   for (const extension of visible) {
     const card = element('article', 'extension-card');
     const top = element('div', 'extension-top');
@@ -2927,13 +3697,25 @@ function renderExtensions() {
     toggle.checked = extension.enabledAll;
     toggle.dataset.extensionToggle = extension.id;
     toggle.indeterminate = !extension.enabledAll && Number(extension.assignedProfiles) > 0;
-    toggleLabel.title = extension.enabledAll ? tx('全部环境已启用') : toggle.indeterminate ? tx('部分环境已启用') : tx('全部环境已停用');
+    toggleLabel.title = extension.enabledAll
+      ? tx('全部环境已启用')
+      : toggle.indeterminate
+        ? tx('部分环境已启用')
+        : tx('全部环境已停用');
     toggleLabel.append(toggle, element('span', 'extension-toggle-slider'));
     top.append(createExtensionIcon(extension), toggleLabel);
-    card.append(top, element('h3', '', extension.name), element('p', '', extension.description || 'Local unpacked Chrome extension'));
+    card.append(
+      top,
+      element('h3', '', extension.name),
+      element('p', '', extension.description || 'Local unpacked Chrome extension')
+    );
     const meta = element('div', 'extension-meta');
     meta.append(
-      element('span', '', `v${extension.version} · MV${extension.manifestVersion} · ${extension.source || (extension.builtIn ? '内置' : '本地')}`),
+      element(
+        'span',
+        '',
+        `v${extension.version} · MV${extension.manifestVersion} · ${extension.source || (extension.builtIn ? '内置' : '本地')}`
+      ),
       element('span', '', `已启用 ${extension.assignedProfiles}/${ui.profiles.length}`)
     );
     card.append(meta);
@@ -2950,7 +3732,8 @@ function renderExtensions() {
     grid.append(card);
   }
   $('#extension-empty').hidden = visible.length !== 0;
-  if (!visible.length) $('#extension-empty').textContent = appCenterTab === 'builtin' ? tx('暂无自带应用') : tx('尚未添加扩展');
+  if (!visible.length)
+    $('#extension-empty').textContent = appCenterTab === 'builtin' ? tx('暂无自带应用') : tx('尚未添加扩展');
 }
 
 async function refreshExtensions() {
@@ -2965,7 +3748,12 @@ async function refreshExtensions() {
         counts: payload.counts || {},
       };
     } else {
-      appCenterData = { builtin: [], recommended: [], local: extensions, counts: { builtin: 0, recommended: 0, local: extensions.length, installed: extensions.length } };
+      appCenterData = {
+        builtin: [],
+        recommended: [],
+        local: extensions,
+        counts: { builtin: 0, recommended: 0, local: extensions.length, installed: extensions.length },
+      };
     }
   } catch (_) {
     appCenterData = {
@@ -2980,15 +3768,23 @@ async function refreshExtensions() {
 }
 
 async function hydrateAppCenterIcons() {
-  const items = [...(appCenterData.recommended || []), ...(appCenterData.local || []), ...(appCenterData.builtin || [])];
-  const missingStoreIds = [...new Set(items
-    .filter((item) => {
-      const storeId = item.store_id || item.storeId || item.chromeId;
-      const hasIcon = Boolean(item.icon_url || item.iconUrl);
-      return storeId && !hasIcon;
-    })
-    .map((item) => item.store_id || item.storeId || item.chromeId)
-    .filter(Boolean))];
+  const items = [
+    ...(appCenterData.recommended || []),
+    ...(appCenterData.local || []),
+    ...(appCenterData.builtin || []),
+  ];
+  const missingStoreIds = [
+    ...new Set(
+      items
+        .filter((item) => {
+          const storeId = item.store_id || item.storeId || item.chromeId;
+          const hasIcon = Boolean(item.icon_url || item.iconUrl);
+          return storeId && !hasIcon;
+        })
+        .map((item) => item.store_id || item.storeId || item.chromeId)
+        .filter(Boolean)
+    ),
+  ];
   if (!missingStoreIds.length) return;
 
   let changed = false;
@@ -3022,19 +3818,37 @@ async function hydrateAppCenterIcons() {
 }
 
 function openAssign(id) {
-  currentExtension = extensions.find((item) => item.id === id); if (!currentExtension) return;
+  currentExtension = extensions.find((item) => item.id === id);
+  if (!currentExtension) return;
   $('#assign-extension-name').textContent = tx(`${currentExtension.name} · 运行中的环境需重启后生效`);
-  const list = $('#assign-profile-list'); list.replaceChildren();
+  const list = $('#assign-profile-list');
+  list.replaceChildren();
   const assigned = new Set(currentExtension.assignedProfileIds || []);
-  for (const profile of ui.profiles) { const label = element('label', 'assign-item'); const input = document.createElement('input'); input.type = 'checkbox'; input.value = profile.id; input.checked = assigned.has(profile.id); label.append(input, element('span', '', '环境 ' + displayProfileNumber(profile))); list.append(label); }
+  for (const profile of ui.profiles) {
+    const label = element('label', 'assign-item');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = profile.id;
+    input.checked = assigned.has(profile.id);
+    label.append(input, element('span', '', '环境 ' + displayProfileNumber(profile)));
+    list.append(label);
+  }
   $('#assign-dialog').showModal();
 }
 
 async function applyAssignment(enabled) {
-  const ids = $$('#assign-profile-list input:checked').map((input) => input.value); if (!ids.length) return toast(tx('请先选择环境'));
-  const result = await window.ops.assignExtension(currentExtension.id, ids, enabled); $('#assign-dialog').close(); await refreshExtensions(); await refreshStatus();
+  const ids = $$('#assign-profile-list input:checked').map((input) => input.value);
+  if (!ids.length) return toast(tx('请先选择环境'));
+  const result = await window.ops.assignExtension(currentExtension.id, ids, enabled);
+  $('#assign-dialog').close();
+  await refreshExtensions();
+  await refreshStatus();
   log('Extension', `${currentExtension.name} ${enabled ? '添加到' : '移出'} ${ids.length} 个环境`);
-  toast(result.restartRequired?.length ? `已保存；${result.restartRequired.length} 个运行环境需重启` : '批量分配已生效');
+  toast(
+    result.restartRequired?.length
+      ? `已保存；${result.restartRequired.length} 个运行环境需重启`
+      : '批量分配已生效'
+  );
 }
 
 function orderedSelectedSessionIds() {
@@ -3044,41 +3858,107 @@ function orderedSelectedSessionIds() {
 }
 
 function populateSyncGroups() {
-  const select = $('#sync-group'); const current = select.value || 'all'; const groups = [...new Set(sessions.map((item) => String(item.profile?.tag || '未分组')))].sort();
-  select.replaceChildren(); const all = document.createElement('option'); all.value = 'all'; all.textContent = tx('全部分组'); select.append(all);
-  for (const group of groups) { const option = document.createElement('option'); option.value = group; option.textContent = group; select.append(option); }
+  const select = $('#sync-group');
+  const current = select.value || 'all';
+  const groups = [...new Set(sessions.map((item) => String(item.profile?.tag || '未分组')))].sort();
+  select.replaceChildren();
+  const all = document.createElement('option');
+  all.value = 'all';
+  all.textContent = tx('全部分组');
+  select.append(all);
+  for (const group of groups) {
+    const option = document.createElement('option');
+    option.value = group;
+    option.textContent = group;
+    select.append(option);
+  }
   select.value = [...select.options].some((option) => option.value === current) ? current : 'all';
 }
 
 function renderSessions() {
-  populateSyncGroups(); const group = $('#sync-group').value || 'all'; const visible = group === 'all' ? sessions : sessions.filter((item) => String(item.profile?.tag || t('groups.ungrouped')) === group);
-  const table = $('#session-table'); table.replaceChildren();
+  populateSyncGroups();
+  const group = $('#sync-group').value || 'all';
+  const visible =
+    group === 'all'
+      ? sessions
+      : sessions.filter((item) => String(item.profile?.tag || t('groups.ungrouped')) === group);
+  const table = $('#session-table');
+  table.replaceChildren();
   for (const value of visible) {
     const selected = selectedSessions.has(value.id);
-    const role = syncState.active && syncState.master === value.id ? t('tag.master') : syncState.active && syncState.selected.includes(value.id) ? t('tag.workgroup') : selected && preferredMasterId === value.id ? t('tag.master') : selected ? t('action.use') : t('status.stopped');
+    const role =
+      syncState.active && syncState.master === value.id
+        ? t('tag.master')
+        : syncState.active && syncState.selected.includes(value.id)
+          ? t('tag.workgroup')
+          : selected && preferredMasterId === value.id
+            ? t('tag.master')
+            : selected
+              ? t('action.use')
+              : t('status.stopped');
     const row = document.createElement('tr');
     if (selected) row.classList.add('selected-row');
-    if ((syncState.active && syncState.master === value.id) || (!syncState.active && preferredMasterId === value.id && selected)) row.classList.add('master-row');
-    const selectCell = document.createElement('td'); const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selected; checkbox.disabled = syncState.active; checkbox.dataset.sessionSelect = value.id; selectCell.append(checkbox);
-    const statusCell = document.createElement('td'); statusCell.append(element('span', 'sync-role', role));
-    const actionCell = document.createElement('td'); actionCell.className = 'sync-actions';
-    const master = element('button', 'sync-show', preferredMasterId === value.id ? t('tag.master') : t('action.use')); master.dataset.masterSelect = value.id; master.disabled = syncState.active || !selected;
-    const show = element('button', 'sync-show', t('action.preview')); show.dataset.showWindow = value.id; actionCell.append(master, show);
+    if (
+      (syncState.active && syncState.master === value.id) ||
+      (!syncState.active && preferredMasterId === value.id && selected)
+    )
+      row.classList.add('master-row');
+    const selectCell = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selected;
+    checkbox.disabled = syncState.active;
+    checkbox.dataset.sessionSelect = value.id;
+    selectCell.append(checkbox);
+    const statusCell = document.createElement('td');
+    statusCell.append(element('span', 'sync-role', role));
+    const actionCell = document.createElement('td');
+    actionCell.className = 'sync-actions';
+    const master = element(
+      'button',
+      'sync-show',
+      preferredMasterId === value.id ? t('tag.master') : t('action.use')
+    );
+    master.dataset.masterSelect = value.id;
+    master.disabled = syncState.active || !selected;
+    const show = element('button', 'sync-show', t('action.preview'));
+    show.dataset.showWindow = value.id;
+    actionCell.append(master, show);
     const profile = value.profile || { id: value.id, number: value.id };
     const number = displayProfileNumber(profile);
     const idCell = document.createElement('td');
     idCell.append(buildEnvBadge(profile, UI_MARK_SIZE));
     const nameCell = document.createElement('td');
-    nameCell.append(element('strong', '', (profile.title && String(profile.title) !== String(number)) ? profile.title : (t('profiles.envName', { n: number }))));
+    nameCell.append(
+      element(
+        'strong',
+        '',
+        profile.title && String(profile.title) !== String(number)
+          ? profile.title
+          : t('profiles.envName', { n: number })
+      )
+    );
     const browserCell = document.createElement('td');
     browserCell.append(buildEnvBrowserCell(profile));
-    row.append(selectCell, idCell, nameCell, browserCell, element('td', '', String(value.tabs.length)), statusCell, actionCell); table.append(row);
+    row.append(
+      selectCell,
+      idCell,
+      nameCell,
+      browserCell,
+      element('td', '', String(value.tabs.length)),
+      statusCell,
+      actionCell
+    );
+    table.append(row);
   }
   $('#session-empty').style.display = visible.length ? 'none' : 'block';
   $('#selected-count').textContent = t('profiles.selected', { n: selectedSessions.size });
   $('#sync-selected').textContent = t('profiles.selected', { n: selectedSessions.size });
-  const allBox = $('#select-all-sessions'); allBox.checked = visible.length > 0 && visible.every((item) => selectedSessions.has(item.id)); allBox.indeterminate = visible.some((item) => selectedSessions.has(item.id)) && !allBox.checked;
-  renderSyncState(); renderTabInventory();
+  const allBox = $('#select-all-sessions');
+  allBox.checked = visible.length > 0 && visible.every((item) => selectedSessions.has(item.id));
+  allBox.indeterminate = visible.some((item) => selectedSessions.has(item.id)) && !allBox.checked;
+  renderSyncState();
+  renderTabInventory();
   afterUiRender(document.getElementById('view-sync') || document);
 }
 
@@ -3086,91 +3966,175 @@ function renderSyncState() {
   $('#start-sync').hidden = syncState.active;
   $('#stop-sync').hidden = !syncState.active;
   $('#restart-sync').disabled = selectedSessions.size < 2;
-  $('#select-all-sessions').disabled = syncState.active; $('#sync-group').disabled = syncState.active;
+  $('#select-all-sessions').disabled = syncState.active;
+  $('#sync-group').disabled = syncState.active;
   const health = $('#sync-health');
   if (!health) return;
-  if (!syncState.active) { health.className = 'sync-health idle'; health.textContent = t('sync.idle'); }
-  else if (syncHealth.recovering) { health.className = 'sync-health warning'; health.textContent = t('sync.recovering'); }
-  else if (syncHealth.queueDepth > 24 || syncHealth.lastLatencyMs > 800) { health.className = 'sync-health warning'; health.textContent = tx(`同步繁忙 · 队列 ${syncHealth.queueDepth}`); }
-  else { health.className = 'sync-health healthy'; health.textContent = tx(`同步正常 · ${syncHealth.lastLatencyMs || 0}ms`); }
+  if (!syncState.active) {
+    health.className = 'sync-health idle';
+    health.textContent = t('sync.idle');
+  } else if (syncHealth.recovering) {
+    health.className = 'sync-health warning';
+    health.textContent = t('sync.recovering');
+  } else if (syncHealth.queueDepth > 24 || syncHealth.lastLatencyMs > 800) {
+    health.className = 'sync-health warning';
+    health.textContent = tx(`同步繁忙 · 队列 ${syncHealth.queueDepth}`);
+  } else {
+    health.className = 'sync-health healthy';
+    health.textContent = tx(`同步正常 · ${syncHealth.lastLatencyMs || 0}ms`);
+  }
 }
 
 function pushSyncSelection() {
   if (syncState.active) return renderSyncState();
-  const ids = orderedSelectedSessionIds(); syncState.selected = ids;
+  const ids = orderedSelectedSessionIds();
+  syncState.selected = ids;
   window.ops.setSyncSelection(ids).catch((error) => log('Error', error.message));
   renderSyncState();
 }
 
 function renderTabInventory() {
-  const target = $('#tab-inventory'); target.replaceChildren();
-  for (const value of sessions.filter((item) => selectedSessions.has(item.id))) { const group = element('div', 'tab-group'); group.append(element('strong', '', `${t('profiles.envName', { n: displayProfileNumber(value.profile || { id: value.id }) })} · ${value.tabs.length} ${t('common.tabs')}`)); for (const tab of value.tabs.slice(0, 6)) group.append(element('span', '', `${tab.title || 'Untitled'} — ${tab.url}`)); target.append(group); }
+  const target = $('#tab-inventory');
+  target.replaceChildren();
+  for (const value of sessions.filter((item) => selectedSessions.has(item.id))) {
+    const group = element('div', 'tab-group');
+    group.append(
+      element(
+        'strong',
+        '',
+        `${t('profiles.envName', { n: displayProfileNumber(value.profile || { id: value.id }) })} · ${value.tabs.length} ${t('common.tabs')}`
+      )
+    );
+    for (const tab of value.tabs.slice(0, 6))
+      group.append(element('span', '', `${tab.title || 'Untitled'} — ${tab.url}`));
+    target.append(group);
+  }
 }
 
 let __refreshSessionsInFlight = null;
 let __refreshSessionsQueued = false;
 async function refreshSessions() {
-  if (__refreshSessionsInFlight) { __refreshSessionsQueued = true; return __refreshSessionsInFlight; }
+  if (__refreshSessionsInFlight) {
+    __refreshSessionsQueued = true;
+    return __refreshSessionsInFlight;
+  }
   __refreshSessionsInFlight = (async () => {
     try {
-      const previous = new Set(selectedSessions); sessions = await window.ops.syncSessions(); const live = new Set(sessions.map((item) => item.id));
-      if (syncState.active) selectedSessions = new Set((syncState.selected || []).filter((id) => live.has(id)));
+      const previous = new Set(selectedSessions);
+      sessions = await window.ops.syncSessions();
+      const live = new Set(sessions.map((item) => item.id));
+      if (syncState.active)
+        selectedSessions = new Set((syncState.selected || []).filter((id) => live.has(id)));
       else if (!sessionsInitialized) selectedSessions = new Set(sessions.map((item) => item.id));
       else selectedSessions = new Set([...previous].filter((id) => live.has(id)));
-      sessionsInitialized = true; if (!selectedSessions.has(preferredMasterId)) preferredMasterId = orderedSelectedSessionIds()[0] || null;
-      if (!syncState.active) pushSyncSelection(); renderSessions();
-    } catch (error) { log('CDP', error.message); }
-    finally {
+      sessionsInitialized = true;
+      if (!selectedSessions.has(preferredMasterId))
+        preferredMasterId = orderedSelectedSessionIds()[0] || null;
+      if (!syncState.active) pushSyncSelection();
+      renderSessions();
+    } catch (error) {
+      log('CDP', error.message);
+    } finally {
       __refreshSessionsInFlight = null;
-      if (__refreshSessionsQueued) { __refreshSessionsQueued = false; refreshSessions(); }
+      if (__refreshSessionsQueued) {
+        __refreshSessionsQueued = false;
+        refreshSessions();
+      }
     }
   })();
   return __refreshSessionsInFlight;
 }
-function selectedSessionIds(minimum = 1) { const ids = orderedSelectedSessionIds(); if (ids.length < minimum) throw new Error(`请至少选择 ${minimum} 个运行环境`); return ids; }
+function selectedSessionIds(minimum = 1) {
+  const ids = orderedSelectedSessionIds();
+  if (ids.length < minimum) throw new Error(`请至少选择 ${minimum} 个运行环境`);
+  return ids;
+}
 function specifiedTextItems(value) {
-  return String(value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+  return String(value || '')
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function distributeSpecifiedTexts(items, count, mode = 'sequence', cursor = 0, random = Math.random) {
-  const values = Array.isArray(items) ? items.map((item) => String(item)).filter((item) => item.length > 0) : [];
+  const values = Array.isArray(items)
+    ? items.map((item) => String(item)).filter((item) => item.length > 0)
+    : [];
   const amount = Math.max(0, Number.parseInt(count, 10) || 0);
-  if (!values.length || !amount) return { texts: [], nextCursor: Math.max(0, Number.parseInt(cursor, 10) || 0) };
+  if (!values.length || !amount)
+    return { texts: [], nextCursor: Math.max(0, Number.parseInt(cursor, 10) || 0) };
   if (mode === 'random') {
     return {
-      texts: Array.from({ length: amount }, () => values[Math.min(values.length - 1, Math.max(0, Math.floor(Number(random()) * values.length)))]),
-      nextCursor: Math.max(0, Number.parseInt(cursor, 10) || 0)
+      texts: Array.from(
+        { length: amount },
+        () => values[Math.min(values.length - 1, Math.max(0, Math.floor(Number(random()) * values.length)))]
+      ),
+      nextCursor: Math.max(0, Number.parseInt(cursor, 10) || 0),
     };
   }
-  const start = ((Number.parseInt(cursor, 10) || 0) % values.length + values.length) % values.length;
-  return { texts: Array.from({ length: amount }, (_unused, index) => values[(start + index) % values.length]), nextCursor: (start + amount) % values.length };
+  const start = (((Number.parseInt(cursor, 10) || 0) % values.length) + values.length) % values.length;
+  return {
+    texts: Array.from({ length: amount }, (_unused, index) => values[(start + index) % values.length]),
+    nextCursor: (start + amount) % values.length,
+  };
 }
 
 function saveSpecifiedTextGroups() {
   try {
-    localStorage.setItem(SPECIFIED_TEXT_GROUPS_KEY, JSON.stringify(specifiedTextGroups.map(({ id, mode, text, cursor }) => ({ id, mode, text, cursor }))));
+    localStorage.setItem(
+      SPECIFIED_TEXT_GROUPS_KEY,
+      JSON.stringify(specifiedTextGroups.map(({ id, mode, text, cursor }) => ({ id, mode, text, cursor })))
+    );
   } catch (_) {}
 }
 
 function renderSpecifiedTextGroups() {
-  const target = $('#specified-text-groups'); if (!target) return;
+  const target = $('#specified-text-groups');
+  if (!target) return;
   target.replaceChildren();
   specifiedTextGroups.forEach((group, index) => {
-    const card = element('article', 'specified-text-group'); card.dataset.specifiedGroup = group.id;
+    const card = element('article', 'specified-text-group');
+    card.dataset.specifiedGroup = group.id;
     const head = element('div', 'specified-text-group-head');
     head.append(element('strong', '', '\u6587\u672c\u7ec4' + (index + 1)));
-    const remove = element('button', 'specified-text-remove', '\u5220\u9664'); remove.type = 'button'; remove.dataset.specifiedRemove = group.id; remove.hidden = specifiedTextGroups.length <= 1; head.append(remove);
+    const remove = element('button', 'specified-text-remove', '\u5220\u9664');
+    remove.type = 'button';
+    remove.dataset.specifiedRemove = group.id;
+    remove.hidden = specifiedTextGroups.length <= 1;
+    head.append(remove);
     const modes = element('div', 'specified-text-modes');
-    for (const [value, labelText] of [['sequence', '\u987a\u5e8f\u8f93\u5165'], ['random', '\u968f\u673a\u8f93\u5165']]) {
-      const label = document.createElement('label'); const input = document.createElement('input');
-      input.type = 'radio'; input.name = 'specified-mode-' + group.id; input.value = value; input.checked = group.mode === value; input.dataset.specifiedMode = group.id;
-      label.append(input, document.createTextNode(labelText)); modes.append(label);
+    for (const [value, labelText] of [
+      ['sequence', '\u987a\u5e8f\u8f93\u5165'],
+      ['random', '\u968f\u673a\u8f93\u5165'],
+    ]) {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'specified-mode-' + group.id;
+      input.value = value;
+      input.checked = group.mode === value;
+      input.dataset.specifiedMode = group.id;
+      label.append(input, document.createTextNode(labelText));
+      modes.append(label);
     }
-    const textarea = document.createElement('textarea'); textarea.value = group.text; textarea.dataset.specifiedText = group.id; textarea.placeholder = '\u6bcf\u884c\u4e00\u6761\u6587\u672c\uff0c\u8f93\u5165\u65f6\u6309\u73af\u5883\u5206\u914d';
+    const textarea = document.createElement('textarea');
+    textarea.value = group.text;
+    textarea.dataset.specifiedText = group.id;
+    textarea.placeholder =
+      '\u6bcf\u884c\u4e00\u6761\u6587\u672c\uff0c\u8f93\u5165\u65f6\u6309\u73af\u5883\u5206\u914d';
     const foot = element('div', 'specified-text-group-foot');
-    const count = element('span', 'specified-text-count', specifiedTextItems(group.text).length + ' \u6761\u6587\u672c'); count.dataset.specifiedCount = group.id;
-    const send = element('button', 'specified-text-send', '\u8f93\u5165 (Shift+F1)'); send.type = 'button'; send.dataset.specifiedSend = group.id;
-    foot.append(count, send); card.append(head, modes, textarea, foot); target.append(card);
+    const count = element(
+      'span',
+      'specified-text-count',
+      specifiedTextItems(group.text).length + ' \u6761\u6587\u672c'
+    );
+    count.dataset.specifiedCount = group.id;
+    const send = element('button', 'specified-text-send', '\u8f93\u5165 (Shift+F1)');
+    send.type = 'button';
+    send.dataset.specifiedSend = group.id;
+    foot.append(count, send);
+    card.append(head, modes, textarea, foot);
+    target.append(card);
   });
 }
 
@@ -3180,7 +4144,10 @@ function specifiedTextSessionIds() {
     const rightSession = sessions.find((item) => item.id === right);
     const leftNumber = String(displayProfileNumber(leftSession?.profile || { id: left }));
     const rightNumber = String(displayProfileNumber(rightSession?.profile || { id: right }));
-    return leftNumber.localeCompare(rightNumber, 'zh-CN', { numeric: true, sensitivity: 'base' }) || String(left).localeCompare(String(right));
+    return (
+      leftNumber.localeCompare(rightNumber, 'zh-CN', { numeric: true, sensitivity: 'base' }) ||
+      String(left).localeCompare(String(right))
+    );
   });
 }
 
@@ -3190,63 +4157,173 @@ function specifiedTextFailureLabel(id) {
 }
 
 async function sendSpecifiedTextGroup(id) {
-  const group = specifiedTextGroups.find((item) => item.id === id); if (!group) return;
+  const group = specifiedTextGroups.find((item) => item.id === id);
+  if (!group) return;
   let ids;
-  try { ids = specifiedTextSessionIds(); } catch (error) { return toast(error.message); }
-  const items = specifiedTextItems(group.text); if (!items.length) return toast('\u8bf7\u5148\u5728\u6587\u672c\u7ec4\u4e2d\u6bcf\u884c\u586b\u5199\u4e00\u6761\u6587\u672c');
+  try {
+    ids = specifiedTextSessionIds();
+  } catch (error) {
+    return toast(error.message);
+  }
+  const items = specifiedTextItems(group.text);
+  if (!items.length)
+    return toast(
+      '\u8bf7\u5148\u5728\u6587\u672c\u7ec4\u4e2d\u6bcf\u884c\u586b\u5199\u4e00\u6761\u6587\u672c'
+    );
   const assignment = distributeSpecifiedTexts(items, ids.length, group.mode, group.cursor);
   const [delayMin, delayMax] = textDelayRange();
-  const button = document.querySelector('[data-specified-send="' + id + '"]'); if (button) button.disabled = true;
+  const button = document.querySelector('[data-specified-send="' + id + '"]');
+  if (button) button.disabled = true;
   try {
-    const label = group.mode === 'random' ? '\u968f\u673a\u6307\u5b9a\u6587\u672c' : '\u987a\u5e8f\u6307\u5b9a\u6587\u672c';
+    const label =
+      group.mode === 'random'
+        ? '\u968f\u673a\u6307\u5b9a\u6587\u672c'
+        : '\u987a\u5e8f\u6307\u5b9a\u6587\u672c';
     const result = await window.ops.batchTextAction(ids, assignment.texts, delayMin, delayMax);
     log('Sync', label + ' \u00b7 ' + JSON.stringify(result));
     if (!result?.success) {
       const failed = (result?.failures || []).map((item) => specifiedTextFailureLabel(item.id));
-      const suffix = failed.length ? '\uff1b\u8bf7\u5148\u5728\u73af\u5883 ' + failed.join('\u3001') + ' \u4e2d\u70b9\u51fb\u4f60\u8981\u8f93\u5165\u7684\u4f4d\u7f6e' : '';
-      return toast('\u6307\u5b9a\u6587\u672c\u4ec5\u5199\u5165 ' + (result?.profiles?.length || 0) + '/' + ids.length + ' \u4e2a\u73af\u5883' + suffix);
+      const suffix = failed.length
+        ? '\uff1b\u8bf7\u5148\u5728\u73af\u5883 ' +
+          failed.join('\u3001') +
+          ' \u4e2d\u70b9\u51fb\u4f60\u8981\u8f93\u5165\u7684\u4f4d\u7f6e'
+        : '';
+      return toast(
+        '\u6307\u5b9a\u6587\u672c\u4ec5\u5199\u5165 ' +
+          (result?.profiles?.length || 0) +
+          '/' +
+          ids.length +
+          ' \u4e2a\u73af\u5883' +
+          suffix
+      );
     }
-    if (group.mode === 'sequence') { group.cursor = assignment.nextCursor; saveSpecifiedTextGroups(); }
-    toast(label + '\u5b8c\u6210\uff1a' + result.profiles.length + '/' + ids.length + ' \u4e2a\u73af\u5883\u5df2\u5b9e\u9645\u5199\u5165');
-  } catch (error) { log('Error', error.message); toast(error.message); }
-  finally { if (button) button.disabled = false; }
+    if (group.mode === 'sequence') {
+      group.cursor = assignment.nextCursor;
+      saveSpecifiedTextGroups();
+    }
+    toast(
+      label +
+        '\u5b8c\u6210\uff1a' +
+        result.profiles.length +
+        '/' +
+        ids.length +
+        ' \u4e2a\u73af\u5883\u5df2\u5b9e\u9645\u5199\u5165'
+    );
+  } catch (error) {
+    log('Error', error.message);
+    toast(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
-function normalizeUrl(value) { const raw = String(value || '').trim(); if (!raw) return 'about:blank'; if (/^(https?:\/\/|about:)/i.test(raw)) return raw; return `https://${raw}`; }
+function normalizeUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return 'about:blank';
+  if (/^(https?:\/\/|about:)/i.test(raw)) return raw;
+  return `https://${raw}`;
+}
 
 function normalizedProxyType(value) {
   const protocol = String(value || '').toLowerCase();
   return ['http', 'https', 'socks5'].includes(protocol) ? protocol : 'socks5';
 }
 function normalizeProxy(value, selectedType = 'socks5') {
-  let raw = String(value || '').trim(); if (!raw || /^(direct|offline|none)$/i.test(raw)) return 'Direct';
+  let raw = String(value || '').trim();
+  if (!raw || /^(direct|offline|none)$/i.test(raw)) return 'Direct';
   raw = raw.replace(/^sock(?:s)?5s?:\/\//i, 'socks5://');
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return raw;
-  const parts = raw.split(':'); if (![2, 4].includes(parts.length) && parts.length < 4) throw new Error('\u4ee3\u7406\u683c\u5f0f\u5e94\u4e3a IP:\u7aef\u53e3 \u6216 IP:\u7aef\u53e3:\u7528\u6237\u540d:\u5bc6\u7801');
-  const host = parts[0]; const port = Number(parts[1]); if (!/^[a-zA-Z0-9._-]+$/.test(host) || !Number.isInteger(port) || port < 1 || port > 65535) throw new Error('\u4ee3\u7406 IP \u6216\u7aef\u53e3\u65e0\u6548');
+  const parts = raw.split(':');
+  if (![2, 4].includes(parts.length) && parts.length < 4)
+    throw new Error(
+      '\u4ee3\u7406\u683c\u5f0f\u5e94\u4e3a IP:\u7aef\u53e3 \u6216 IP:\u7aef\u53e3:\u7528\u6237\u540d:\u5bc6\u7801'
+    );
+  const host = parts[0];
+  const port = Number(parts[1]);
+  if (!/^[a-zA-Z0-9._-]+$/.test(host) || !Number.isInteger(port) || port < 1 || port > 65535)
+    throw new Error('\u4ee3\u7406 IP \u6216\u7aef\u53e3\u65e0\u6548');
   const protocol = normalizedProxyType(selectedType);
   if (parts.length === 2) return protocol + '://' + host + ':' + port;
-  const username = parts[2]; const password = parts.slice(3).join(':'); if (!username || !password) throw new Error('\u4ee3\u7406\u7528\u6237\u540d\u548c\u5bc6\u7801\u4e0d\u80fd\u4e3a\u7a7a');
-  return protocol + '://' + encodeURIComponent(username) + ':' + encodeURIComponent(password) + '@' + host + ':' + port;
+  const username = parts[2];
+  const password = parts.slice(3).join(':');
+  if (!username || !password)
+    throw new Error('\u4ee3\u7406\u7528\u6237\u540d\u548c\u5bc6\u7801\u4e0d\u80fd\u4e3a\u7a7a');
+  return (
+    protocol +
+    '://' +
+    encodeURIComponent(username) +
+    ':' +
+    encodeURIComponent(password) +
+    '@' +
+    host +
+    ':' +
+    port
+  );
 }
-function proxyLines(textareaId, typeId) { return $(textareaId).value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).map((item) => normalizeProxy(item, $(typeId).value)); }
+function proxyLines(textareaId, typeId) {
+  return $(textareaId)
+    .value.split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => normalizeProxy(item, $(typeId).value));
+}
 async function verifyProxyAssignments(profiles, proxies) {
-  if (profiles.length !== proxies.length) throw new Error('\u4ee3\u7406\u6570\u91cf\u5fc5\u987b\u4e0e\u73af\u5883\u6570\u91cf\u4e00\u81f4\uff0c\u786e\u4fdd\u6bcf\u4e2a\u73af\u5883\u7ed1\u5b9a\u81ea\u5df1\u7684\u4ee3\u7406');
+  if (profiles.length !== proxies.length)
+    throw new Error(
+      '\u4ee3\u7406\u6570\u91cf\u5fc5\u987b\u4e0e\u73af\u5883\u6570\u91cf\u4e00\u81f4\uff0c\u786e\u4fdd\u6bcf\u4e2a\u73af\u5883\u7ed1\u5b9a\u81ea\u5df1\u7684\u4ee3\u7406'
+    );
   const results = [];
   for (let index = 0; index < profiles.length; index += 1) {
-    const profile = profiles[index]; toast('\u6b63\u5728\u68c0\u6d4b\u4ee3\u7406 ' + (index + 1) + '/' + profiles.length + '\uff08\u73af\u5883 ' + displayProfileNumber(profile) + '\uff09...');
-    try { results.push(await window.ops.testProfileProxy({ ...profile, proxy: proxies[index] })); }
-    catch (error) { throw new Error('\u73af\u5883 ' + displayProfileNumber(profile) + ' \u4ee3\u7406\u4e0d\u53ef\u7528\uff1a' + error.message); }
+    const profile = profiles[index];
+    toast(
+      '\u6b63\u5728\u68c0\u6d4b\u4ee3\u7406 ' +
+        (index + 1) +
+        '/' +
+        profiles.length +
+        '\uff08\u73af\u5883 ' +
+        displayProfileNumber(profile) +
+        '\uff09...'
+    );
+    try {
+      results.push(await window.ops.testProfileProxy({ ...profile, proxy: proxies[index] }));
+    } catch (error) {
+      throw new Error(
+        '\u73af\u5883 ' +
+          displayProfileNumber(profile) +
+          ' \u4ee3\u7406\u4e0d\u53ef\u7528\uff1a' +
+          error.message
+      );
+    }
   }
   return results;
 }
 function installProxyTypeControl(textareaId, selectId) {
-  const textarea = $(textareaId); if (!textarea || $(selectId)) return;
-  const label = document.createElement('label'); label.className = 'proxy-type-field'; label.dataset.proxyFor = textarea.id; label.textContent = '\u4ee3\u7406\u7c7b\u578b\uff08\u672a\u586b\u5199\u524d\u7f00\u65f6\u4f7f\u7528\uff09';
-  const select = document.createElement('select'); select.id = selectId;
-  for (const [value, text] of [['socks5', 'SOCKS5'], ['http', 'HTTP'], ['https', 'HTTPS']]) { const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option); }
+  const textarea = $(textareaId);
+  if (!textarea || $(selectId)) return;
+  const label = document.createElement('label');
+  label.className = 'proxy-type-field';
+  label.dataset.proxyFor = textarea.id;
+  label.textContent = '\u4ee3\u7406\u7c7b\u578b\uff08\u672a\u586b\u5199\u524d\u7f00\u65f6\u4f7f\u7528\uff09';
+  const select = document.createElement('select');
+  select.id = selectId;
+  for (const [value, text] of [
+    ['socks5', 'SOCKS5'],
+    ['http', 'HTTP'],
+    ['https', 'HTTPS'],
+  ]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    select.append(option);
+  }
   label.append(select);
-  const note = element('p', 'store-note', '\u53ef\u76f4\u63a5\u8f93\u5165 IP:\u7aef\u53e3:\u7528\u6237\u540d:\u5bc6\u7801\uff1b\u68c0\u6d4b\u6210\u529f\u540e\u624d\u4f1a\u5199\u5165\u73af\u5883\u3002'); note.dataset.proxyFor = textarea.id;
-  const field = textarea.closest('label') || textarea; field.before(label, note);
+  const note = element(
+    'p',
+    'store-note',
+    '\u53ef\u76f4\u63a5\u8f93\u5165 IP:\u7aef\u53e3:\u7528\u6237\u540d:\u5bc6\u7801\uff1b\u68c0\u6d4b\u6210\u529f\u540e\u624d\u4f1a\u5199\u5165\u73af\u5883\u3002'
+  );
+  note.dataset.proxyFor = textarea.id;
+  const field = textarea.closest('label') || textarea;
+  field.before(label, note);
 }
 installProxyTypeControl('#batch-add-proxies', 'batch-add-proxy-type');
 installProxyTypeControl('#batch-proxy-list', 'batch-update-proxy-type');
@@ -3258,13 +4335,16 @@ function installBatchUpdateNetworkMode() {
   const submit = $('#batch-update-submit') || form?.querySelector('button.primary[value="default"]');
   if (!form || !hidden) return;
   const sync = () => {
-    const selected = document.querySelector('input[name="batch-update-network"]:checked')?.value
-      || (hidden.value === 'direct' ? 'direct' : 'proxy');
+    const selected =
+      document.querySelector('input[name="batch-update-network"]:checked')?.value ||
+      (hidden.value === 'direct' ? 'direct' : 'proxy');
     const direct = selected === 'direct';
     hidden.value = direct ? 'direct' : 'proxy';
     if (fields) fields.hidden = direct;
     if (textarea) textarea.disabled = direct;
-    form.querySelectorAll('[data-proxy-for="batch-proxy-list"]').forEach((item) => { item.hidden = direct; });
+    form.querySelectorAll('[data-proxy-for="batch-proxy-list"]').forEach((item) => {
+      item.hidden = direct;
+    });
     if (submit) submit.textContent = direct ? tx('应用本地直连') : tx('检测并应用代理');
   };
   form.querySelectorAll('input[name="batch-update-network"]').forEach((input) => {
@@ -3272,7 +4352,11 @@ function installBatchUpdateNetworkMode() {
   });
   // keep legacy select support if something still injects it
   const legacy = document.getElementById('batch-update-network-mode-select');
-  if (legacy) legacy.addEventListener('change', () => { hidden.value = legacy.value; sync(); });
+  if (legacy)
+    legacy.addEventListener('change', () => {
+      hidden.value = legacy.value;
+      sync();
+    });
   sync();
 }
 installBatchUpdateNetworkMode();
@@ -3289,7 +4373,9 @@ function installCreateNetworkMode() {
       if (direct) input.value = '';
     }
   };
-  document.querySelectorAll('input[name="create-network"]').forEach((el) => el.addEventListener('change', sync));
+  document
+    .querySelectorAll('input[name="create-network"]')
+    .forEach((el) => el.addEventListener('change', sync));
   sync();
 }
 installCreateNetworkMode();
@@ -3300,7 +4386,9 @@ function installBatchAddNetworkMode() {
     const mode = document.querySelector('input[name="batch-add-network"]:checked')?.value || 'direct';
     if (fields) fields.hidden = mode === 'direct';
   };
-  document.querySelectorAll('input[name="batch-add-network"]').forEach((el) => el.addEventListener('change', sync));
+  document
+    .querySelectorAll('input[name="batch-add-network"]')
+    .forEach((el) => el.addEventListener('change', sync));
   sync();
 }
 installBatchAddNetworkMode();
@@ -3308,16 +4396,29 @@ renderSpecifiedTextGroups();
 
 async function runSyncAction(label, action) {
   try {
-    const result = await action(); log('Sync', label + ' · ' + JSON.stringify(result));
+    const result = await action();
+    log('Sync', label + ' · ' + JSON.stringify(result));
     if (result?.success === false) {
       const failures = Array.isArray(result.failures) ? result.failures : [];
       const failed = failures.map((item) => specifiedTextFailureLabel(item.id)).join('、');
-      toast(label + '仅完成 ' + (result.profiles?.length || 0) + ' 个环境' + (failed ? '；失败环境：' + failed : ''));
-      await refreshSessions(); return result;
+      toast(
+        label +
+          '仅完成 ' +
+          (result.profiles?.length || 0) +
+          ' 个环境' +
+          (failed ? '；失败环境：' + failed : '')
+      );
+      await refreshSessions();
+      return result;
     }
-    toast(label + '完成'); await refreshSessions(); return result;
+    toast(label + '完成');
+    await refreshSessions();
+    return result;
+  } catch (error) {
+    log('Error', error.message);
+    toast(error.message);
+    return null;
   }
-  catch (error) { log('Error', error.message); toast(error.message); return null; }
 }
 
 function renderLogs() {
@@ -3329,7 +4430,11 @@ function renderLogs() {
   }
   for (const item of ui.logs) {
     const row = element('div', 'log-row');
-    row.append(element('span', '', item.time), element('span', '', item.module), element('span', '', item.message));
+    row.append(
+      element('span', '', item.time),
+      element('span', '', item.module),
+      element('span', '', item.message)
+    );
     target.append(row);
   }
 }
@@ -3401,7 +4506,7 @@ function positionThemePopover() {
   left = Math.min(Math.max(left, minLeft), maxLeft);
 
   let top = rect.bottom + gap;
-  const spaceBelow = (vp.top + vp.height - pad) - top;
+  const spaceBelow = vp.top + vp.height - pad - top;
   const spaceAbove = rect.top - gap - (vp.top + pad);
   const useH = Math.min(measuredH, maxH);
   if (useH > spaceBelow && spaceAbove > spaceBelow) {
@@ -3487,25 +4592,57 @@ document.addEventListener('click', async (event) => {
   } else if (!event.target.closest('#theme-picker') && !event.target.closest('#theme-popover')) {
     setThemePopoverOpen(false);
   }
-  const nav = event.target.closest('[data-view]'); if (nav) switchView(nav.dataset.view);
+  const nav = event.target.closest('[data-view]');
+  if (nav) switchView(nav.dataset.view);
   const action = event.target.closest('[data-action]');
   if (action?.dataset.action === 'start') startProfile(action.dataset.id);
   if (action?.dataset.action === 'stop') stopProfile(action.dataset.id);
   if (action?.dataset.action === 'edit') openProfileEditor(action.dataset.id);
-  if (action?.dataset.action === 'select-sync') { selectedSessions.add(action.dataset.id); pushSyncSelection(); switchView('sync'); }
+  if (action?.dataset.action === 'select-sync') {
+    selectedSessions.add(action.dataset.id);
+    pushSyncSelection();
+    switchView('sync');
+  }
 
-  const assign = event.target.closest('[data-extension-assign]'); if (assign) openAssign(assign.dataset.extensionAssign);
-  const remove = event.target.closest('[data-extension-remove]'); if (remove) { try { await window.ops.removeExtension(remove.dataset.extensionRemove); await refreshExtensions(); } catch (error) { toast(error.message); } }
+  const assign = event.target.closest('[data-extension-assign]');
+  if (assign) openAssign(assign.dataset.extensionAssign);
+  const remove = event.target.closest('[data-extension-remove]');
+  if (remove) {
+    try {
+      await window.ops.removeExtension(remove.dataset.extensionRemove);
+      await refreshExtensions();
+    } catch (error) {
+      toast(error.message);
+    }
+  }
   const windowButton = event.target.closest('[data-window]');
   if (windowButton) {
     const action = windowButton.dataset.window;
     $$('[data-window]').forEach((btn) => btn.classList.toggle('active', btn === windowButton));
     runSyncAction('窗口操作', () => window.ops.windowAction(selectedSessionIds(), action));
   }
-  const masterSelect = event.target.closest('[data-master-select]'); if (masterSelect && !syncState.active && selectedSessions.has(masterSelect.dataset.masterSelect)) { preferredMasterId = masterSelect.dataset.masterSelect; pushSyncSelection(); renderSessions(); }
-  const showWindow = event.target.closest('[data-show-window]'); if (showWindow) runSyncAction('\u663e\u793a\u7a97\u53e3', () => window.ops.windowAction([showWindow.dataset.showWindow], 'normal'));
-  const proxyCheck = event.target.closest('[data-proxy-check]'); if (proxyCheck) checkProfileProxy(proxyCheck.dataset.proxyCheck);
-  const consoleButton = event.target.closest('[data-console]'); if (consoleButton) { $$('.console-tabs button').forEach((button) => button.classList.toggle('active', button === consoleButton)); $$('.console-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `console-${consoleButton.dataset.console}`)); }
+  const masterSelect = event.target.closest('[data-master-select]');
+  if (masterSelect && !syncState.active && selectedSessions.has(masterSelect.dataset.masterSelect)) {
+    preferredMasterId = masterSelect.dataset.masterSelect;
+    pushSyncSelection();
+    renderSessions();
+  }
+  const showWindow = event.target.closest('[data-show-window]');
+  if (showWindow)
+    runSyncAction('\u663e\u793a\u7a97\u53e3', () =>
+      window.ops.windowAction([showWindow.dataset.showWindow], 'normal')
+    );
+  const proxyCheck = event.target.closest('[data-proxy-check]');
+  if (proxyCheck) checkProfileProxy(proxyCheck.dataset.proxyCheck);
+  const consoleButton = event.target.closest('[data-console]');
+  if (consoleButton) {
+    $$('.console-tabs button').forEach((button) =>
+      button.classList.toggle('active', button === consoleButton)
+    );
+    $$('.console-panel').forEach((panel) =>
+      panel.classList.toggle('active', panel.id === `console-${consoleButton.dataset.console}`)
+    );
+  }
 });
 
 document.addEventListener('focusin', (event) => {
@@ -3519,14 +4656,18 @@ window.addEventListener('resize', () => {
 });
 // Close dropdown on outer scroll — but NOT when scrolling the menu itself
 // (long lists need overflow scroll; previous capture-scroll closed them instantly)
-window.addEventListener('scroll', (event) => {
-  if (!openSelectMenu || openSelectMenu.settling) return;
-  const target = event.target;
-  if (target === openSelectMenu.menu || openSelectMenu.menu.contains(target)) return;
-  // Also ignore scrolls bubbling from within the open menu (some browsers)
-  if (typeof target?.closest === 'function' && target.closest('.themed-select-menu')) return;
-  closeSelectMenu();
-}, true);
+window.addEventListener(
+  'scroll',
+  (event) => {
+    if (!openSelectMenu || openSelectMenu.settling) return;
+    const target = event.target;
+    if (target === openSelectMenu.menu || openSelectMenu.menu.contains(target)) return;
+    // Also ignore scrolls bubbling from within the open menu (some browsers)
+    if (typeof target?.closest === 'function' && target.closest('.themed-select-menu')) return;
+    closeSelectMenu();
+  },
+  true
+);
 document.addEventListener('keydown', (event) => {
   if (!openSelectMenu) return;
   if (event.key === 'Escape') {
@@ -3558,28 +4699,108 @@ document.addEventListener('keydown', (event) => {
   options[next].scrollIntoView({ block: 'nearest' });
 });
 
-document.addEventListener('close', (event) => {
-  if (event.target instanceof HTMLDialogElement && openSelectMenu?.select.closest('dialog') === event.target) closeSelectMenu();
-}, true);
+document.addEventListener(
+  'close',
+  (event) => {
+    if (
+      event.target instanceof HTMLDialogElement &&
+      openSelectMenu?.select.closest('dialog') === event.target
+    )
+      closeSelectMenu();
+  },
+  true
+);
 
 document.addEventListener('change', async (event) => {
   if (event.target.dataset.extensionToggle) {
-    const input = event.target; input.disabled = true;
-    try { toast(input.checked ? '正在批量启用扩展并重启运行环境...' : '正在批量停用扩展并重启运行环境...'); const result = await window.ops.toggleExtensionAll(input.dataset.extensionToggle, input.checked); await refreshExtensions(); await refreshStatus(); await refreshSessions(); toast(tx(`已${input.checked ? '启用' : '停用'}，影响 ${result.affected} 个环境，重启 ${result.restarted} 个`)); }
-    catch (error) { input.checked = !input.checked; toast(error.message); } finally { input.disabled = false; }
+    const input = event.target;
+    input.disabled = true;
+    try {
+      toast(input.checked ? '正在批量启用扩展并重启运行环境...' : '正在批量停用扩展并重启运行环境...');
+      const result = await window.ops.toggleExtensionAll(input.dataset.extensionToggle, input.checked);
+      await refreshExtensions();
+      await refreshStatus();
+      await refreshSessions();
+      toast(
+        tx(
+          `已${input.checked ? '启用' : '停用'}，影响 ${result.affected} 个环境，重启 ${result.restarted} 个`
+        )
+      );
+    } catch (error) {
+      input.checked = !input.checked;
+      toast(error.message);
+    } finally {
+      input.disabled = false;
+    }
   }
-  if (event.target.dataset.profileSelect) { event.target.checked ? selectedProfiles.add(event.target.dataset.profileSelect) : selectedProfiles.delete(event.target.dataset.profileSelect); updateProfileSelectionUi(); }
-  if (event.target.dataset.sessionSelect && !syncState.active) { event.target.checked ? selectedSessions.add(event.target.dataset.sessionSelect) : selectedSessions.delete(event.target.dataset.sessionSelect); if (!selectedSessions.has(preferredMasterId)) preferredMasterId = [...selectedSessions][0] || null; pushSyncSelection(); renderSessions(); }
+  if (event.target.dataset.profileSelect) {
+    event.target.checked
+      ? selectedProfiles.add(event.target.dataset.profileSelect)
+      : selectedProfiles.delete(event.target.dataset.profileSelect);
+    updateProfileSelectionUi();
+  }
+  if (event.target.dataset.sessionSelect && !syncState.active) {
+    event.target.checked
+      ? selectedSessions.add(event.target.dataset.sessionSelect)
+      : selectedSessions.delete(event.target.dataset.sessionSelect);
+    if (!selectedSessions.has(preferredMasterId)) preferredMasterId = [...selectedSessions][0] || null;
+    pushSyncSelection();
+    renderSessions();
+  }
 });
 
-$('#select-all-profiles').addEventListener('change', (event) => { for (const id of visibleProfilePageIds()) event.target.checked ? selectedProfiles.add(id) : selectedProfiles.delete(id); renderProfiles(); });
-$('#select-all-sessions').addEventListener('change', (event) => { if (syncState.active) return; const group = $('#sync-group').value || 'all'; const visible = group === 'all' ? sessions : sessions.filter((item) => String(item.profile?.tag || '未分组') === group); for (const item of visible) event.target.checked ? selectedSessions.add(item.id) : selectedSessions.delete(item.id); if (!selectedSessions.has(preferredMasterId)) preferredMasterId = [...selectedSessions][0] || null; pushSyncSelection(); renderSessions(); });
-$('#sync-group').addEventListener('change', () => { if (syncState.active) return; const group = $('#sync-group').value || 'all'; const values = group === 'all' ? sessions : sessions.filter((item) => String(item.profile?.tag || '未分组') === group); selectedSessions = new Set(values.map((item) => item.id)); preferredMasterId = values[0]?.id || null; pushSyncSelection(); renderSessions(); });
-$('#profile-search').addEventListener('input', () => { profilePage = 1; renderProfiles(); }); $('#extension-search').addEventListener('input', renderExtensions);
-$('#profile-page-size').addEventListener('change', (event) => { const value = Number(event.target.value); profilePageSize = PROFILE_PAGE_SIZES.includes(value) ? value : 10; profilePage = 1; try { localStorage.setItem(PROFILE_PAGE_SIZE_KEY, String(profilePageSize)); } catch (_) {} renderProfiles(); });
-$('#profile-prev').addEventListener('click', () => { profilePage = Math.max(1, profilePage - 1); renderProfiles(); });
-$('#profile-next').addEventListener('click', () => { profilePage += 1; renderProfiles(); });
-$('#profile-page').addEventListener('change', (event) => { profilePage = Math.max(1, Number.parseInt(event.target.value, 10) || 1); renderProfiles(); });
+$('#select-all-profiles').addEventListener('change', (event) => {
+  for (const id of visibleProfilePageIds())
+    event.target.checked ? selectedProfiles.add(id) : selectedProfiles.delete(id);
+  renderProfiles();
+});
+$('#select-all-sessions').addEventListener('change', (event) => {
+  if (syncState.active) return;
+  const group = $('#sync-group').value || 'all';
+  const visible =
+    group === 'all' ? sessions : sessions.filter((item) => String(item.profile?.tag || '未分组') === group);
+  for (const item of visible)
+    event.target.checked ? selectedSessions.add(item.id) : selectedSessions.delete(item.id);
+  if (!selectedSessions.has(preferredMasterId)) preferredMasterId = [...selectedSessions][0] || null;
+  pushSyncSelection();
+  renderSessions();
+});
+$('#sync-group').addEventListener('change', () => {
+  if (syncState.active) return;
+  const group = $('#sync-group').value || 'all';
+  const values =
+    group === 'all' ? sessions : sessions.filter((item) => String(item.profile?.tag || '未分组') === group);
+  selectedSessions = new Set(values.map((item) => item.id));
+  preferredMasterId = values[0]?.id || null;
+  pushSyncSelection();
+  renderSessions();
+});
+$('#profile-search').addEventListener('input', () => {
+  profilePage = 1;
+  renderProfiles();
+});
+$('#extension-search').addEventListener('input', renderExtensions);
+$('#profile-page-size').addEventListener('change', (event) => {
+  const value = Number(event.target.value);
+  profilePageSize = PROFILE_PAGE_SIZES.includes(value) ? value : 10;
+  profilePage = 1;
+  try {
+    localStorage.setItem(PROFILE_PAGE_SIZE_KEY, String(profilePageSize));
+  } catch (_) {}
+  renderProfiles();
+});
+$('#profile-prev').addEventListener('click', () => {
+  profilePage = Math.max(1, profilePage - 1);
+  renderProfiles();
+});
+$('#profile-next').addEventListener('click', () => {
+  profilePage += 1;
+  renderProfiles();
+});
+$('#profile-page').addEventListener('change', (event) => {
+  profilePage = Math.max(1, Number.parseInt(event.target.value, 10) || 1);
+  renderProfiles();
+});
 function openCreateProfileDialog() {
   fillGroupSelect($('#profile-create-group'), listGroups()[0]?.id || UNGROUPED_ID);
   const directRadio = document.querySelector('input[name="create-network"][value="direct"]');
@@ -3597,7 +4818,8 @@ function openCreateProfileDialog() {
   if (form?.elements?.startUrl) form.elements.startUrl.value = '';
   $('#profile-dialog')?.showModal();
 }
-$('#create-profile').addEventListener('click', openCreateProfileDialog); $('#quick-create').addEventListener('click', openCreateProfileDialog);
+$('#create-profile').addEventListener('click', openCreateProfileDialog);
+$('#quick-create').addEventListener('click', openCreateProfileDialog);
 
 // group filter chips
 document.getElementById('profile-group-chips')?.addEventListener('click', (event) => {
@@ -3634,7 +4856,9 @@ document.getElementById('group-color')?.addEventListener('input', (event) => {
   const color = event.target.value.trim();
   if (/^#[0-9a-fA-F]{6}$/.test(color)) {
     $('#group-color-preview')?.style.setProperty('--group-color', color);
-    $$('#group-color-chips .group-color-pick').forEach((button) => button.classList.toggle('active', button.dataset.color.toLowerCase() === color.toLowerCase()));
+    $$('#group-color-chips .group-color-pick').forEach((button) =>
+      button.classList.toggle('active', button.dataset.color.toLowerCase() === color.toLowerCase())
+    );
   }
 });
 document.getElementById('group-form')?.addEventListener('submit', (event) => {
@@ -3645,29 +4869,43 @@ document.getElementById('group-form')?.addEventListener('submit', (event) => {
     $('#group-dialog').close();
     toast(tx('分组已保存'));
     log('Group', tx('保存分组'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 document.getElementById('batch-assign-group-btn')?.addEventListener('click', async () => {
   try {
     const gid = $('#batch-assign-group')?.value;
     await assignSelectedToGroup(gid === '' ? UNGROUPED_ID : gid);
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#profile-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); if (event.submitter?.value === 'cancel') return $('#profile-dialog').close();
-  const form = event.currentTarget; const data = new FormData(form); const number = nextProfileNumber(); const previousNext = ui.nextProfileNumber;
+  event.preventDefault();
+  if (event.submitter?.value === 'cancel') return $('#profile-dialog').close();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const number = nextProfileNumber();
+  const previousNext = ui.nextProfileNumber;
   const groupId = String(data.get('groupId') || $('#profile-create-group')?.value || UNGROUPED_ID);
   let startUrl = '';
-  try { startUrl = normalizeOptionalWebUrl(data.get('startUrl')); }
-  catch (error) { return toast(error.message); }
+  try {
+    startUrl = normalizeOptionalWebUrl(data.get('startUrl'));
+  } catch (error) {
+    return toast(error.message);
+  }
   const networkMode = document.querySelector('input[name="create-network"]:checked')?.value || 'direct';
   let proxy = 'Direct';
   if (networkMode === 'proxy') {
     const type = $('#create-proxy-type')?.value || 'socks5';
     const raw = String(data.get('proxy') || '').trim();
     if (raw) {
-      try { proxy = normalizeProxy(raw, type); }
-      catch (error) { return toast('代理格式错误：' + error.message); }
+      try {
+        proxy = normalizeProxy(raw, type);
+      } catch (error) {
+        return toast('代理格式错误：' + error.message);
+      }
     }
   }
   const profile = {
@@ -3688,34 +4926,62 @@ $('#profile-form').addEventListener('submit', async (event) => {
     // New profiles get a coherent device persona; existing ones are left as they were.
     privacy: { languageMode: 'ip', langFromIp: true, uiLanguage: 'profile', deviceProfile: 'persona' },
   };
-  ui.profiles.push(profile); ui.nextProfileNumber = number + 1; save();
+  ui.profiles.push(profile);
+  ui.nextProfileNumber = number + 1;
+  save();
   try {
-    await window.ops.syncProfiles(ui.profiles); $('#profile-dialog').close(); form.reset();
+    await window.ops.syncProfiles(ui.profiles);
+    $('#profile-dialog').close();
+    form.reset();
     const directRadio = document.querySelector('input[name="create-network"][value="direct"]');
     if (directRadio) directRadio.checked = true;
-    const fields = $('#create-proxy-fields'); if (fields) fields.hidden = true;
-    await refreshStatus(); log('Profile', '创建环境 ' + number + ' · ' + (isDirectProxy(proxy) ? '本地直连' : '代理'));
-    toast(isDirectProxy(proxy) && networkMode === 'proxy' ? '未填写代理，已自动切换为本地直连' : (isDirectProxy(proxy) ? '已创建（本地直连）' : '已创建（代理模式）'));
+    const fields = $('#create-proxy-fields');
+    if (fields) fields.hidden = true;
+    await refreshStatus();
+    log('Profile', '创建环境 ' + number + ' · ' + (isDirectProxy(proxy) ? '本地直连' : '代理'));
+    toast(
+      isDirectProxy(proxy) && networkMode === 'proxy'
+        ? '未填写代理，已自动切换为本地直连'
+        : isDirectProxy(proxy)
+          ? '已创建（本地直连）'
+          : '已创建（代理模式）'
+    );
   } catch (error) {
-    ui.profiles = ui.profiles.filter((item) => item.id !== profile.id); ui.nextProfileNumber = previousNext; save(); toast('创建失败：' + error.message);
+    ui.profiles = ui.profiles.filter((item) => item.id !== profile.id);
+    ui.nextProfileNumber = previousNext;
+    save();
+    toast('创建失败：' + error.message);
   }
 });
 
-$$('[data-editor-tab]').forEach((button) => button.addEventListener('click', () => setEditorTab(button.dataset.editorTab)));
-$('#editor-back').addEventListener('click', () => { editingProfileId = null; editorNetworkResult = null; switchView('profiles'); });
-$('#editor-cancel').addEventListener('click', () => { editingProfileId = null; editorNetworkResult = null; switchView('profiles'); });
+$$('[data-editor-tab]').forEach((button) =>
+  button.addEventListener('click', () => setEditorTab(button.dataset.editorTab))
+);
+$('#editor-back').addEventListener('click', () => {
+  editingProfileId = null;
+  editorNetworkResult = null;
+  switchView('profiles');
+});
+$('#editor-cancel').addEventListener('click', () => {
+  editingProfileId = null;
+  editorNetworkResult = null;
+  switchView('profiles');
+});
 $('#editor-test-proxy')?.addEventListener('click', testEditorProxy);
 $('#editor-apply-proxy-fp')?.addEventListener('click', applyEditorProxyFingerprint);
 $('#editor-refresh-proxy')?.addEventListener('click', refreshEditorProxy);
 $('#editor-system-defaults').addEventListener('click', useSystemEditorDefaults);
-const editorProxySelector = '#editor-proxy-type,#editor-proxy-host,#editor-proxy-port,#editor-proxy-user,#editor-proxy-password,input[name="editor-network"]';
+const editorProxySelector =
+  '#editor-proxy-type,#editor-proxy-host,#editor-proxy-port,#editor-proxy-user,#editor-proxy-password,input[name="editor-network"]';
 const onEditorFormChange = (event) => {
   if (event.target.matches(editorProxySelector)) {
     editorNetworkResult = null;
     $('#editor-proxy-result').className = 'proxy-test-result';
-    $('#editor-proxy-result').textContent = editorSelectedNetwork() === 'direct' ? tx('本地直连') : tx('设置已更改，请重新检测');
+    $('#editor-proxy-result').textContent =
+      editorSelectedNetwork() === 'direct' ? tx('本地直连') : tx('设置已更改，请重新检测');
   }
-  updateEditorVisibility(); renderEditorSummary();
+  updateEditorVisibility();
+  renderEditorSummary();
 };
 $('#profile-editor-form').addEventListener('input', onEditorFormChange);
 $('#profile-editor-form').addEventListener('change', onEditorFormChange);
@@ -3760,7 +5026,9 @@ document.getElementById('editor-cookie-export')?.addEventListener('click', () =>
     a.click();
     URL.revokeObjectURL(a.href);
     toast(tx('Cookie 已导出'));
-  } catch (error) { toast('导出失败：' + error.message); }
+  } catch (error) {
+    toast('导出失败：' + error.message);
+  }
 });
 document.getElementById('editor-cookie-import-file')?.addEventListener('click', () => {
   document.getElementById('editor-cookie-file')?.click();
@@ -3775,7 +5043,9 @@ document.getElementById('editor-cookie-file')?.addEventListener('change', async 
     if (!Array.isArray(data)) throw new Error(tx('Cookie 必须是 JSON 数组'));
     editorSet('#editor-cookies', JSON.stringify(data, null, 2));
     toast('已导入 ' + data.length + ' 条 Cookie（保存环境后生效）');
-  } catch (error) { toast('导入失败：' + error.message); }
+  } catch (error) {
+    toast('导入失败：' + error.message);
+  }
 });
 document.getElementById('editor-clear-cache-cookie')?.addEventListener('click', async () => {
   if (!editingProfileId) return toast(tx('未打开环境'));
@@ -3789,18 +5059,47 @@ document.getElementById('editor-clear-cache-cookie')?.addEventListener('click', 
       save();
     }
     toast(tx('缓存及 Cookie 已清除'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#profile-editor-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); const index = ui.profiles.findIndex((item) => item.id === editingProfileId); if (index < 0) return toast(tx('环境不存在'));
+  event.preventDefault();
+  const index = ui.profiles.findIndex((item) => item.id === editingProfileId);
+  if (index < 0) return toast(tx('环境不存在'));
   try {
-    const previous = ui.profiles[index]; const draft = editorDraft(true); if (!draft.name) throw new Error(tx('环境名称不能为空'));
+    const previous = ui.profiles[index];
+    const draft = editorDraft(true);
+    if (!draft.name) throw new Error(tx('环境名称不能为空'));
     const switchedToDirect = editorSelectedNetwork() !== 'direct' && isDirectProxy(draft.proxy);
-    if (draft.proxy !== previous.proxy && !editorNetworkResult) { delete draft.exitIp; delete draft.exitCountryCode; delete draft.exitTimezone; delete draft.exitLatitude; delete draft.exitLongitude; delete draft.exitCheckedAt; }
+    if (draft.proxy !== previous.proxy && !editorNetworkResult) {
+      delete draft.exitIp;
+      delete draft.exitCountryCode;
+      delete draft.exitTimezone;
+      delete draft.exitLatitude;
+      delete draft.exitLongitude;
+      delete draft.exitCheckedAt;
+    }
     draft.updatedAt = new Date().toISOString();
-    ui.profiles[index] = draft; save(); engineProfiles = await window.ops.syncProfiles(ui.profiles); renderProfiles();
-    const running = profileEngine(draft.id).running; log('Profile', '已更新环境 ' + displayProfileNumber(draft)); editingProfileId = null; editorNetworkResult = null; switchView('profiles'); toast(switchedToDirect ? '未填写代理，已自动切换为本地直连' : (running ? '设置已保存，请重启该环境后生效' : '环境设置已保存'));
-  } catch (error) { toast('保存失败：' + error.message); }
+    ui.profiles[index] = draft;
+    save();
+    engineProfiles = await window.ops.syncProfiles(ui.profiles);
+    renderProfiles();
+    const running = profileEngine(draft.id).running;
+    log('Profile', '已更新环境 ' + displayProfileNumber(draft));
+    editingProfileId = null;
+    editorNetworkResult = null;
+    switchView('profiles');
+    toast(
+      switchedToDirect
+        ? '未填写代理，已自动切换为本地直连'
+        : running
+          ? '设置已保存，请重启该环境后生效'
+          : '环境设置已保存'
+    );
+  } catch (error) {
+    toast('保存失败：' + error.message);
+  }
 });
 
 $('#batch-add').addEventListener('click', () => {
@@ -3809,72 +5108,168 @@ $('#batch-add').addEventListener('click', () => {
   fillGroupSelect($('#batch-assign-group'), UNGROUPED_ID, { includeUngrouped: true });
   const directRadio = document.querySelector('input[name="batch-add-network"][value="direct"]');
   if (directRadio) directRadio.checked = true;
-  const fields = $('#batch-add-proxy-fields'); if (fields) fields.hidden = true;
+  const fields = $('#batch-add-proxy-fields');
+  if (fields) fields.hidden = true;
   const template = $('#batch-add-template');
   if (template) {
     template.replaceChildren(new Option(tx('使用新环境默认偏好'), ''));
-    for (const profile of ui.profiles) template.append(new Option(`环境 ${displayProfileNumber(profile)}${profile.title ? ' · ' + profile.title : ''}`, profile.id));
+    for (const profile of ui.profiles)
+      template.append(
+        new Option(
+          `环境 ${displayProfileNumber(profile)}${profile.title ? ' · ' + profile.title : ''}`,
+          profile.id
+        )
+      );
   }
   $('#batch-add-dialog').showModal();
 });
 $('#batch-add-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); if (event.submitter?.value === 'cancel') return $('#batch-add-dialog').close();
-  const count = Number.parseInt($('#batch-add-count').value, 10); const start = nextProfileNumber(); const previousNext = ui.nextProfileNumber;
-  const language = $('#batch-add-language').value; const tag = $('#batch-add-tag').value.trim() || '批量创建';
+  event.preventDefault();
+  if (event.submitter?.value === 'cancel') return $('#batch-add-dialog').close();
+  const count = Number.parseInt($('#batch-add-count').value, 10);
+  const start = nextProfileNumber();
+  const previousNext = ui.nextProfileNumber;
+  const language = $('#batch-add-language').value;
+  const tag = $('#batch-add-tag').value.trim() || '批量创建';
   const groupId = $('#batch-add-group')?.value || UNGROUPED_ID;
   const templateId = $('#batch-add-template')?.value || '';
-  const templateProfile = templateId ? (profileEngine(templateId)?.id ? profileEngine(templateId) : ui.profiles.find((item) => item.id === templateId)) : null;
+  const templateProfile = templateId
+    ? profileEngine(templateId)?.id
+      ? profileEngine(templateId)
+      : ui.profiles.find((item) => item.id === templateId)
+    : null;
   const templatePreferences = templateProfile ? cloneProfilePreferences(templateProfile) : null;
   const networkMode = document.querySelector('input[name="batch-add-network"]:checked')?.value || 'direct';
   let proxies = [];
   if (networkMode === 'proxy') {
-    try { proxies = proxyLines('#batch-add-proxies', '#batch-add-proxy-type'); }
-    catch (error) { return toast('代理格式错误：' + error.message); }
+    try {
+      proxies = proxyLines('#batch-add-proxies', '#batch-add-proxy-type');
+    } catch (error) {
+      return toast('代理格式错误：' + error.message);
+    }
     if (!proxies.length) return toast(tx('代理模式请填写代理列表'));
   }
   if (!Number.isInteger(count) || count < 1 || count > 200) return toast(tx('新增数量必须为 1-200'));
-  if (proxies.length && proxies.length !== count) return toast(tx('代理数量必须等于新增环境数量，每个环境对应一条代理'));
-  const used = new Set(ui.profiles.map((item) => item.id)); const created = [];
+  if (proxies.length && proxies.length !== count)
+    return toast(tx('代理数量必须等于新增环境数量，每个环境对应一条代理'));
+  const used = new Set(ui.profiles.map((item) => item.id));
+  const created = [];
   while (created.length < count) {
-    const number = start + created.length; const id = createInternalProfileId(number, used); used.add(id);
-    created.push({ ...(templatePreferences ? structuredClone(templatePreferences) : {}), id, number, name: String(number), title: '', browser: 'Google Chrome', language, networkMode: proxies.length ? 'proxy' : 'direct', proxy: proxies.length ? proxies[created.length] : 'Direct', tag, groupId, os: templatePreferences?.os || 'Windows', location: 'Local', cookies: '' });
+    const number = start + created.length;
+    const id = createInternalProfileId(number, used);
+    used.add(id);
+    created.push({
+      ...(templatePreferences ? structuredClone(templatePreferences) : {}),
+      id,
+      number,
+      name: String(number),
+      title: '',
+      browser: 'Google Chrome',
+      language,
+      networkMode: proxies.length ? 'proxy' : 'direct',
+      proxy: proxies.length ? proxies[created.length] : 'Direct',
+      tag,
+      groupId,
+      os: templatePreferences?.os || 'Windows',
+      location: 'Local',
+      cookies: '',
+    });
   }
   try {
     const verified = proxies.length ? await verifyProxyAssignments(created, proxies) : [];
     created.forEach((profile, index) => {
-      const result = verified[index]; if (!result) return;
-      profile.exitIp = result.ip; profile.exitCountryCode = result.countryCode; profile.exitTimezone = result.timezone || ''; profile.exitLatitude = result.latitude; profile.exitLongitude = result.longitude; profile.exitCheckedAt = result.checkedAt;
+      const result = verified[index];
+      if (!result) return;
+      profile.exitIp = result.ip;
+      profile.exitCountryCode = result.countryCode;
+      profile.exitTimezone = result.timezone || '';
+      profile.exitLatitude = result.latitude;
+      profile.exitLongitude = result.longitude;
+      profile.exitCheckedAt = result.checkedAt;
     });
-    ui.profiles.push(...created); ui.nextProfileNumber = start + created.length; save(); engineProfiles = await window.ops.syncProfiles(ui.profiles);
-    selectedProfiles = new Set(created.map((item) => item.id)); $('#select-all-profiles').checked = false; $('#batch-add-dialog').close(); $('#batch-add-proxies').value = '';
-    await refreshStatus(); await refreshExtensions(); renderProfiles();
-    log('Batch', '批量新增 ' + created.length + ' 个环境 · ' + (networkMode === 'direct' ? '本地直连' : '代理'));
-    toast('已批量创建 ' + created.length + ' 个环境（' + (networkMode === 'direct' ? '本地直连' : '代理模式') + '）');
+    ui.profiles.push(...created);
+    ui.nextProfileNumber = start + created.length;
+    save();
+    engineProfiles = await window.ops.syncProfiles(ui.profiles);
+    selectedProfiles = new Set(created.map((item) => item.id));
+    $('#select-all-profiles').checked = false;
+    $('#batch-add-dialog').close();
+    $('#batch-add-proxies').value = '';
+    await refreshStatus();
+    await refreshExtensions();
+    renderProfiles();
+    log(
+      'Batch',
+      '批量新增 ' + created.length + ' 个环境 · ' + (networkMode === 'direct' ? '本地直连' : '代理')
+    );
+    toast(
+      '已批量创建 ' +
+        created.length +
+        ' 个环境（' +
+        (networkMode === 'direct' ? '本地直连' : '代理模式') +
+        '）'
+    );
   } catch (error) {
-    ui.profiles = ui.profiles.filter((item) => !created.some((createdItem) => createdItem.id === item.id)); ui.nextProfileNumber = previousNext; save(); toast('批量新增失败：' + error.message);
+    ui.profiles = ui.profiles.filter((item) => !created.some((createdItem) => createdItem.id === item.id));
+    ui.nextProfileNumber = previousNext;
+    save();
+    toast('批量新增失败：' + error.message);
   }
 });
 $('#delete-selected').addEventListener('click', async () => {
   pendingDeleteProfiles = ui.profiles.filter((item) => selectedProfiles.has(item.id)).map((item) => item.id);
   if (!pendingDeleteProfiles.length) return toast(tx('请先勾选要删除的环境'));
   try {
-    const status = await window.ops.profileStatus(); const running = status.filter((item) => item.running && pendingDeleteProfiles.includes(item.id)).length;
-    $('#batch-delete-summary').textContent = tx('已选择 ') + pendingDeleteProfiles.length + ' 个环境，其中 ' + running + ' 个正在运行。'; $('#batch-delete-dialog').showModal();
-  } catch (error) { toast(error.message); }
+    const status = await window.ops.profileStatus();
+    const running = status.filter((item) => item.running && pendingDeleteProfiles.includes(item.id)).length;
+    $('#batch-delete-summary').textContent =
+      tx('已选择 ') + pendingDeleteProfiles.length + ' 个环境，其中 ' + running + ' 个正在运行。';
+    $('#batch-delete-dialog').showModal();
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#batch-delete-form').addEventListener('submit', async (event) => {
-  event.preventDefault(); if (event.submitter?.value === 'cancel') { pendingDeleteProfiles = []; return $('#batch-delete-dialog').close(); }
-  const ids = [...pendingDeleteProfiles]; if (!ids.length) return $('#batch-delete-dialog').close();
-  const submitter = event.submitter; if (submitter) submitter.disabled = true;
+  event.preventDefault();
+  if (event.submitter?.value === 'cancel') {
+    pendingDeleteProfiles = [];
+    return $('#batch-delete-dialog').close();
+  }
+  const ids = [...pendingDeleteProfiles];
+  if (!ids.length) return $('#batch-delete-dialog').close();
+  const submitter = event.submitter;
+  if (submitter) submitter.disabled = true;
   try {
     const result = await window.ops.deleteProfiles(ids, $('#batch-delete-data').checked);
-    ui.profiles = ui.profiles.filter((item) => !ids.includes(item.id)); for (const id of ids) { selectedProfiles.delete(id); selectedSessions.delete(id); }
-    pendingDeleteProfiles = []; save(); $('#select-all-profiles').checked = false; $('#batch-delete-dialog').close();
-    await refreshStatus(); await refreshSessions(); await refreshExtensions(); renderProfiles(); log('Batch', '批量删除 ' + result.deleted + ' 个环境'); toast('已删除 ' + result.deleted + ' 个环境');
-  } catch (error) { toast('批量删除失败：' + error.message); } finally { if (submitter) submitter.disabled = false; }
+    ui.profiles = ui.profiles.filter((item) => !ids.includes(item.id));
+    for (const id of ids) {
+      selectedProfiles.delete(id);
+      selectedSessions.delete(id);
+    }
+    pendingDeleteProfiles = [];
+    save();
+    $('#select-all-profiles').checked = false;
+    $('#batch-delete-dialog').close();
+    await refreshStatus();
+    await refreshSessions();
+    await refreshExtensions();
+    renderProfiles();
+    log('Batch', '批量删除 ' + result.deleted + ' 个环境');
+    toast('已删除 ' + result.deleted + ' 个环境');
+  } catch (error) {
+    toast('批量删除失败：' + error.message);
+  } finally {
+    if (submitter) submitter.disabled = false;
+  }
 });
-$('#start-selected').addEventListener('click', async () => { if (!selectedProfiles.size) return toast(tx('请先选择环境')); for (const id of selectedProfiles) await startProfile(id); });
-$('#stop-selected').addEventListener('click', async () => { if (!selectedProfiles.size) return toast(tx('请先选择环境')); for (const id of selectedProfiles) await stopProfile(id); });
+$('#start-selected').addEventListener('click', async () => {
+  if (!selectedProfiles.size) return toast(tx('请先选择环境'));
+  for (const id of selectedProfiles) await startProfile(id);
+});
+$('#stop-selected').addEventListener('click', async () => {
+  if (!selectedProfiles.size) return toast(tx('请先选择环境'));
+  for (const id of selectedProfiles) await stopProfile(id);
+});
 $('#copy-selected')?.addEventListener('click', async () => {
   const sources = ui.profiles.filter((profile) => selectedProfiles.has(profile.id));
   if (!sources.length) return toast(tx('请先选择环境'));
@@ -3884,7 +5279,8 @@ $('#copy-selected')?.addEventListener('click', async () => {
     const engineProfile = engineProfiles.find((item) => item.id === local.id);
     const source = normalizeProfileSettings(engineProfile ? { ...local, ...engineProfile } : local);
     const number = previousNext + index;
-    const id = createInternalProfileId(number, used); used.add(id);
+    const id = createInternalProfileId(number, used);
+    used.add(id);
     const clone = normalizeProfileSettings({
       ...source,
       ...cloneProfilePreferences(source),
@@ -3894,16 +5290,26 @@ $('#copy-selected')?.addEventListener('click', async () => {
       title: source.title ? `${source.title} 副本` : '',
       cookies: '',
       platform: { ...(source.platform || {}), username: '', password: '', totpSecret: '' },
-      exitIp: '', exitCountryCode: '', exitTimezone: '', exitLatitude: '', exitLongitude: '', exitCheckedAt: '', exitLatencyMs: '', exitNetworkType: '',
+      exitIp: '',
+      exitCountryCode: '',
+      exitTimezone: '',
+      exitLatitude: '',
+      exitLongitude: '',
+      exitCheckedAt: '',
+      exitLatencyMs: '',
+      exitNetworkType: '',
     });
     return clone;
   });
   try {
-    ui.profiles.push(...created); ui.nextProfileNumber = previousNext + created.length; save();
+    ui.profiles.push(...created);
+    ui.nextProfileNumber = previousNext + created.length;
+    save();
     engineProfiles = await window.ops.syncProfiles(ui.profiles);
     for (let index = 0; index < sources.length; index += 1) {
       const extensionIds = profileEngine(sources[index].id).assignedExtensions || [];
-      for (const extensionId of extensionIds) await window.ops.assignExtension(extensionId, [created[index].id], true);
+      for (const extensionId of extensionIds)
+        await window.ops.assignExtension(extensionId, [created[index].id], true);
     }
     await refreshExtensions();
     await refreshStatus();
@@ -3912,9 +5318,16 @@ $('#copy-selected')?.addEventListener('click', async () => {
     log('Batch', `复制 ${created.length} 个环境配置`);
     toast(`已复制 ${created.length} 个环境配置（未复制 Cookie 和账号密码）`);
   } catch (error) {
-    await window.ops.deleteProfiles(created.map((item) => item.id), false).catch(() => {});
+    await window.ops
+      .deleteProfiles(
+        created.map((item) => item.id),
+        false
+      )
+      .catch(() => {});
     ui.profiles = ui.profiles.filter((item) => !created.some((createdItem) => createdItem.id === item.id));
-    ui.nextProfileNumber = previousNext; save(); toast('复制环境失败：' + error.message);
+    ui.nextProfileNumber = previousNext;
+    save();
+    toast('复制环境失败：' + error.message);
   }
 });
 $('#add-extension').addEventListener('click', () => $('#add-app-dialog').showModal());
@@ -3923,21 +5336,42 @@ $('#cancel-add-app').addEventListener('click', () => $('#add-app-dialog').close(
 $('#choose-extension-folder').addEventListener('click', async () => {
   try {
     const result = await window.ops.addExtensionFolder();
-    if (!result.canceled) { await refreshExtensions(); await refreshStatus(); await refreshSessions(); $('#add-app-dialog').close(); log('Extension', `添加 ${result.extension.name}，默认分配 ${result.assigned || 0} 个环境，重启 ${result.restarted || 0} 个`); toast(tx(`已添加 ${result.extension.name}，默认启用 ${result.assigned || 0}/${ui.profiles.length}`)); }
-  } catch (error) { toast(error.message); }
+    if (!result.canceled) {
+      await refreshExtensions();
+      await refreshStatus();
+      await refreshSessions();
+      $('#add-app-dialog').close();
+      log(
+        'Extension',
+        `添加 ${result.extension.name}，默认分配 ${result.assigned || 0} 个环境，重启 ${result.restarted || 0} 个`
+      );
+      toast(tx(`已添加 ${result.extension.name}，默认启用 ${result.assigned || 0}/${ui.profiles.length}`));
+    }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#add-store-submit').addEventListener('click', async () => {
   const url = $('#chrome-store-url').value.trim();
   if (!url) return toast(tx('请输入 Chrome 应用商店 URL'));
-  const all = $('#store-assign-all').checked; const ids = all ? ui.profiles.map((item) => item.id) : [];
+  const all = $('#store-assign-all').checked;
+  const ids = all ? ui.profiles.map((item) => item.id) : [];
   try {
     toast(tx('正在从 Chrome 应用商店获取扩展...'));
     const result = await window.ops.addExtensionStore(url, ids, all);
-    await refreshExtensions(); await refreshStatus(); await refreshSessions();
-    $('#add-app-dialog').close(); $('#chrome-store-url').value = '';
-    log('Extension', '商店添加 ' + result.extension.name + ', 分配 ' + result.assigned + ', 重启 ' + result.restarted);
+    await refreshExtensions();
+    await refreshStatus();
+    await refreshSessions();
+    $('#add-app-dialog').close();
+    $('#chrome-store-url').value = '';
+    log(
+      'Extension',
+      '商店添加 ' + result.extension.name + ', 分配 ' + result.assigned + ', 重启 ' + result.restarted
+    );
     toast('已添加 ' + result.extension.name + '，分配 ' + result.assigned + ' 个环境');
-  } catch (error) { toast('商店添加失败：' + error.message); }
+  } catch (error) {
+    toast('商店添加失败：' + error.message);
+  }
 });
 $('#refresh-extensions').addEventListener('click', refreshExtensions);
 $('#app-center-tabs')?.addEventListener('click', (event) => {
@@ -3954,9 +5388,17 @@ $('#proxy-search')?.addEventListener('input', renderProxies);
 $('#proxy-select-all')?.addEventListener('change', (event) => {
   const checked = event.target.checked;
   const q = ($('#proxy-search')?.value || '').trim().toLowerCase();
-  const list = proxyLibrary.filter((item) => !q || [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)].join(' ').toLowerCase().includes(q));
+  const list = proxyLibrary.filter(
+    (item) =>
+      !q ||
+      [item.name, item.host, item.protocol, item.remark, item.lastIp, String(item.port)]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+  );
   for (const item of list) {
-    if (checked) selectedProxies.add(item.id); else selectedProxies.delete(item.id);
+    if (checked) selectedProxies.add(item.id);
+    else selectedProxies.delete(item.id);
   }
   renderProxies();
 });
@@ -3970,7 +5412,9 @@ $('#proxy-delete-selected')?.addEventListener('click', async () => {
     await refreshProxies();
     toast('已删除 ' + ids.length + ' 条代理');
     log('Proxy', '删除 ' + ids.length + ' 条');
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 async function runProxyBatchCheck(ids) {
   if (!ids.length) return toast(tx('请先勾选代理'));
@@ -3988,10 +5432,15 @@ async function runProxyBatchCheck(ids) {
       return;
     }
   }
-  let ok = 0; let fail = 0;
+  let ok = 0;
+  let fail = 0;
   for (const id of ids) {
-    try { await window.ops.proxyCheck({ id }); ok += 1; }
-    catch (_) { fail += 1; }
+    try {
+      await window.ops.proxyCheck({ id });
+      ok += 1;
+    } catch (_) {
+      fail += 1;
+    }
   }
   await refreshProxies();
   toast(tx(`检测完成：成功 ${ok} · 失败 ${fail}`));
@@ -4026,7 +5475,9 @@ document.addEventListener('click', async (event) => {
       selectedProxies.delete(id);
       await refreshProxies();
       toast(tx('已删除'));
-    } catch (error) { toast(error.message); }
+    } catch (error) {
+      toast(error.message);
+    }
     return;
   }
   const test = event.target.closest('[data-proxy-test]');
@@ -4038,7 +5489,9 @@ document.addEventListener('click', async (event) => {
       await refreshProxies();
       toast('连接成功 · ' + result.ip + (result.countryCode ? ' · ' + result.countryCode : ''));
       log('Proxy', '检测 ' + id + ' → ' + result.ip);
-    } catch (error) { toast('检测失败：' + error.message); }
+    } catch (error) {
+      toast('检测失败：' + error.message);
+    }
     return;
   }
   const use = event.target.closest('[data-proxy-use]');
@@ -4068,13 +5521,16 @@ $('#proxy-dialog-test')?.addEventListener('click', async () => {
     output.textContent = tx('正在检测…');
     let proxyValue = draft.raw;
     if (!proxyValue && draft.host && Number.isInteger(draft.port) && draft.port > 0 && draft.port <= 65535) {
-      const auth = draft.username ? `${encodeURIComponent(draft.username)}:${encodeURIComponent(draft.password || '')}@` : '';
+      const auth = draft.username
+        ? `${encodeURIComponent(draft.username)}:${encodeURIComponent(draft.password || '')}@`
+        : '';
       proxyValue = `${draft.protocol || 'socks5'}://${auth}${draft.host}:${draft.port}`;
     }
     if (!proxyValue) throw new Error(tx('请先填写主机和端口'));
     const result = await window.ops.proxyCheck(draft.id ? { id: draft.id } : { proxy: proxyValue, ...draft });
     output.className = 'proxy-test-result success';
-    output.textContent = tx('连接成功 · ') + result.ip + (result.countryCode ? ' · ' + result.countryCode : '');
+    output.textContent =
+      tx('连接成功 · ') + result.ip + (result.countryCode ? ' · ' + result.countryCode : '');
     if (draft.id) await refreshProxies();
   } catch (error) {
     output.className = 'proxy-test-result error';
@@ -4106,7 +5562,11 @@ document.addEventListener('click', async (event) => {
   try {
     toast(tx('正在从 Chrome 应用商店安装…'));
     const ids = ui.profiles.map((item) => item.id);
-    const result = await window.ops.addExtensionStore(url.includes('://') ? url : `https://chromewebstore.google.com/detail/${url}`, ids, true);
+    const result = await window.ops.addExtensionStore(
+      url.includes('://') ? url : `https://chromewebstore.google.com/detail/${url}`,
+      ids,
+      true
+    );
     await refreshExtensions();
     await refreshStatus();
     await refreshSessions();
@@ -4117,55 +5577,143 @@ document.addEventListener('click', async (event) => {
     log('Error', error.message);
   }
 });
-$('#assign-extension').addEventListener('click', (event) => { event.preventDefault(); applyAssignment(true); }); $('#unassign-extension').addEventListener('click', (event) => { event.preventDefault(); applyAssignment(false); });
+$('#assign-extension').addEventListener('click', (event) => {
+  event.preventDefault();
+  applyAssignment(true);
+});
+$('#unassign-extension').addEventListener('click', (event) => {
+  event.preventDefault();
+  applyAssignment(false);
+});
 $('#refresh-sessions').addEventListener('click', refreshSessions);
-$('#start-sync').addEventListener('click', () => runSyncAction('\u542f\u52a8\u540c\u6b65', () => window.ops.startSync(selectedSessionIds(2))));
-$('#stop-sync').addEventListener('click', () => runSyncAction('\u505c\u6b62\u540c\u6b65', () => window.ops.stopSync()));
-$('#restart-sync').addEventListener('click', () => runSyncAction('\u91cd\u542f\u540c\u6b65', () => window.ops.restartSync()));
-async function sendSameText() { const [delayMin, delayMax] = textDelayRange(); return runSyncAction('\u6587\u672c\u8f93\u5165', () => window.ops.textAction(selectedSessionIds(), 'insert', $('#sync-text').value, delayMin, delayMax)); }
+$('#start-sync').addEventListener('click', () =>
+  runSyncAction('\u542f\u52a8\u540c\u6b65', () => window.ops.startSync(selectedSessionIds(2)))
+);
+$('#stop-sync').addEventListener('click', () =>
+  runSyncAction('\u505c\u6b62\u540c\u6b65', () => window.ops.stopSync())
+);
+$('#restart-sync').addEventListener('click', () =>
+  runSyncAction('\u91cd\u542f\u540c\u6b65', () => window.ops.restartSync())
+);
+async function sendSameText() {
+  const [delayMin, delayMax] = textDelayRange();
+  return runSyncAction('\u6587\u672c\u8f93\u5165', () =>
+    window.ops.textAction(selectedSessionIds(), 'insert', $('#sync-text').value, delayMin, delayMax)
+  );
+}
 async function sendRandomNumbers() {
-  let ids; try { ids = specifiedTextSessionIds(); } catch (error) { return toast(error.message); }
-  let min = Number($('#random-number-min').value), max = Number($('#random-number-max').value); if (!Number.isFinite(min) || !Number.isFinite(max)) return toast('\u8bf7\u8f93\u5165\u6709\u6548\u7684\u6570\u5b57\u8303\u56f4'); if (max < min) [min, max] = [max, min];
-  const decimals = Math.max((String($('#random-number-min').value).split('.')[1] || '').length, (String($('#random-number-max').value).split('.')[1] || '').length);
+  let ids;
+  try {
+    ids = specifiedTextSessionIds();
+  } catch (error) {
+    return toast(error.message);
+  }
+  let min = Number($('#random-number-min').value),
+    max = Number($('#random-number-max').value);
+  if (!Number.isFinite(min) || !Number.isFinite(max))
+    return toast('\u8bf7\u8f93\u5165\u6709\u6548\u7684\u6570\u5b57\u8303\u56f4');
+  if (max < min) [min, max] = [max, min];
+  const decimals = Math.max(
+    (String($('#random-number-min').value).split('.')[1] || '').length,
+    (String($('#random-number-max').value).split('.')[1] || '').length
+  );
   const texts = ids.map(() => (min + Math.random() * (max - min)).toFixed(Math.min(8, decimals)));
-  const [delayMin, delayMax] = textDelayRange(); return runSyncAction('\u968f\u673a\u6570\u5b57\u8f93\u5165', () => window.ops.batchTextAction(ids, texts, delayMin, delayMax));
+  const [delayMin, delayMax] = textDelayRange();
+  return runSyncAction('\u968f\u673a\u6570\u5b57\u8f93\u5165', () =>
+    window.ops.batchTextAction(ids, texts, delayMin, delayMax)
+  );
 }
 $('#send-text').addEventListener('click', sendSameText);
 $('#send-random-number').addEventListener('click', sendRandomNumbers);
-$('#sync-settings-button').addEventListener('click', () => { fillSyncSettingsForm(); $('#sync-settings-dialog').showModal(); });
-$('#sync-settings-form').addEventListener('submit', async (event) => { event.preventDefault(); if (event.submitter?.value === 'cancel') return $('#sync-settings-dialog').close('cancel'); await applySyncSettings(syncSettingsFromForm(), true); $('#sync-settings-dialog').close(); });
-$('#delay-input').addEventListener('change', () => applySyncSettings({ ...syncSettings, delayInput: $('#delay-input').checked }));
-$('#delay-click').addEventListener('change', () => applySyncSettings({ ...syncSettings, delayClick: $('#delay-click').checked }));
-$('#clear-text').addEventListener('click', () => runSyncAction('清空内容', () => window.ops.textAction(selectedSessionIds(), 'clear', '', 0, 0)));
+$('#sync-settings-button').addEventListener('click', () => {
+  fillSyncSettingsForm();
+  $('#sync-settings-dialog').showModal();
+});
+$('#sync-settings-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (event.submitter?.value === 'cancel') return $('#sync-settings-dialog').close('cancel');
+  await applySyncSettings(syncSettingsFromForm(), true);
+  $('#sync-settings-dialog').close();
+});
+$('#delay-input').addEventListener('change', () =>
+  applySyncSettings({ ...syncSettings, delayInput: $('#delay-input').checked })
+);
+$('#delay-click').addEventListener('change', () =>
+  applySyncSettings({ ...syncSettings, delayClick: $('#delay-click').checked })
+);
+$('#clear-text').addEventListener('click', () =>
+  runSyncAction('清空内容', () => window.ops.textAction(selectedSessionIds(), 'clear', '', 0, 0))
+);
 $('#add-specified-text-group').addEventListener('click', () => {
-  if (specifiedTextGroups.length >= SPECIFIED_TEXT_GROUP_LIMIT) return toast('\u6700\u591a\u6dfb\u52a0 ' + SPECIFIED_TEXT_GROUP_LIMIT + ' \u4e2a\u6587\u672c\u7ec4');
-  specifiedTextGroups.push(createSpecifiedTextGroup(specifiedTextGroups.length)); saveSpecifiedTextGroups(); renderSpecifiedTextGroups();
+  if (specifiedTextGroups.length >= SPECIFIED_TEXT_GROUP_LIMIT)
+    return toast('\u6700\u591a\u6dfb\u52a0 ' + SPECIFIED_TEXT_GROUP_LIMIT + ' \u4e2a\u6587\u672c\u7ec4');
+  specifiedTextGroups.push(createSpecifiedTextGroup(specifiedTextGroups.length));
+  saveSpecifiedTextGroups();
+  renderSpecifiedTextGroups();
 });
 $('#specified-text-groups').addEventListener('input', (event) => {
-  const id = event.target.dataset.specifiedText; if (!id) return;
-  const group = specifiedTextGroups.find((item) => item.id === id); if (!group) return;
-  group.text = event.target.value.slice(0, 500000); group.cursor = Math.min(group.cursor, Math.max(0, specifiedTextItems(group.text).length - 1)); saveSpecifiedTextGroups();
-  const counter = document.querySelector('[data-specified-count="' + id + '"]'); if (counter) counter.textContent = specifiedTextItems(group.text).length + ' \u6761\u6587\u672c';
+  const id = event.target.dataset.specifiedText;
+  if (!id) return;
+  const group = specifiedTextGroups.find((item) => item.id === id);
+  if (!group) return;
+  group.text = event.target.value.slice(0, 500000);
+  group.cursor = Math.min(group.cursor, Math.max(0, specifiedTextItems(group.text).length - 1));
+  saveSpecifiedTextGroups();
+  const counter = document.querySelector('[data-specified-count="' + id + '"]');
+  if (counter) counter.textContent = specifiedTextItems(group.text).length + ' \u6761\u6587\u672c';
 });
 $('#specified-text-groups').addEventListener('change', (event) => {
-  const id = event.target.dataset.specifiedMode; if (!id) return;
-  const group = specifiedTextGroups.find((item) => item.id === id); if (!group) return;
-  group.mode = event.target.value === 'random' ? 'random' : 'sequence'; group.cursor = 0; saveSpecifiedTextGroups();
+  const id = event.target.dataset.specifiedMode;
+  if (!id) return;
+  const group = specifiedTextGroups.find((item) => item.id === id);
+  if (!group) return;
+  group.mode = event.target.value === 'random' ? 'random' : 'sequence';
+  group.cursor = 0;
+  saveSpecifiedTextGroups();
 });
 $('#specified-text-groups').addEventListener('click', (event) => {
-  const send = event.target.closest('[data-specified-send]'); if (send) return sendSpecifiedTextGroup(send.dataset.specifiedSend);
-  const remove = event.target.closest('[data-specified-remove]'); if (!remove || specifiedTextGroups.length <= 1) return;
-  specifiedTextGroups = specifiedTextGroups.filter((item) => item.id !== remove.dataset.specifiedRemove); saveSpecifiedTextGroups(); renderSpecifiedTextGroups();
+  const send = event.target.closest('[data-specified-send]');
+  if (send) return sendSpecifiedTextGroup(send.dataset.specifiedSend);
+  const remove = event.target.closest('[data-specified-remove]');
+  if (!remove || specifiedTextGroups.length <= 1) return;
+  specifiedTextGroups = specifiedTextGroups.filter((item) => item.id !== remove.dataset.specifiedRemove);
+  saveSpecifiedTextGroups();
+  renderSpecifiedTextGroups();
 });
-$('#new-tab').addEventListener('click', () => runSyncAction('新建标签页', () => window.ops.tabAction(selectedSessionIds(), 'new', { url: normalizeUrl($('#tab-url').value) })));
-$('#navigate-tab').addEventListener('click', () => runSyncAction('批量导航', () => window.ops.tabAction(selectedSessionIds(), 'navigate', { url: normalizeUrl($('#tab-url').value) })));
-$('#reload-tab').addEventListener('click', () => runSyncAction('刷新标签页', () => window.ops.tabAction(selectedSessionIds(), 'reload', {})));
-$('#close-tab').addEventListener('click', () => runSyncAction('关闭标签页', () => window.ops.tabAction(selectedSessionIds(), 'close', {})));
-$('#sync-tabs').addEventListener('click', () => runSyncAction('同步标签页', () => window.ops.tabAction(selectedSessionIds(2), 'sync', {})));
-$('#clear-logs').addEventListener('click', () => { ui.logs = []; save(); renderLogs(); });
+$('#new-tab').addEventListener('click', () =>
+  runSyncAction('新建标签页', () =>
+    window.ops.tabAction(selectedSessionIds(), 'new', { url: normalizeUrl($('#tab-url').value) })
+  )
+);
+$('#navigate-tab').addEventListener('click', () =>
+  runSyncAction('批量导航', () =>
+    window.ops.tabAction(selectedSessionIds(), 'navigate', { url: normalizeUrl($('#tab-url').value) })
+  )
+);
+$('#reload-tab').addEventListener('click', () =>
+  runSyncAction('刷新标签页', () => window.ops.tabAction(selectedSessionIds(), 'reload', {}))
+);
+$('#close-tab').addEventListener('click', () =>
+  runSyncAction('关闭标签页', () => window.ops.tabAction(selectedSessionIds(), 'close', {}))
+);
+$('#sync-tabs').addEventListener('click', () =>
+  runSyncAction('同步标签页', () => window.ops.tabAction(selectedSessionIds(2), 'sync', {}))
+);
+$('#clear-logs').addEventListener('click', () => {
+  ui.logs = [];
+  save();
+  renderLogs();
+});
 $('#choose-profile-storage').addEventListener('click', chooseProfileStorage);
 $('#reset-profile-storage').addEventListener('click', resetProfileStorage);
-$('#open-profile-storage').addEventListener('click', async () => { try { await window.ops.openProfileStorage(); } catch (error) { toast(error.message); log('Error', error.message); } });
+$('#open-profile-storage').addEventListener('click', async () => {
+  try {
+    await window.ops.openProfileStorage();
+  } catch (error) {
+    toast(error.message);
+    log('Error', error.message);
+  }
+});
 
 window.ops.onEvent(async (value) => {
   if (value?.type === 'app-update-progress') {
@@ -4216,10 +5764,16 @@ window.ops.onEvent(async (value) => {
       ui.profiles[idx] = normalizeProfileSettings(next);
       save();
       if (editingProfileId === value.profile.id) {
-        editorSet('#editor-cookies', (() => {
-          try { return next.cookies ? JSON.stringify(JSON.parse(next.cookies), null, 2) : ''; }
-          catch (_) { return next.cookies || ''; }
-        })());
+        editorSet(
+          '#editor-cookies',
+          (() => {
+            try {
+              return next.cookies ? JSON.stringify(JSON.parse(next.cookies), null, 2) : '';
+            } catch (_) {
+              return next.cookies || '';
+            }
+          })()
+        );
       }
     }
   }
@@ -4232,17 +5786,25 @@ window.ops.onEvent(async (value) => {
     if (blocker) toast(blocker.message);
   }
   if (value.type === 'storage-settings') updateProfileStorageDisplay(value.profileRoot);
-  if (value.type === 'sync-settings' && value.settings) { syncSettings = normalizeSyncSettings(value.settings); fillSyncSettingsForm(); }
+  if (value.type === 'sync-settings' && value.settings) {
+    syncSettings = normalizeSyncSettings(value.settings);
+    fillSyncSettingsForm();
+  }
   if (value.type === 'text-shortcut') {
     if (value.action === 'random-number') sendRandomNumbers();
     else if (value.action === 'same-text') sendSameText();
-    else if (value.action === 'specified-text' && specifiedTextGroups[0]) sendSpecifiedTextGroup(specifiedTextGroups[0].id);
+    else if (value.action === 'specified-text' && specifiedTextGroups[0])
+      sendSpecifiedTextGroup(specifiedTextGroups[0].id);
   }
   if (value.type === 'sync-state') {
     syncState = { active: value.active, master: value.master, selected: value.selected || [] };
-    if (value.active) { preferredMasterId = value.master; selectedSessions = new Set(value.selected || []); syncHealth.recovering = false; }
-    else syncHealth = { queueDepth: 0, coalesced: 0, dropped: 0, lastLatencyMs: 0, recovering: false };
-    renderSessions(); log('Sync', value.active ? '同步已启动' : '同步已停止');
+    if (value.active) {
+      preferredMasterId = value.master;
+      selectedSessions = new Set(value.selected || []);
+      syncHealth.recovering = false;
+    } else syncHealth = { queueDepth: 0, coalesced: 0, dropped: 0, lastLatencyMs: 0, recovering: false };
+    renderSessions();
+    log('Sync', value.active ? '同步已启动' : '同步已停止');
   }
   if (value.type === 'sync-health') {
     syncHealth = { ...syncHealth, ...value, recovering: false };
@@ -4254,10 +5816,23 @@ window.ops.onEvent(async (value) => {
       }, 400);
     }
   }
-  if (value.type === 'sync-recovering') { syncHealth.recovering = true; renderSyncState(); log('Sync', `输入桥自动恢复，第 ${value.attempt} 次`); }
-  if (value.type === 'native-input' && value.active) { syncHealth.recovering = false; renderSyncState(); }
-  if (value.type === 'sync-error') { toast(value.message); log('Error', value.message); }
-  if (value.type === 'sync-disconnected') { toast(value.message); log('Sync', value.message); }
+  if (value.type === 'sync-recovering') {
+    syncHealth.recovering = true;
+    renderSyncState();
+    log('Sync', `输入桥自动恢复，第 ${value.attempt} 次`);
+  }
+  if (value.type === 'native-input' && value.active) {
+    syncHealth.recovering = false;
+    renderSyncState();
+  }
+  if (value.type === 'sync-error') {
+    toast(value.message);
+    log('Error', value.message);
+  }
+  if (value.type === 'sync-disconnected') {
+    toast(value.message);
+    log('Sync', value.message);
+  }
 });
 
 window.ops.onEvent((value) => {
@@ -4265,7 +5840,11 @@ window.ops.onEvent((value) => {
     const profile = ui.profiles.find((item) => item.id === value.id);
     const msg = String(value.message || '');
     const message = '环境 ' + displayProfileNumber(profile || { id: value.id }) + '：' + msg;
-    if (/出口信息检测失败（语言\/时区可能回退）|本地出口信息暂不可用|Direct exit lookup|本地出口查询失败/.test(msg)) {
+    if (
+      /出口信息检测失败（语言\/时区可能回退）|本地出口信息暂不可用|Direct exit lookup|本地出口查询失败/.test(
+        msg
+      )
+    ) {
       log('ProxyWarn', message);
       return;
     }
@@ -4276,37 +5855,63 @@ window.ops.onEvent((value) => {
 
 function updateProfileStorageDisplay(profileRoot) {
   const value = String(profileRoot || '');
-  const current = $('#profile-storage-path'); if (current) current.textContent = value;
-  const runtimeValue = document.querySelector('[data-runtime-key="Profile root"]'); if (runtimeValue) runtimeValue.textContent = value;
+  const current = $('#profile-storage-path');
+  if (current) current.textContent = value;
+  const runtimeValue = document.querySelector('[data-runtime-key="Profile root"]');
+  if (runtimeValue) runtimeValue.textContent = value;
 }
 
 function renderRuntimeInfo(info) {
-  const runtime = $('#runtime-info'); runtime.replaceChildren();
+  const runtime = $('#runtime-info');
+  runtime.replaceChildren();
   const rows = [
     [t('system.runtime'), info.appVersion],
     [t('system.cdp'), info.chrome],
     [t('system.storage.current'), info.profileRoot],
   ];
   for (const [key, value] of rows) {
-    const row = document.createElement('div'); const output = element('dd', '', value); output.dataset.runtimeKey = key;
-    row.append(element('dt', '', key), output); runtime.append(row);
+    const row = document.createElement('div');
+    const output = element('dd', '', value);
+    output.dataset.runtimeKey = key;
+    row.append(element('dt', '', key), output);
+    runtime.append(row);
   }
   updateProfileStorageDisplay(info.profileRoot);
 }
 
 async function chooseProfileStorage() {
-  const button = $('#choose-profile-storage'); button.disabled = true;
+  const button = $('#choose-profile-storage');
+  button.disabled = true;
   try {
-    const result = await window.ops.chooseProfileStorage(); if (result.canceled) return;
-    updateProfileStorageDisplay(result.profileRoot); log('System', '\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u66f4\u6539\u4e3a ' + result.profileRoot); toast('\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u66f4\u6539\uff0c\u4e0b\u6b21\u542f\u52a8\u73af\u5883\u65f6\u751f\u6548');
-  } catch (error) { toast(error.message); log('Error', error.message); } finally { button.disabled = false; }
+    const result = await window.ops.chooseProfileStorage();
+    if (result.canceled) return;
+    updateProfileStorageDisplay(result.profileRoot);
+    log('System', '\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u66f4\u6539\u4e3a ' + result.profileRoot);
+    toast(
+      '\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u66f4\u6539\uff0c\u4e0b\u6b21\u542f\u52a8\u73af\u5883\u65f6\u751f\u6548'
+    );
+  } catch (error) {
+    toast(error.message);
+    log('Error', error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function resetProfileStorage() {
-  const button = $('#reset-profile-storage'); button.disabled = true;
+  const button = $('#reset-profile-storage');
+  button.disabled = true;
   try {
-    const result = await window.ops.resetProfileStorage(); updateProfileStorageDisplay(result.profileRoot); log('System', '\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u6062\u590d\u9ed8\u8ba4'); toast('\u5df2\u6062\u590d\u9ed8\u8ba4\u6570\u636e\u4f4d\u7f6e');
-  } catch (error) { toast(error.message); log('Error', error.message); } finally { button.disabled = false; }
+    const result = await window.ops.resetProfileStorage();
+    updateProfileStorageDisplay(result.profileRoot);
+    log('System', '\u73af\u5883\u6570\u636e\u4f4d\u7f6e\u5df2\u6062\u590d\u9ed8\u8ba4');
+    toast('\u5df2\u6062\u590d\u9ed8\u8ba4\u6570\u636e\u4f4d\u7f6e');
+  } catch (error) {
+    toast(error.message);
+    log('Error', error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 function updateEngineBadge(info) {
   const badge = $('#engine-badge');
@@ -4319,7 +5924,9 @@ function updateEngineBadge(info) {
   const text = badge.querySelector('.engine-badge-text');
   if (text) text.textContent = ready ? t('header.browserReady') : t('header.browserMissing');
   badge.title = ready
-    ? (names.length ? names.join(' · ') : t('header.browserReadyTitle'))
+    ? names.length
+      ? names.join(' · ')
+      : t('header.browserReadyTitle')
     : t('header.browserMissingTitle');
   badge.setAttribute('aria-label', badge.title);
 }
@@ -4333,8 +5940,11 @@ async function initialize() {
   // Backend also pushes app-update-status after startup delay; this primes the light immediately.
   updateEngineBadge(info);
   renderRuntimeInfo(info);
-  syncState = await window.ops.getSyncState(); preferredMasterId = syncState.master || null; if (syncState.active) selectedSessions = new Set(syncState.selected || []);
-  await applySyncSettings(syncSettings); fillSyncSettingsForm();
+  syncState = await window.ops.getSyncState();
+  preferredMasterId = syncState.master || null;
+  if (syncState.active) selectedSessions = new Set(syncState.selected || []);
+  await applySyncSettings(syncSettings);
+  fillSyncSettingsForm();
   ui.profiles = ui.profiles.map((item) => ({ ...item, browser: 'Google Chrome' }));
   // Merge secrets already loaded in main process (not stored in localStorage).
   try {
@@ -4346,16 +5956,18 @@ async function initialize() {
         if (!remote) return local;
         return normalizeProfileSettings({
           ...local,
-          ...(remote.exitIp ? {
-            exitIp: remote.exitIp,
-            exitCountryCode: remote.exitCountryCode,
-            exitTimezone: remote.exitTimezone,
-            exitLatitude: remote.exitLatitude,
-            exitLongitude: remote.exitLongitude,
-            exitCheckedAt: remote.exitCheckedAt,
-            exitLatencyMs: remote.exitLatencyMs,
-            exitNetworkType: remote.exitNetworkType,
-          } : {}),
+          ...(remote.exitIp
+            ? {
+                exitIp: remote.exitIp,
+                exitCountryCode: remote.exitCountryCode,
+                exitTimezone: remote.exitTimezone,
+                exitLatitude: remote.exitLatitude,
+                exitLongitude: remote.exitLongitude,
+                exitCheckedAt: remote.exitCheckedAt,
+                exitLatencyMs: remote.exitLatencyMs,
+                exitNetworkType: remote.exitNetworkType,
+              }
+            : {}),
           cookies: local.cookies || remote.cookies || '',
           proxy: mergeRemoteProxy(local.proxy, remote.proxy),
           platform: {
@@ -4374,7 +5986,11 @@ async function initialize() {
     }
   } catch (_) {}
   save();
-  engineProfiles = await window.ops.syncProfiles(ui.profiles); await refreshExtensions(); await refreshSessions(); renderProfiles(); renderLogs();
+  engineProfiles = await window.ops.syncProfiles(ui.profiles);
+  await refreshExtensions();
+  await refreshSessions();
+  renderProfiles();
+  renderLogs();
   log('System', readyBrowserLog(info));
   switchView(document.querySelector('.view.active')?.id?.replace(/^view-/, '') || 'profiles');
 }
@@ -4388,30 +6004,96 @@ initialize().catch((error) => {
   toast(error.message);
 });
 
-
 function parseCsvLine(line) {
-  const values = []; let current = ''; let quoted = false;
-  for (let index = 0; index < line.length; index += 1) { const char = line[index]; if (char === '"' && line[index + 1] === '"') { current += '"'; index += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { values.push(current.trim()); current = ''; } else current += char; }
-  values.push(current.trim()); return values;
+  const values = [];
+  let current = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"' && line[index + 1] === '"') {
+      current += '"';
+      index += 1;
+    } else if (char === '"') quoted = !quoted;
+    else if (char === ',' && !quoted) {
+      values.push(current.trim());
+      current = '';
+    } else current += char;
+  }
+  values.push(current.trim());
+  return values;
 }
 
 function parseImportedProfiles(text, extension) {
-  if (extension === 'json') { const values = JSON.parse(text); if (!Array.isArray(values)) throw new Error('\u5bfc\u5165 JSON \u5fc5\u987b\u662f\u6570\u7ec4'); return values; }
-  const lines = text.split(/\r?\n/).filter((line) => line.trim()); if (lines.length < 2) return [];
+  if (extension === 'json') {
+    const values = JSON.parse(text);
+    if (!Array.isArray(values)) throw new Error('\u5bfc\u5165 JSON \u5fc5\u987b\u662f\u6570\u7ec4');
+    return values;
+  }
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) return [];
   const headers = parseCsvLine(lines[0]).map((item) => item.toLowerCase());
-  return lines.slice(1).map((line, row) => { const values = parseCsvLine(line); const item = Object.fromEntries(headers.map((key, index) => [key, values[index] || ''])); return { id: item.id || 'env-import-' + Date.now().toString(36) + '-' + row, name: item.name || item.id || 'Imported ' + (row + 1), browser: item.browser || 'Google Chrome', language: item.language || 'en-US', proxy: item.proxy || item.ip || 'Direct', proxyType: item.proxytype || '', exitIp: item.ip || '', exitCountryCode: item.countrycode || '', tag: item.tag || item.group || 'Imported', os: 'Windows', location: item.location || 'Local' }; });
+  return lines.slice(1).map((line, row) => {
+    const values = parseCsvLine(line);
+    const item = Object.fromEntries(headers.map((key, index) => [key, values[index] || '']));
+    return {
+      id: item.id || 'env-import-' + Date.now().toString(36) + '-' + row,
+      name: item.name || item.id || 'Imported ' + (row + 1),
+      browser: item.browser || 'Google Chrome',
+      language: item.language || 'en-US',
+      proxy: item.proxy || item.ip || 'Direct',
+      proxyType: item.proxytype || '',
+      exitIp: item.ip || '',
+      exitCountryCode: item.countrycode || '',
+      tag: item.tag || item.group || 'Imported',
+      os: 'Windows',
+      location: item.location || 'Local',
+    };
+  });
 }
 
 $('#batch-import').addEventListener('click', () => $('#batch-import-file').click());
 $('#batch-import-file').addEventListener('change', async (event) => {
-  const file = event.target.files[0]; if (!file) return;
-  const previousLength = ui.profiles.length; const previousNext = ui.nextProfileNumber;
+  const file = event.target.files[0];
+  if (!file) return;
+  const previousLength = ui.profiles.length;
+  const previousNext = ui.nextProfileNumber;
   try {
-    const extension = file.name.toLowerCase().endsWith('.json') ? 'json' : 'csv'; const imported = parseImportedProfiles(await file.text(), extension);
-    const start = nextProfileNumber(); const used = new Set(ui.profiles.map((item) => item.id));
-    const normalized = imported.map((item, index) => { const number = start + index; const id = createInternalProfileId(number, used); used.add(id); return { id, number, name: String(number), browser: 'Google Chrome', language: String(item.language || 'en-US'), proxy: String(item.proxy || item.ip || 'Direct'), proxyType: String(item.proxyType || item.proxytype || ''), exitIp: String(item.exitIp || item.ip || ''), exitCountryCode: String(item.exitCountryCode || item.countrycode || ''), tag: String(item.tag || item.group || 'Imported'), os: 'Windows', location: String(item.location || 'Local') }; });
-    ui.profiles.push(...normalized); ui.nextProfileNumber = start + normalized.length; save(); engineProfiles = await window.ops.syncProfiles(ui.profiles); renderProfiles(); log('Import', '\u6279\u91cf\u5bfc\u5165 ' + normalized.length + ' \u4e2a\u73af\u5883'); toast('\u5df2\u5bfc\u5165 ' + normalized.length + ' \u4e2a\u73af\u5883');
-  } catch (error) { ui.profiles = ui.profiles.slice(0, previousLength); ui.nextProfileNumber = previousNext; save(); toast('\u5bfc\u5165\u5931\u8d25\uff1a' + error.message); }
+    const extension = file.name.toLowerCase().endsWith('.json') ? 'json' : 'csv';
+    const imported = parseImportedProfiles(await file.text(), extension);
+    const start = nextProfileNumber();
+    const used = new Set(ui.profiles.map((item) => item.id));
+    const normalized = imported.map((item, index) => {
+      const number = start + index;
+      const id = createInternalProfileId(number, used);
+      used.add(id);
+      return {
+        id,
+        number,
+        name: String(number),
+        browser: 'Google Chrome',
+        language: String(item.language || 'en-US'),
+        proxy: String(item.proxy || item.ip || 'Direct'),
+        proxyType: String(item.proxyType || item.proxytype || ''),
+        exitIp: String(item.exitIp || item.ip || ''),
+        exitCountryCode: String(item.exitCountryCode || item.countrycode || ''),
+        tag: String(item.tag || item.group || 'Imported'),
+        os: 'Windows',
+        location: String(item.location || 'Local'),
+      };
+    });
+    ui.profiles.push(...normalized);
+    ui.nextProfileNumber = start + normalized.length;
+    save();
+    engineProfiles = await window.ops.syncProfiles(ui.profiles);
+    renderProfiles();
+    log('Import', '\u6279\u91cf\u5bfc\u5165 ' + normalized.length + ' \u4e2a\u73af\u5883');
+    toast('\u5df2\u5bfc\u5165 ' + normalized.length + ' \u4e2a\u73af\u5883');
+  } catch (error) {
+    ui.profiles = ui.profiles.slice(0, previousLength);
+    ui.nextProfileNumber = previousNext;
+    save();
+    toast('\u5bfc\u5165\u5931\u8d25\uff1a' + error.message);
+  }
   event.target.value = '';
 });
 
@@ -4420,7 +6102,8 @@ async function applySelectedNetworkMode(mode, { proxies = null, restart = true }
   if (!ids.length) throw new Error(tx('请先选择环境'));
   const profiles = ids.map((id) => ui.profiles.find((profile) => profile.id === id));
   const direct = mode === 'direct';
-  let list; let verified;
+  let list;
+  let verified;
   if (direct) {
     list = profiles.map(() => 'Direct');
     verified = profiles.map(() => null);
@@ -4430,26 +6113,39 @@ async function applySelectedNetworkMode(mode, { proxies = null, restart = true }
     verified = await verifyProxyAssignments(profiles, list);
   }
   const status = await window.ops.profileStatus();
-  const runningBefore = new Set(status.filter((item) => item.running && ids.includes(item.id)).map((item) => item.id));
+  const runningBefore = new Set(
+    status.filter((item) => item.running && ids.includes(item.id)).map((item) => item.id)
+  );
   if (restart) for (const id of runningBefore) await window.ops.stopProfile(id);
   profiles.forEach((profile, index) => {
     profile.proxy = list[index];
     const result = verified[index];
     if (result) {
-      profile.exitIp = result.ip; profile.exitCountryCode = result.countryCode; profile.exitTimezone = result.timezone || '';
-      profile.exitLatitude = result.latitude; profile.exitLongitude = result.longitude; profile.exitCheckedAt = result.checkedAt;
+      profile.exitIp = result.ip;
+      profile.exitCountryCode = result.countryCode;
+      profile.exitTimezone = result.timezone || '';
+      profile.exitLatitude = result.latitude;
+      profile.exitLongitude = result.longitude;
+      profile.exitCheckedAt = result.checkedAt;
     } else {
-      delete profile.exitIp; delete profile.exitCountryCode; delete profile.exitTimezone;
-      delete profile.exitLatitude; delete profile.exitLongitude; delete profile.exitCheckedAt;
+      delete profile.exitIp;
+      delete profile.exitCountryCode;
+      delete profile.exitTimezone;
+      delete profile.exitLatitude;
+      delete profile.exitLongitude;
+      delete profile.exitCheckedAt;
     }
   });
   save();
   engineProfiles = await window.ops.syncProfiles(ui.profiles);
-  if (restart) for (const id of runningBefore) {
-    const profile = ui.profiles.find((item) => item.id === id);
-    if (profile) await window.ops.startProfile(profile);
-  }
-  await refreshStatus(); await refreshSessions(); renderProfiles();
+  if (restart)
+    for (const id of runningBefore) {
+      const profile = ui.profiles.find((item) => item.id === id);
+      if (profile) await window.ops.startProfile(profile);
+    }
+  await refreshStatus();
+  await refreshSessions();
+  renderProfiles();
   return { count: ids.length, direct };
 }
 
@@ -4468,25 +6164,35 @@ $('#batch-update').addEventListener('click', () => {
   if (!selectedProfiles.size) return toast(tx('请先选择环境'));
   const proxyRadio = document.querySelector('input[name="batch-update-network"][value="proxy"]');
   if (proxyRadio) proxyRadio.checked = true;
-  const hidden = $('#batch-update-network-mode'); if (hidden) hidden.value = 'proxy';
-  const fields = $('#batch-update-proxy-fields'); if (fields) fields.hidden = false;
-  const submit = $('#batch-update-submit'); if (submit) submit.textContent = tx('检测并应用代理');
+  const hidden = $('#batch-update-network-mode');
+  if (hidden) hidden.value = 'proxy';
+  const fields = $('#batch-update-proxy-fields');
+  if (fields) fields.hidden = false;
+  const submit = $('#batch-update-submit');
+  if (submit) submit.textContent = tx('检测并应用代理');
   $('#batch-update-dialog').showModal();
 });
 $('#batch-update-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (event.submitter?.value === 'cancel') return $('#batch-update-dialog').close();
-  const mode = document.querySelector('input[name="batch-update-network"]:checked')?.value
-    || $('#batch-update-network-mode')?.value
-    || 'proxy';
+  const mode =
+    document.querySelector('input[name="batch-update-network"]:checked')?.value ||
+    $('#batch-update-network-mode')?.value ||
+    'proxy';
   const restart = !!$('#restart-running')?.checked;
   try {
     let proxies = null;
     if (mode !== 'direct') {
-      try { proxies = proxyLines('#batch-proxy-list', '#batch-update-proxy-type'); }
-      catch (error) { return toast('代理格式错误：' + error.message); }
+      try {
+        proxies = proxyLines('#batch-proxy-list', '#batch-update-proxy-type');
+      } catch (error) {
+        return toast('代理格式错误：' + error.message);
+      }
     }
-    const result = await applySelectedNetworkMode(mode === 'direct' ? 'direct' : 'proxy', { proxies, restart });
+    const result = await applySelectedNetworkMode(mode === 'direct' ? 'direct' : 'proxy', {
+      proxies,
+      restart,
+    });
     $('#batch-update-dialog').close();
     $('#batch-proxy-list').value = '';
     const modeText = result.direct ? '本地直连' : '已验证代理';
@@ -4497,7 +6203,6 @@ $('#batch-update-form').addEventListener('submit', async (event) => {
     toast(error.message);
   }
 });
-
 
 // ========== Automation scripts (local-only panels) ==========
 let rpaPlans = [];
@@ -4556,11 +6261,12 @@ function fillRpaProfileSelect(selectedIds = []) {
   if (!sel) return;
   const running = (engineProfiles || []).filter((p) => p.running);
   sel.replaceChildren();
-  for (const profile of (ui.profiles || [])) {
+  for (const profile of ui.profiles || []) {
     const opt = document.createElement('option');
     opt.value = profile.id;
     const live = running.some((r) => r.id === profile.id);
-    opt.textContent = (live ? '● ' : '○ ') + displayProfileNumber(profile) + ' · ' + (profile.name || profile.id);
+    opt.textContent =
+      (live ? '● ' : '○ ') + displayProfileNumber(profile) + ' · ' + (profile.name || profile.id);
     if (selectedIds.includes(profile.id)) opt.selected = true;
     sel.append(opt);
   }
@@ -4579,19 +6285,34 @@ function renderRpaPlans() {
   if (countEl) countEl.textContent = String(rpaPlans.length);
   if (!table) return;
   table.replaceChildren();
-  const list = rpaPlans.filter((p) => !q || String(p.plan_name || '').toLowerCase().includes(q));
+  const list = rpaPlans.filter(
+    (p) =>
+      !q ||
+      String(p.plan_name || '')
+        .toLowerCase()
+        .includes(q)
+  );
   for (const plan of list) {
     const row = document.createElement('tr');
     if (plan.id === rpaSelectedId) row.classList.add('active');
     row.dataset.rpaPlan = plan.id;
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.rpaPlanCheck = plan.id;
-    const td0 = document.createElement('td'); td0.append(cb);
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.rpaPlanCheck = plan.id;
+    const td0 = document.createElement('td');
+    td0.append(cb);
     row.append(
       td0,
       element('td', '', plan.plan_name || plan.id),
       element('td', '', String((plan.steps || []).length)),
       element('td', '', String((plan.profile_ids || []).length)),
-      element('td', '', String(plan.update_time || plan.create_time || '—').replace('T', ' ').slice(0, 19))
+      element(
+        'td',
+        '',
+        String(plan.update_time || plan.create_time || '—')
+          .replace('T', ' ')
+          .slice(0, 19)
+      )
     );
     table.append(row);
   }
@@ -4630,9 +6351,12 @@ function appendRpaLog(line) {
   let message = raw;
   if (levelMatch) {
     const token = String(levelMatch[1] || '').toLowerCase();
-    level = /error|fail/.test(token) ? 'error'
-      : /warn/.test(token) ? 'warn'
-        : /ok|success|done/.test(token) ? 'ok'
+    level = /error|fail/.test(token)
+      ? 'error'
+      : /warn/.test(token)
+        ? 'warn'
+        : /ok|success|done/.test(token)
+          ? 'ok'
           : 'info';
     message = raw.slice(levelMatch[0].length) || raw;
   } else if (/\berror\b|错误|失败/i.test(raw)) {
@@ -4642,10 +6366,7 @@ function appendRpaLog(line) {
   } else if (/完成|成功|started|已启动|done|success/i.test(raw)) {
     level = 'ok';
   }
-  const levelLabel = level === 'error' ? 'ERROR'
-    : level === 'warn' ? 'WARN'
-      : level === 'ok' ? 'OK'
-        : 'INFO';
+  const levelLabel = level === 'error' ? 'ERROR' : level === 'warn' ? 'WARN' : level === 'ok' ? 'OK' : 'INFO';
   const row = document.createElement('div');
   row.className = 'log-line level-' + level;
   const timeEl = document.createElement('span');
@@ -4660,14 +6381,16 @@ function appendRpaLog(line) {
   row.append(timeEl, levelEl, msgEl);
   box.prepend(row);
   // Keep the newest line visible without forcing the whole page to jump.
-  try { box.scrollTop = 0; } catch (_) {}
+  try {
+    box.scrollTop = 0;
+  } catch (_) {}
 }
 
 async function refreshRpaStatusBadge() {
   try {
     const st = await window.ops.rpaStatus();
     const el = document.getElementById('rpa-run-status');
-    if (el) el.textContent = st.count ? (tx('运行中 ') + st.count) : tx('空闲');
+    if (el) el.textContent = st.count ? tx('运行中 ') + st.count : tx('空闲');
   } catch (_) {}
 }
 
@@ -4676,28 +6399,47 @@ async function refreshRpaTasks() {
   const empty = document.getElementById('rpa-task-empty');
   if (!table) return;
   let tasks = [];
-  try { tasks = await window.ops.rpaTasks({}); } catch (_) { tasks = []; }
+  try {
+    tasks = await window.ops.rpaTasks({});
+  } catch (_) {
+    tasks = [];
+  }
   const q = (document.getElementById('rpa-task-search')?.value || '').trim().toLowerCase();
   table.replaceChildren();
-  const list = (tasks || []).filter((t) => !q || String(t.process_name || t.id).toLowerCase().includes(q));
+  const list = (tasks || []).filter(
+    (t) =>
+      !q ||
+      String(t.process_name || t.id)
+        .toLowerCase()
+        .includes(q)
+  );
   for (const t of list) {
     const row = document.createElement('tr');
-    const cb = document.createElement('input'); cb.type = 'checkbox';
-    const td0 = document.createElement('td'); td0.append(cb);
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    const td0 = document.createElement('td');
+    td0.append(cb);
     const runBtn = element('button', 'outline', tx('详情'));
     runBtn.onclick = () => {
       appendRpaLog(JSON.stringify(t));
       showRpaPanel('runs');
       toast(tx('见运行记录/日志'));
     };
-    const tdOp = document.createElement('td'); tdOp.append(runBtn);
+    const tdOp = document.createElement('td');
+    tdOp.append(runBtn);
     row.append(
       td0,
       element('td', '', t.process_name || t.id),
       element('td', '', '1'),
       element('td', '', t.process_name || '—'),
       element('td', '', t.type || '普通'),
-      element('td', '', String(t.start_time || t.create_time || '—').replace('T', ' ').slice(0, 19)),
+      element(
+        'td',
+        '',
+        String(t.start_time || t.create_time || '—')
+          .replace('T', ' ')
+          .slice(0, 19)
+      ),
       element('td', '', t.status || '—'),
       tdOp
     );
@@ -4713,13 +6455,22 @@ async function refreshRpaRuns() {
   const empty = document.getElementById('rpa-run-empty');
   if (!table) return;
   let tasks = [];
-  try { tasks = await window.ops.rpaTasks({}); } catch (_) { tasks = []; }
+  try {
+    tasks = await window.ops.rpaTasks({});
+  } catch (_) {
+    tasks = [];
+  }
   const filter = document.getElementById('rpa-run-filter')?.value || 'all';
   const q = (document.getElementById('rpa-run-search')?.value || '').trim().toLowerCase();
   table.replaceChildren();
   let list = tasks || [];
   if (filter !== 'all') list = list.filter((t) => String(t.status) === filter);
-  if (q) list = list.filter((t) => String(t.process_name || '').toLowerCase().includes(q));
+  if (q)
+    list = list.filter((t) =>
+      String(t.process_name || '')
+        .toLowerCase()
+        .includes(q)
+    );
   for (const t of list) {
     const row = document.createElement('tr');
     row.append(
@@ -4727,8 +6478,20 @@ async function refreshRpaRuns() {
       element('td', '', t.process_name || '—'),
       element('td', '', t.profile_id || '—'),
       element('td', '', t.status || '—'),
-      element('td', '', String(t.start_time || t.create_time || '—').replace('T', ' ').slice(0, 19)),
-      element('td', '', String(t.complete_time || '—').replace('T', ' ').slice(0, 19)),
+      element(
+        'td',
+        '',
+        String(t.start_time || t.create_time || '—')
+          .replace('T', ' ')
+          .slice(0, 19)
+      ),
+      element(
+        'td',
+        '',
+        String(t.complete_time || '—')
+          .replace('T', ' ')
+          .slice(0, 19)
+      ),
       element('td', '', '')
     );
     table.append(row);
@@ -4780,12 +6543,17 @@ function rpaStoreSourceLabel(tpl) {
 
 function rpaStepSummary(steps, max = 12) {
   if (!Array.isArray(steps) || !steps.length) return '（无步骤）';
-  return steps.slice(0, max).map((s, i) => {
-    const t = s.type || s.action || '?';
-    const hint = s.url || s.selector || s.content || s.expression || '';
-    const short = String(hint).replace(/\s+/g, ' ').slice(0, 48);
-    return `${i + 1}. ${t}${short ? ' · ' + short : ''}`;
-  }).join('\n') + (steps.length > max ? `\n… 共 ${steps.length} 步` : '');
+  return (
+    steps
+      .slice(0, max)
+      .map((s, i) => {
+        const t = s.type || s.action || '?';
+        const hint = s.url || s.selector || s.content || s.expression || '';
+        const short = String(hint).replace(/\s+/g, ' ').slice(0, 48);
+        return `${i + 1}. ${t}${short ? ' · ' + short : ''}`;
+      })
+      .join('\n') + (steps.length > max ? `\n… 共 ${steps.length} 步` : '')
+  );
 }
 
 async function refreshRpaStore() {
@@ -4855,35 +6623,54 @@ function renderRpaStore() {
     meta[1].textContent = t('rpa.store.steps', { n: stepCount });
     const actions = card.querySelector('.rpa-store-actions');
     const useBtn = document.createElement('button');
-    useBtn.type = 'button'; useBtn.className = 'primary'; useBtn.textContent = runnable ? t('action.use') : t('action.unavailable');
+    useBtn.type = 'button';
+    useBtn.className = 'primary';
+    useBtn.textContent = runnable ? t('action.use') : t('action.unavailable');
     useBtn.disabled = !runnable;
     useBtn.title = runnable
       ? t('rpa.store.createFlow')
-      : (stepCount ? t('rpa.store.unsupportedPrefix', { items: (tpl.unsupported_steps || []).slice(0, 3).map((item) => item.type).join(', ') }) : t('rpa.store.noSteps'));
+      : stepCount
+        ? t('rpa.store.unsupportedPrefix', {
+            items: (tpl.unsupported_steps || [])
+              .slice(0, 3)
+              .map((item) => item.type)
+              .join(', '),
+          })
+        : t('rpa.store.noSteps');
     useBtn.onclick = () => installRpaTemplate(tpl.id).catch((e) => toast(e.message));
     const previewBtn = document.createElement('button');
-    previewBtn.type = 'button'; previewBtn.className = 'outline'; previewBtn.textContent = t('action.preview');
+    previewBtn.type = 'button';
+    previewBtn.className = 'outline';
+    previewBtn.textContent = t('action.preview');
     previewBtn.onclick = () => openRpaTemplatePreview(tpl);
     const exportBtn = document.createElement('button');
-    exportBtn.type = 'button'; exportBtn.className = 'outline'; exportBtn.textContent = t('action.export');
+    exportBtn.type = 'button';
+    exportBtn.className = 'outline';
+    exportBtn.textContent = t('action.export');
     exportBtn.onclick = async () => {
       try {
         const result = await window.ops.rpaTemplateExport(tpl.id);
         if (result?.canceled) return;
         toast(t('rpa.store.exported', { path: result.path || '' }));
-      } catch (e) { toast(e.message); }
+      } catch (e) {
+        toast(e.message);
+      }
     };
     actions.append(useBtn, previewBtn, exportBtn);
     if (!tpl.builtin && tpl.source !== 'builtin' && tpl.source !== 'catalog') {
       const delBtn = document.createElement('button');
-      delBtn.type = 'button'; delBtn.className = 'outline rpa-btn-danger'; delBtn.textContent = t('action.delete');
+      delBtn.type = 'button';
+      delBtn.className = 'outline rpa-btn-danger';
+      delBtn.textContent = t('action.delete');
       delBtn.onclick = async () => {
         if (!confirm(t('rpa.store.deleteConfirm', { name: tpl.name || '' }))) return;
         try {
           await window.ops.rpaTemplateDelete(tpl.id);
           toast(t('toast.deleted'));
           await refreshRpaStore();
-        } catch (e) { toast(e.message); }
+        } catch (e) {
+          toast(e.message);
+        }
       };
       actions.append(delBtn);
     }
@@ -4899,7 +6686,9 @@ async function installRpaTemplate(id) {
   showRpaPanel('flows');
   await refreshRpaPage();
   loadRpaPlanToEditor(plan);
-  toast(`${t('rpa.store.createFlow')}：${plan.plan_name || plan.id}（${t('rpa.store.steps', { n: plan.steps?.length || 0 })}）`);
+  toast(
+    `${t('rpa.store.createFlow')}：${plan.plan_name || plan.id}（${t('rpa.store.steps', { n: plan.steps?.length || 0 })}）`
+  );
   afterUiRender(document.getElementById('view-rpa') || document);
   return plan;
 }
@@ -4932,9 +6721,10 @@ function openCustomTemplateDialog(seed = {}) {
   if (descEl) descEl.value = seed.desc || '';
   if (stepsEl) {
     try {
-      stepsEl.value = typeof seed.stepsJson === 'string'
-        ? seed.stepsJson
-        : JSON.stringify(seed.steps || JSON.parse(RPA_TEMPLATE), null, 2);
+      stepsEl.value =
+        typeof seed.stepsJson === 'string'
+          ? seed.stepsJson
+          : JSON.stringify(seed.steps || JSON.parse(RPA_TEMPLATE), null, 2);
     } catch (_) {
       stepsEl.value = RPA_TEMPLATE;
     }
@@ -4969,9 +6759,12 @@ async function refreshRpaPage() {
     toast('加载自动脚本失败：' + error.message);
   }
   if (rpaSelectedId) {
-    const plan = rpaPlans.find((p) => p.id === rpaSelectedId) || await window.ops.rpaGetPlan(rpaSelectedId);
+    const plan = rpaPlans.find((p) => p.id === rpaSelectedId) || (await window.ops.rpaGetPlan(rpaSelectedId));
     if (plan) loadRpaPlanToEditor(plan);
-    else { rpaSelectedId = null; renderRpaPlans(); }
+    else {
+      rpaSelectedId = null;
+      renderRpaPlans();
+    }
   } else renderRpaPlans();
   await refreshRpaStatusBadge();
   await refreshRpaTasks();
@@ -4982,7 +6775,7 @@ async function refreshRpaPage() {
 
 async function createRpaPlan(name) {
   const plan = await window.ops.rpaSavePlan({
-    plan_name: name || ('新流程 ' + new Date().toLocaleString()),
+    plan_name: name || '新流程 ' + new Date().toLocaleString(),
     profile_ids: [],
     steps: JSON.parse(RPA_TEMPLATE),
   });
@@ -4993,9 +6786,17 @@ async function createRpaPlan(name) {
   toast(tx('已创建流程'));
 }
 
-document.getElementById('rpa-new-plan')?.addEventListener('click', () => createRpaPlan().catch((e) => toast(e.message)));
-document.getElementById('rpa-new-plan-2')?.addEventListener('click', () => createRpaPlan().catch((e) => toast(e.message)));
-document.getElementById('rpa-create-task')?.addEventListener('click', () => createRpaPlan('任务流程 ' + new Date().toLocaleString()).catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-new-plan')
+  ?.addEventListener('click', () => createRpaPlan().catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-new-plan-2')
+  ?.addEventListener('click', () => createRpaPlan().catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-create-task')
+  ?.addEventListener('click', () =>
+    createRpaPlan('任务流程 ' + new Date().toLocaleString()).catch((e) => toast(e.message))
+  );
 document.getElementById('rpa-refresh')?.addEventListener('click', refreshRpaPage);
 document.getElementById('rpa-task-refresh')?.addEventListener('click', refreshRpaTasks);
 document.getElementById('rpa-run-refresh')?.addEventListener('click', refreshRpaRuns);
@@ -5015,9 +6816,15 @@ document.getElementById('rpa-store-cat')?.addEventListener('change', (event) => 
   });
   refreshRpaStore().catch((e) => toast(e.message));
 });
-document.getElementById('rpa-store-sort')?.addEventListener('change', () => refreshRpaStore().catch((e) => toast(e.message)));
-document.getElementById('rpa-store-source')?.addEventListener('change', () => refreshRpaStore().catch((e) => toast(e.message)));
-document.getElementById('rpa-store-refresh')?.addEventListener('click', () => refreshRpaStore().catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-store-sort')
+  ?.addEventListener('change', () => refreshRpaStore().catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-store-source')
+  ?.addEventListener('change', () => refreshRpaStore().catch((e) => toast(e.message)));
+document
+  .getElementById('rpa-store-refresh')
+  ?.addEventListener('click', () => refreshRpaStore().catch((e) => toast(e.message)));
 document.getElementById('rpa-store-guide')?.addEventListener('click', () => {
   showRpaPanel('guide');
 });
@@ -5035,16 +6842,23 @@ document.getElementById('rpa-store-import')?.addEventListener('click', async () 
   try {
     const result = await window.ops.rpaTemplateImport();
     if (result?.canceled) return;
-    toast(`导入 ${result.imported || 0} 个模板` + (result.skipped?.length ? `，跳过 ${result.skipped.length}` : ''));
+    toast(
+      `导入 ${result.imported || 0} 个模板` +
+        (result.skipped?.length ? `，跳过 ${result.skipped.length}` : '')
+    );
     await refreshRpaStore();
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    toast(e.message);
+  }
 });
 document.getElementById('rpa-store-export-all')?.addEventListener('click', async () => {
   try {
     const result = await window.ops.rpaTemplateExport(null);
     if (result?.canceled) return;
     toast(result.count ? `已导出 ${result.count} 个自定义模板` : '没有可导出的自定义模板（已写空包）');
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    toast(e.message);
+  }
 });
 document.getElementById('rpa-store-custom')?.addEventListener('click', () => {
   openCustomTemplateDialog({
@@ -5079,21 +6893,27 @@ document.getElementById('rpa-preview-use')?.addEventListener('click', async () =
     if (!rpaPreviewTemplateId) return;
     document.getElementById('rpa-template-preview')?.close?.();
     await installRpaTemplate(rpaPreviewTemplateId);
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    toast(e.message);
+  }
 });
 
 document.getElementById('rpa-plan-table')?.addEventListener('click', async (event) => {
   const tr = event.target.closest('[data-rpa-plan]');
   if (!tr || event.target.closest('input')) return;
-  const plan = rpaPlans.find((p) => p.id === tr.dataset.rpaPlan) || await window.ops.rpaGetPlan(tr.dataset.rpaPlan);
+  const plan =
+    rpaPlans.find((p) => p.id === tr.dataset.rpaPlan) || (await window.ops.rpaGetPlan(tr.dataset.rpaPlan));
   if (plan) loadRpaPlanToEditor(plan);
 });
 
 document.getElementById('rpa-save')?.addEventListener('click', async () => {
   try {
     let steps;
-    try { steps = JSON.parse(document.getElementById('rpa-steps-json').value || '[]'); }
-    catch (e) { throw new Error(tx('步骤 JSON 无效：') + e.message); }
+    try {
+      steps = JSON.parse(document.getElementById('rpa-steps-json').value || '[]');
+    } catch (e) {
+      throw new Error(tx('步骤 JSON 无效：') + e.message);
+    }
     if (!Array.isArray(steps)) throw new Error(tx('步骤必须是数组'));
     const plan = await window.ops.rpaSavePlan({
       id: rpaSelectedId || undefined,
@@ -5105,12 +6925,16 @@ document.getElementById('rpa-save')?.addEventListener('click', async () => {
     await refreshRpaPage();
     toast(tx('已保存'));
     log('自动脚本', '保存流程 ' + plan.plan_name);
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 
 document.getElementById('rpa-delete')?.addEventListener('click', async () => {
-  const checked = [...document.querySelectorAll('[data-rpa-plan-check]:checked')].map((el) => el.dataset.rpaPlanCheck);
-  const ids = checked.length ? checked : (rpaSelectedId ? [rpaSelectedId] : []);
+  const checked = [...document.querySelectorAll('[data-rpa-plan-check]:checked')].map(
+    (el) => el.dataset.rpaPlanCheck
+  );
+  const ids = checked.length ? checked : rpaSelectedId ? [rpaSelectedId] : [];
   if (!ids.length) return toast(tx('请先选择流程'));
   if (!confirm(tx('确定删除选中的 ') + ids.length + tx(' 个流程？'))) return;
   try {
@@ -5118,14 +6942,19 @@ document.getElementById('rpa-delete')?.addEventListener('click', async () => {
     if (ids.includes(rpaSelectedId)) rpaSelectedId = null;
     await refreshRpaPage();
     toast(tx('已删除'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 
 document.getElementById('rpa-run')?.addEventListener('click', async () => {
   try {
     let steps;
-    try { steps = JSON.parse(document.getElementById('rpa-steps-json').value || '[]'); }
-    catch (e) { throw new Error(tx('步骤 JSON 无效：') + e.message); }
+    try {
+      steps = JSON.parse(document.getElementById('rpa-steps-json').value || '[]');
+    } catch (e) {
+      throw new Error(tx('步骤 JSON 无效：') + e.message);
+    }
     const profileIds = selectedRpaProfileIds();
     if (!profileIds.length) throw new Error(tx('请选择至少一个已启动的环境'));
     const plan = await window.ops.rpaSavePlan({
@@ -5156,26 +6985,35 @@ document.getElementById('rpa-stop')?.addEventListener('click', async () => {
     appendRpaLog('已请求停止');
     await refreshRpaStatusBadge();
     toast(tx('已停止'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 
 document.getElementById('rpa-load-template')?.addEventListener('click', () => {
   const ta = document.getElementById('rpa-steps-json');
-  if (ta) { ta.value = RPA_TEMPLATE; toast(tx('已载入示例')); }
+  if (ta) {
+    ta.value = RPA_TEMPLATE;
+    toast(tx('已载入示例'));
+  }
 });
 document.getElementById('rpa-format-json')?.addEventListener('click', () => {
   try {
     const ta = document.getElementById('rpa-steps-json');
     if (!ta) return;
     ta.value = JSON.stringify(JSON.parse(ta.value || '[]'), null, 2);
-  } catch (error) { toast('JSON 无效：' + error.message); }
+  } catch (error) {
+    toast('JSON 无效：' + error.message);
+  }
 });
 
 document.getElementById('rpa-store-chips')?.addEventListener('click', (event) => {
   const btn = event.target.closest('button[data-store-cat]');
   if (!btn) return;
   rpaStoreActiveCat = btn.dataset.storeCat || '全部';
-  document.querySelectorAll('#rpa-store-chips button').forEach((b) => b.classList.toggle('active', b === btn));
+  document
+    .querySelectorAll('#rpa-store-chips button')
+    .forEach((b) => b.classList.toggle('active', b === btn));
   const select = document.getElementById('rpa-store-cat');
   if (select) select.value = rpaStoreActiveCat;
   refreshRpaStore().catch((e) => toast(e.message));
@@ -5229,7 +7067,7 @@ async function refreshApiMcpPage() {
     const info = await window.ops.localApiInfo();
     const paths = await window.ops.mcpPaths();
     const port = info?.port || paths?.port || 50325;
-    const base = (info?.url || ('http://127.0.0.1:' + port + '/')).replace(/\/?$/, '/');
+    const base = (info?.url || 'http://127.0.0.1:' + port + '/').replace(/\/?$/, '/');
     const apiKey = paths?.apiKey || '';
     const apiKeyFile = paths?.apiKeyFile || '';
     if (pill) {
@@ -5244,9 +7082,9 @@ async function refreshApiMcpPage() {
     if (keyNote) {
       keyNote.textContent = apiKey
         ? '配置已写入当前 API Key。如要限制 AI 权限，请在 MCP 环境变量中追加 OPENBROWSER_MCP_MODE=manage|run|read（可选黑/白名单）。'
-        : (apiKeyFile
+        : apiKeyFile
           ? 'MCP 配置会从本机 key 文件读取鉴权；如迁移到另一台电脑，请同时迁移该文件或改填 API Key。'
-          : '未取到 API Key：请先从上方 API Key 框复制，再手动填入下方配置；否则 MCP 会返回 401。');
+          : '未取到 API Key：请先从上方 API Key 框复制，再手动填入下方配置；否则 MCP 会返回 401。';
     }
     const common = {
       mcpServers: {
@@ -5278,17 +7116,28 @@ async function refreshApiMcpPage() {
       },
     };
     const tab = document.querySelector('#mcp-config-tabs button.active')?.dataset.mcpTab || 'common';
-    if (mcpTa) mcpTa.textContent = JSON.stringify(tab === 'platform' ? window.__mcpConfigPlatform : window.__mcpConfigCommon, null, 2);
+    if (mcpTa)
+      mcpTa.textContent = JSON.stringify(
+        tab === 'platform' ? window.__mcpConfigPlatform : window.__mcpConfigCommon,
+        null,
+        2
+      );
     if (mcpHint) {
       const keyEnv = apiKeyFile
         ? ' OPENBROWSER_API_KEY_FILE=' + shellQuote(apiKeyFile)
         : ' OPENBROWSER_API_KEY=' + shellQuote(keyPlaceholder);
-      mcpHint.textContent = 'OPENBROWSER_API_PORT=' + shellQuote(port) + keyEnv + ' node ' + shellQuote(mcpScript);
+      mcpHint.textContent =
+        'OPENBROWSER_API_PORT=' + shellQuote(port) + keyEnv + ' node ' + shellQuote(mcpScript);
     }
-    if (curlHint) curlHint.textContent = 'curl -s -H ' + shellQuote('api-key: ' + keyPlaceholder) + ' ' + shellQuote(base + 'api/getVersion');
+    if (curlHint)
+      curlHint.textContent =
+        'curl -s -H ' + shellQuote('api-key: ' + keyPlaceholder) + ' ' + shellQuote(base + 'api/getVersion');
     setLocalApiStatus(!!info);
   } catch (error) {
-    if (pill) { pill.textContent = tx('未启动'); pill.classList.add('off'); }
+    if (pill) {
+      pill.textContent = tx('未启动');
+      pill.classList.add('off');
+    }
     setLocalApiStatus(false);
   }
   afterUiRender(document.getElementById('view-api-mcp') || document);
@@ -5304,7 +7153,12 @@ function setLocalApiStatus(running) {
 document.getElementById('api-refresh')?.addEventListener('click', refreshApiMcpPage);
 document.getElementById('api-copy-base')?.addEventListener('click', async () => {
   const url = document.getElementById('api-status-url')?.textContent || '';
-  try { await navigator.clipboard.writeText(url); toast(tx('已复制')); } catch (_) { toast(url); }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast(tx('已复制'));
+  } catch (_) {
+    toast(url);
+  }
 });
 document.getElementById('api-open-version')?.addEventListener('click', async () => {
   const out = document.getElementById('api-test-output');
@@ -5319,29 +7173,47 @@ document.getElementById('api-open-version')?.addEventListener('click', async () 
 });
 document.getElementById('api-copy-curl')?.addEventListener('click', async () => {
   const text = document.getElementById('api-curl-hint')?.textContent || '';
-  try { await navigator.clipboard.writeText(text); toast(tx('已复制')); } catch (_) {}
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(tx('已复制'));
+  } catch (_) {}
 });
 document.getElementById('mcp-copy-config')?.addEventListener('click', async () => {
   const text = document.getElementById('mcp-config-json')?.textContent || '';
-  try { await navigator.clipboard.writeText(text); toast(tx('已复制 MCP 配置')); } catch (_) {}
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(tx('已复制 MCP 配置'));
+  } catch (_) {}
 });
 document.getElementById('mcp-copy-cmd')?.addEventListener('click', async () => {
   const text = document.getElementById('mcp-cmd-hint')?.textContent || '';
-  try { await navigator.clipboard.writeText(text); toast(tx('已复制命令')); } catch (_) {}
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(tx('已复制命令'));
+  } catch (_) {}
 });
 document.getElementById('mcp-config-tabs')?.addEventListener('click', (event) => {
   const btn = event.target.closest('button[data-mcp-tab]');
   if (!btn) return;
-  document.querySelectorAll('#mcp-config-tabs button').forEach((b) => b.classList.toggle('active', b === btn));
+  document
+    .querySelectorAll('#mcp-config-tabs button')
+    .forEach((b) => b.classList.toggle('active', b === btn));
   const tab = btn.dataset.mcpTab;
   const mcpTa = document.getElementById('mcp-config-json');
-  if (mcpTa) mcpTa.textContent = JSON.stringify(tab === 'platform' ? window.__mcpConfigPlatform : window.__mcpConfigCommon, null, 2);
+  if (mcpTa)
+    mcpTa.textContent = JSON.stringify(
+      tab === 'platform' ? window.__mcpConfigPlatform : window.__mcpConfigCommon,
+      null,
+      2
+    );
 });
 
 window.ops.onEvent((value) => {
   if (value?.type === 'rpa-log') appendRpaLog((value.level || 'info') + ': ' + value.message);
   if (value?.type === 'rpa-task') {
-    appendRpaLog('task ' + value.taskId + ' → ' + value.status + (value.message ? ' · ' + value.message : ''));
+    appendRpaLog(
+      'task ' + value.taskId + ' → ' + value.status + (value.message ? ' · ' + value.message : '')
+    );
     refreshRpaStatusBadge();
     refreshRpaTasks();
     refreshRpaRuns();
@@ -5372,7 +7244,7 @@ async function refreshKernelPanel() {
   try {
     const info = await window.ops.getInfo();
     updateEngineBadge(info);
-    const st = info.kernel || await window.ops.kernelStatus();
+    const st = info.kernel || (await window.ops.kernelStatus());
     const k = st.kernel;
     if (badge) {
       badge.textContent = k ? tx('已安装 · ') + kernelSourceLabel(k.source) : tx('未安装');
@@ -5391,16 +7263,18 @@ async function refreshKernelPanel() {
         : 'Donut · Wayfern · https://donutbrowser.com/wayfern.json';
     }
     const selection = info.kernelSelection;
-    if (activePathEl) activePathEl.textContent = selection?.browser?.path || selection?.message || tx('未选择可执行文件');
+    if (activePathEl)
+      activePathEl.textContent = selection?.browser?.path || selection?.message || tx('未选择可执行文件');
     if (launchModeEl) {
       const mode = selection?.mode;
-      launchModeEl.textContent = mode === 'independent'
-        ? `独立内核 · ${selection.browser.name}`
-        : mode === 'system-manual'
-          ? `手动选择本机浏览器 · ${selection.browser.name}`
-          : mode === 'system'
-            ? `本机浏览器 · ${selection.browser.name}`
-            : tx('已阻止启动：需要独立内核');
+      launchModeEl.textContent =
+        mode === 'independent'
+          ? `独立内核 · ${selection.browser.name}`
+          : mode === 'system-manual'
+            ? `手动选择本机浏览器 · ${selection.browser.name}`
+            : mode === 'system'
+              ? `本机浏览器 · ${selection.browser.name}`
+              : tx('已阻止启动：需要独立内核');
     }
     if (prefer) prefer.checked = info.preferIndependentKernel !== false;
     if (allow) allow.checked = info.allowSystemBrowserFallback === true;
@@ -5478,13 +7352,17 @@ document.getElementById('kernel-choose')?.addEventListener('click', async () => 
       toast(tx('已设置自定义内核'));
     }
     await refreshKernelPanel();
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 document.getElementById('kernel-prefer-independent')?.addEventListener('change', async (e) => {
   try {
     await window.ops.kernelPolicy({ preferIndependentKernel: e.target.checked });
     toast(e.target.checked ? tx('已优先独立内核') : tx('已允许使用候选列表第一项'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 document.getElementById('kernel-allow-system')?.addEventListener('change', async (e) => {
   try {
@@ -5495,9 +7373,7 @@ document.getElementById('kernel-allow-system')?.addEventListener('change', async
       return;
     }
     await window.ops.kernelPolicy({ allowSystemBrowserFallback: e.target.checked });
-    toast(e.target.checked
-      ? tx('已允许在独立内核不可用时回退本机浏览器')
-      : tx('已禁止自动回退本机浏览器'));
+    toast(e.target.checked ? tx('已允许在独立内核不可用时回退本机浏览器') : tx('已禁止自动回退本机浏览器'));
     await refreshKernelPanel();
   } catch (error) {
     e.target.checked = !e.target.checked;
@@ -5614,7 +7490,9 @@ function applyCloudPreset(presetId) {
   toast(tx(`已切换到「${preset.label}」一键配置，请填写 WebDAV 桥 URL 与账号后点保存`));
   afterUiRender(document.getElementById('view-system') || document);
   // scroll fields into view
-  document.getElementById(`cloud-fields-${prefix}`)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  document
+    .getElementById(`cloud-fields-${prefix}`)
+    ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
 }
 
 function readCloudForm() {
@@ -5625,7 +7503,12 @@ function readCloudForm() {
     provider: $('#cloud-provider')?.value || 'local',
     restoreMode: $('#cloud-restore-mode')?.value || 'merge',
     passphrase: $('#cloud-passphrase')?.value || '',
-    local: { dir: ($('#cloud-local-dir')?.textContent || '').trim() === tx('未选择') ? '' : ($('#cloud-local-dir')?.textContent || '').trim() },
+    local: {
+      dir:
+        ($('#cloud-local-dir')?.textContent || '').trim() === tx('未选择')
+          ? ''
+          : ($('#cloud-local-dir')?.textContent || '').trim(),
+    },
     webdav: {
       url: ($('#cloud-webdav-url')?.value || '').trim(),
       username: ($('#cloud-webdav-user')?.value || '').trim(),
@@ -5666,7 +7549,8 @@ function applyCloudForm(cloud) {
   if ($('#cloud-gh-repo')) $('#cloud-gh-repo').value = c.github?.repo || '';
   if ($('#cloud-gh-token')) $('#cloud-gh-token').value = c.github?.token || '';
   if ($('#cloud-gh-branch')) $('#cloud-gh-branch').value = c.github?.branch || 'main';
-  if ($('#cloud-gh-path')) $('#cloud-gh-path').value = c.github?.path || 'openbrowser/openbrowser-backup.obpack';
+  if ($('#cloud-gh-path'))
+    $('#cloud-gh-path').value = c.github?.path || 'openbrowser/openbrowser-backup.obpack';
   writeBridgeFields('gdrive', c.gdrive || {});
   writeBridgeFields('onedrive', c.onedrive || {});
   writeBridgeFields('quark', c.quark || {});
@@ -5675,16 +7559,26 @@ function applyCloudForm(cloud) {
   if (badge) badge.textContent = c.enabled ? (c.lastSyncAt ? tx('已同步') : tx('已启用')) : tx('未配置');
   const status = $('#cloud-sync-status');
   if (status) {
-    const modeLabel = ({ merge: '智能合并', 'local-wins': '仅新增', overwrite: '覆盖' })[c.restoreMode || 'merge'] || '智能合并';
-    const providerLabel = ({
-      local: '本地', webdav: 'WebDAV', github: 'GitHub', gdrive: '谷歌云',
-      onedrive: '微软云', quark: '夸克云', baidu: '百度云',
-    })[c.provider || 'local'] || (c.provider || '本地');
+    const modeLabel =
+      { merge: '智能合并', 'local-wins': '仅新增', overwrite: '覆盖' }[c.restoreMode || 'merge'] ||
+      '智能合并';
+    const providerLabel =
+      {
+        local: '本地',
+        webdav: 'WebDAV',
+        github: 'GitHub',
+        gdrive: '谷歌云',
+        onedrive: '微软云',
+        quark: '夸克云',
+        baidu: '百度云',
+      }[c.provider || 'local'] ||
+      c.provider ||
+      '本地';
     status.textContent = c.lastError
-      ? (tx('上次错误：') + c.lastError)
-      : (c.lastSyncAt
-        ? (`上次同步：${c.lastSyncAt} · ${providerLabel} · 恢复策略：${modeLabel}`)
-        : `尚未同步。当前：${providerLabel} · 恢复策略：${modeLabel}（默认不会删除本地独有环境）。`);
+      ? tx('上次错误：') + c.lastError
+      : c.lastSyncAt
+        ? `上次同步：${c.lastSyncAt} · ${providerLabel} · 恢复策略：${modeLabel}`
+        : `尚未同步。当前：${providerLabel} · 恢复策略：${modeLabel}（默认不会删除本地独有环境）。`;
   }
   cloudProviderFieldsVisibility();
 }
@@ -5781,14 +7675,18 @@ $('#cloud-choose-dir')?.addEventListener('click', async () => {
     const result = await window.ops.cloudChooseDir();
     if (result?.canceled || !result.dir) return;
     if ($('#cloud-local-dir')) $('#cloud-local-dir').textContent = result.dir;
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#cloud-save-cfg')?.addEventListener('click', async () => {
   try {
     const cloud = await window.ops.cloudSetConfig(readCloudForm());
     applyCloudForm(cloud);
     toast(tx('云备份配置已保存'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#cloud-backup-now')?.addEventListener('click', async () => {
   try {
@@ -5801,18 +7699,27 @@ $('#cloud-backup-now')?.addEventListener('click', async () => {
       cloud,
     });
     applyCloudForm(result.cloud || cloud);
-    toast('备份完成 · ' + (result.meta?.profileCount || 0) + ' 个环境 · ' + Math.round((result.meta?.bytes || 0) / 1024) + ' KB');
+    toast(
+      '备份完成 · ' +
+        (result.meta?.profileCount || 0) +
+        ' 个环境 · ' +
+        Math.round((result.meta?.bytes || 0) / 1024) +
+        ' KB'
+    );
     log('Cloud', '全量备份 · ' + (result.meta?.profileCount || 0) + ' 环境');
-  } catch (error) { toast('备份失败：' + error.message); }
+  } catch (error) {
+    toast('备份失败：' + error.message);
+  }
 });
 $('#cloud-restore-now')?.addEventListener('click', async () => {
   const cloud = readCloudForm();
   const mode = cloud.restoreMode || 'merge';
-  const warn = mode === 'overwrite'
-    ? '将用云端备份完全覆盖本地环境列表，本地独有环境会丢失。确定？'
-    : (mode === 'local-wins'
-      ? '仅从云端新增本地没有的环境，已有环境不变。继续？'
-      : '智能合并：同 ID 取较新版本，本地独有环境会保留。继续？');
+  const warn =
+    mode === 'overwrite'
+      ? '将用云端备份完全覆盖本地环境列表，本地独有环境会丢失。确定？'
+      : mode === 'local-wins'
+        ? '仅从云端新增本地没有的环境，已有环境不变。继续？'
+        : '智能合并：同 ID 取较新版本，本地独有环境会保留。继续？';
   if (!confirm(warn)) return;
   try {
     await window.ops.cloudSetConfig(cloud);
@@ -5828,22 +7735,29 @@ $('#cloud-restore-now')?.addEventListener('click', async () => {
     const detail = formatMergeStats(result.mergeStats);
     toast('恢复完成 · ' + (result.profiles?.length || 0) + ' 个环境' + (detail ? ' · ' + detail : ''));
     log('Cloud', '恢复 · ' + mode + ' · ' + (result.profiles?.length || 0) + (detail ? ' · ' + detail : ''));
-  } catch (error) { toast('恢复失败：' + error.message); }
+  } catch (error) {
+    toast('恢复失败：' + error.message);
+  }
 });
 $('#cloud-export-file')?.addEventListener('click', async () => {
   try {
     const cloud = readCloudForm();
-    const result = await window.ops.cloudExportFile({ profiles: ui.profiles, groups: ui.groups || [], cloud });
+    const result = await window.ops.cloudExportFile({
+      profiles: ui.profiles,
+      groups: ui.groups || [],
+      cloud,
+    });
     if (result?.canceled) return;
     toast(tx('已导出备份文件'));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#cloud-import-file')?.addEventListener('click', async () => {
   const cloud = readCloudForm();
   const mode = cloud.restoreMode || 'merge';
-  const warn = mode === 'overwrite'
-    ? '导入将完全覆盖本地环境列表。确定？'
-    : '导入将按当前恢复策略合并。继续？';
+  const warn =
+    mode === 'overwrite' ? '导入将完全覆盖本地环境列表。确定？' : '导入将按当前恢复策略合并。继续？';
   if (!confirm(warn)) return;
   try {
     const result = await window.ops.cloudImportFile({
@@ -5856,7 +7770,9 @@ $('#cloud-import-file')?.addEventListener('click', async () => {
     applyRestoredProfiles(result);
     const detail = formatMergeStats(result.mergeStats);
     toast('导入完成 · ' + (result.profiles?.length || 0) + ' 个环境' + (detail ? ' · ' + detail : ''));
-  } catch (error) { toast('导入失败：' + error.message); }
+  } catch (error) {
+    toast('导入失败：' + error.message);
+  }
 });
 document.getElementById('editor-cloud-push-one')?.addEventListener('click', async () => {
   try {
@@ -5871,14 +7787,18 @@ document.getElementById('editor-cloud-push-one')?.addEventListener('click', asyn
     save();
     await window.ops.syncProfiles(ui.profiles);
     await pushProfilesToCloud([editingProfileId]);
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 document.getElementById('editor-cloud-pull-one')?.addEventListener('click', async () => {
   try {
     if (!editingProfileId) throw new Error(tx('未打开环境'));
     await pullProfilesFromCloud([editingProfileId]);
     openProfileEditor(editingProfileId);
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 
 $('#cloud-push-selected')?.addEventListener('click', async () => {
@@ -5886,7 +7806,9 @@ $('#cloud-push-selected')?.addEventListener('click', async () => {
   try {
     const ids = ui.profiles.filter((p) => p.advanced?.cloudBackup).map((p) => p.id);
     await pushProfilesToCloud(ids);
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 $('#cloud-pull-selected')?.addEventListener('click', async () => {
   try {
@@ -5904,30 +7826,46 @@ $('#cloud-pull-selected')?.addEventListener('click', async () => {
     applyRestoredProfiles(result);
     await refreshCloudPanel();
     toast('恢复完成 · ' + formatMergeStats(result.mergeStats));
-  } catch (error) { toast(error.message); }
+  } catch (error) {
+    toast(error.message);
+  }
 });
 
 // hook system view
 const _switchViewKernel = switchView;
-switchView = function(view) {
+switchView = function (view) {
   _switchViewKernel.apply(this, arguments);
   // Re-translate static + dynamic chrome for every page (API/MCP, guide, settings, store…)
   try {
     const root = document.getElementById('view-' + view) || document;
     afterUiRender(root);
     // guide + system + api are mostly static HTML — full document pass catches options/labels
-    if (view === 'system' || view === 'api-mcp' || view === 'rpa' || view === 'rpa-guide' || view === 'logs') {
+    if (
+      view === 'system' ||
+      view === 'api-mcp' ||
+      view === 'rpa' ||
+      view === 'rpa-guide' ||
+      view === 'logs'
+    ) {
       afterUiRender(document);
     }
   } catch (_) {}
   if (view === 'system') {
     refreshLocaleChrome();
-    try { refreshKernelPanel?.(); } catch (_) {}
-    try { refreshApiMcpPage?.().catch(() => setLocalApiStatus?.(false)); } catch (_) {}
-    try { refreshCloudPanel?.().catch(() => {}); } catch (_) {}
+    try {
+      refreshKernelPanel?.();
+    } catch (_) {}
+    try {
+      refreshApiMcpPage?.().catch(() => setLocalApiStatus?.(false));
+    } catch (_) {}
+    try {
+      refreshCloudPanel?.().catch(() => {});
+    } catch (_) {}
   }
   if (view === 'api-mcp') {
-    try { refreshApiMcpPage?.().catch(() => {}); } catch (_) {}
+    try {
+      refreshApiMcpPage?.().catch(() => {});
+    } catch (_) {}
     afterUiRender(document.getElementById('view-api-mcp') || document);
   }
   if (view === 'rpa-guide') {
@@ -5939,7 +7877,10 @@ window.ops.onEvent((value) => {
   if (value?.type === 'kernel-progress') {
     const progress = document.getElementById('kernel-progress');
     if (!progress) return;
-    if (value.phase === 'download' && value.percent != null) progress.textContent = tx(`下载中 ${value.percent}% (${Math.round((value.received||0)/1048576)}MB) · ${value.version || ''}`);
+    if (value.phase === 'download' && value.percent != null)
+      progress.textContent = tx(
+        `下载中 ${value.percent}% (${Math.round((value.received || 0) / 1048576)}MB) · ${value.version || ''}`
+      );
     else if (value.message) progress.textContent = value.message;
   }
   if (value?.type === 'kernel-error') {
@@ -5960,17 +7901,28 @@ $('#batch-edit-preferences')?.addEventListener('click', () => {
   const templateSelect = $('#batch-pref-template');
   if (templateSelect) {
     templateSelect.replaceChildren(new Option('手动指定下方偏好设置', ''));
-    ui.profiles.forEach((profile) => templateSelect.append(new Option(
-      `环境 ${displayProfileNumber(profile)}${profile.title ? ' · ' + profile.title : ''}`,
-      profile.id,
-    )));
+    ui.profiles.forEach((profile) =>
+      templateSelect.append(
+        new Option(
+          `环境 ${displayProfileNumber(profile)}${profile.title ? ' · ' + profile.title : ''}`,
+          profile.id
+        )
+      )
+    );
   }
   $('#batch-pref-start-url').value = '';
   $('#batch-pref-clear-start-url').checked = false;
   $('#batch-pref-os').value = '';
   $('#batch-pref-resolution').value = '';
-  ['batch-pref-block-images', 'batch-pref-block-sound', 'batch-pref-clear-cache', 'batch-pref-multi-open']
-    .forEach((id) => { const el = $('#' + id); if (el) el.value = 'keep'; });
+  [
+    'batch-pref-block-images',
+    'batch-pref-block-sound',
+    'batch-pref-clear-cache',
+    'batch-pref-multi-open',
+  ].forEach((id) => {
+    const el = $('#' + id);
+    if (el) el.value = 'keep';
+  });
   const summary = $('#batch-pref-summary');
   if (summary) summary.textContent = `将偏好设置统一应用到已勾选的 ${sources.length} 个环境`;
   $('#batch-preferences-dialog')?.showModal();
@@ -5985,7 +7937,11 @@ $('#batch-preferences-form')?.addEventListener('submit', async (event) => {
   const templateId = $('#batch-pref-template')?.value;
   const templateProfile = templateId ? ui.profiles.find((item) => item.id === templateId) : null;
   let startUrl = '';
-  try { startUrl = normalizeOptionalWebUrl($('#batch-pref-start-url')?.value || ''); } catch (e) { return toast(e.message); }
+  try {
+    startUrl = normalizeOptionalWebUrl($('#batch-pref-start-url')?.value || '');
+  } catch (e) {
+    return toast(e.message);
+  }
   const clearStartUrl = Boolean($('#batch-pref-clear-start-url')?.checked);
   const os = $('#batch-pref-os')?.value;
   const resolution = $('#batch-pref-resolution')?.value;
@@ -5999,7 +7955,10 @@ $('#batch-preferences-form')?.addEventListener('submit', async (event) => {
   let width, height;
   if (resolution) {
     const [w, h] = resolution.split('x').map(Number);
-    if (w && h) { width = w; height = h; }
+    if (w && h) {
+      width = w;
+      height = h;
+    }
   }
 
   const before = new Map(sources.map((item) => [item.id, structuredClone(item)]));
@@ -6026,7 +7985,10 @@ $('#batch-preferences-form')?.addEventListener('submit', async (event) => {
         item.advanced = { ...(item.advanced || {}), startUrls: startUrl };
       }
       if (os) item.os = os;
-      if (width && height) { item.width = width; item.height = height; }
+      if (width && height) {
+        item.width = width;
+        item.height = height;
+      }
       for (const [key, mode] of Object.entries(preferenceModes)) {
         if (mode !== 'keep') item.advanced = { ...(item.advanced || {}), [key]: mode === 'on' };
       }

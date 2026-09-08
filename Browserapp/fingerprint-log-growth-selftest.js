@@ -15,7 +15,11 @@ const os = require('os');
 const assert = require('assert');
 
 let passed = 0;
-const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1; };
+const ok = (n, c) => {
+  assert.ok(c, n);
+  console.log('  PASS  ' + n);
+  passed += 1;
+};
 
 (async () => {
   // --- 1. rotation caps the log ---
@@ -47,34 +51,41 @@ const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1
     const cdp = require('./cdp');
     const { BrowserEngine } = require('./engine.js');
     const originalTabs = cdp.tabs;
-    cdp.tabs = async () => ([
+    cdp.tabs = async () => [
       { id: 'T1', url: 'https://example.com/a', webSocketDebuggerUrl: 'ws://127.0.0.1/1' },
       { id: 'T2', url: 'https://example.com/b', webSocketDebuggerUrl: 'ws://127.0.0.1/2' },
-    ]);
+    ];
     try {
       const profile = {
-        id: 'steady', advanced: {}, privacy: {},
+        id: 'steady',
+        advanced: {},
+        privacy: {},
       };
       const ctx = { networkInfo: new Map() };
-      const applied = new Set(['T1', 'T2']);          // both tabs already injected
+      const applied = new Set(['T1', 'T2']); // both tabs already injected
       const tracked = {};
       const fingerprint = { userAgent: 'UA', platform: 'MacIntel' };
 
-      await BrowserEngine.prototype.applyRuntimeSettings.call(
-        ctx, 9222, profile, fingerprint,
-        { appliedTargetIds: applied, trackOn: tracked, phase: 'watch-ensure' },
-      );
+      await BrowserEngine.prototype.applyRuntimeSettings.call(ctx, 9222, profile, fingerprint, {
+        appliedTargetIds: applied,
+        trackOn: tracked,
+        phase: 'watch-ensure',
+      });
 
       const wrote = fs.existsSync(logFile) ? (await fsp.readFile(logFile, 'utf8')).trim() : '';
       ok('steady-state pass writes no diagnostics', wrote === '');
-      ok('steady-state still refreshes tracked state', tracked.fpAppliedTargets === applied && tracked.fingerprint === fingerprint);
+      ok(
+        'steady-state still refreshes tracked state',
+        tracked.fpAppliedTargets === applied && tracked.fingerprint === fingerprint
+      );
 
       // A closed tab must be pruned so the set cannot grow forever.
       const stale = new Set(['T1', 'T2', 'GONE']);
-      await BrowserEngine.prototype.applyRuntimeSettings.call(
-        ctx, 9222, profile, fingerprint,
-        { appliedTargetIds: stale, trackOn: {}, phase: 'watch-ensure' },
-      );
+      await BrowserEngine.prototype.applyRuntimeSettings.call(ctx, 9222, profile, fingerprint, {
+        appliedTargetIds: stale,
+        trackOn: {},
+        phase: 'watch-ensure',
+      });
       ok('closed targets are pruned from the applied set', !stale.has('GONE') && stale.size === 2);
     } finally {
       cdp.tabs = originalTabs;
@@ -85,4 +96,7 @@ const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1
 
   console.log(`\nfingerprint-log-growth-selftest: ${passed} checks passed.`);
   process.exit(0);
-})().catch((e) => { console.error('fingerprint-log-growth-selftest FAILED:', e); process.exit(1); });
+})().catch((e) => {
+  console.error('fingerprint-log-growth-selftest FAILED:', e);
+  process.exit(1);
+});

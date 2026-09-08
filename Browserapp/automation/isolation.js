@@ -38,10 +38,9 @@ function readJsonFileSync(filePath) {
 
 function lockBelongsToProfile(lock, identity) {
   if (!lock || typeof lock !== 'object' || Array.isArray(lock)) return false;
-  if (lock.profileRoot != null
-    && normalizedPath(lock.profileRoot) !== normalizedPath(identity.profileRoot)) return false;
-  if (identity.profileId != null
-    && String(lock.profileId || '') !== identity.profileId) return false;
+  if (lock.profileRoot != null && normalizedPath(lock.profileRoot) !== normalizedPath(identity.profileRoot))
+    return false;
+  if (identity.profileId != null && String(lock.profileId || '') !== identity.profileId) return false;
   return true;
 }
 
@@ -63,7 +62,7 @@ function validPid(value) {
 
 function extractUserDataDir(command) {
   const match = String(command || '').match(
-    /(?:^|\s)--user-data-dir=(?:"([^"]*)"|'([^']*)'|((?:(?!\s--).)*))/i,
+    /(?:^|\s)--user-data-dir=(?:"([^"]*)"|'([^']*)'|((?:(?!\s--).)*))/i
   );
   return String(match?.slice(1).find((value) => value !== undefined) || '').trim();
 }
@@ -75,39 +74,59 @@ function commandUsesProfile(command, profileRoot) {
   // GPU cache instead of repeating --user-data-dir. Those processes still own
   // the profile and must be included in the fail-closed cleanup scan.
   if (process.platform !== 'win32') return false;
-  const commandText = String(command || '').replace(/["']/g, '').toLowerCase();
-  const root = normalizedPath(profileRoot).toLowerCase().replace(/[\\/]+$/, '');
+  const commandText = String(command || '')
+    .replace(/["']/g, '')
+    .toLowerCase();
+  const root = normalizedPath(profileRoot)
+    .toLowerCase()
+    .replace(/[\\/]+$/, '');
   return Boolean(root && (commandText.includes(`${root}\\`) || commandText.includes(`${root}/`)));
 }
 
 function decodeProcessListOutput(value) {
   const bytes = Buffer.isBuffer(value) ? value : Buffer.from(String(value || ''), 'utf8');
-  const utf8 = bytes.toString('utf8').replace(/^\uFEFF/, '').trim();
+  const utf8 = bytes
+    .toString('utf8')
+    .replace(/^\uFEFF/, '')
+    .trim();
   if (utf8.startsWith('{') || utf8.startsWith('[')) return utf8;
-  return bytes.toString('utf16le').replace(/^\uFEFF/, '').trim();
+  return bytes
+    .toString('utf16le')
+    .replace(/^\uFEFF/, '')
+    .trim();
 }
 
 function scanProcessesUsingProfile(profileRoot) {
   try {
     if (process.platform === 'win32') {
-      const output = decodeProcessListOutput(execFileSync('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        '[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); [Console]::Out.Write((Get-CimInstance Win32_Process -ErrorAction Stop | Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress))',
-      ], {
-        encoding: 'buffer',
-        windowsHide: true,
-        stdio: ['ignore', 'pipe', 'ignore'],
-        timeout: PROCESS_SCAN_TIMEOUT_MS,
-      }));
+      const output = decodeProcessListOutput(
+        execFileSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            '[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); [Console]::Out.Write((Get-CimInstance Win32_Process -ErrorAction Stop | Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress))',
+          ],
+          {
+            encoding: 'buffer',
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'ignore'],
+            timeout: PROCESS_SCAN_TIMEOUT_MS,
+          }
+        )
+      );
       if (!output) return { known: true, pids: [] };
       const parsed = JSON.parse(output);
       const records = Array.isArray(parsed) ? parsed : [parsed];
       return {
         known: true,
         pids: records
-          .filter((record) => Number(record?.ProcessId) !== process.pid && commandUsesProfile(record?.CommandLine, profileRoot))
+          .filter(
+            (record) =>
+              Number(record?.ProcessId) !== process.pid &&
+              commandUsesProfile(record?.CommandLine, profileRoot)
+          )
           .map((record) => Number(record.ProcessId))
           .filter(validPid),
       };
@@ -176,8 +195,13 @@ async function acquireProfileLock(profileRoot, meta = {}) {
     } catch (error) {
       if (error?.code !== 'EEXIST') throw error;
       let existing;
-      try { existing = JSON.parse(await fsp.readFile(file, 'utf8')); } catch (_) {
-        throw lockOwnerError('PROFILE_LOCK_UNRECOVERABLE', 'Profile lock is malformed and cannot be recovered');
+      try {
+        existing = JSON.parse(await fsp.readFile(file, 'utf8'));
+      } catch (_) {
+        throw lockOwnerError(
+          'PROFILE_LOCK_UNRECOVERABLE',
+          'Profile lock is malformed and cannot be recovered'
+        );
       }
       const numericPid = Number(existing?.pid);
       const pidValid = Number.isSafeInteger(numericPid) && numericPid > 0;
@@ -185,7 +209,7 @@ async function acquireProfileLock(profileRoot, meta = {}) {
         throw lockOwnerError(
           'PROFILE_LOCK_UNRECOVERABLE',
           'Profile lock ownership cannot be verified; refusing to remove it',
-          existing,
+          existing
         );
       }
       if (isPidAlive(numericPid)) {
@@ -200,7 +224,7 @@ async function acquireProfileLock(profileRoot, meta = {}) {
           throw lockOwnerError(
             'PROFILE_LOCK_UNRECOVERABLE',
             'Profile lock browser ownership cannot be verified; refusing to remove it',
-            existing,
+            existing
           );
         }
         const browserPid = Number(existing.browserPid);
@@ -208,7 +232,7 @@ async function acquireProfileLock(profileRoot, meta = {}) {
           throw lockOwnerError(
             'PROFILE_LOCKED',
             `Profile browser is still running (pid ${browserPid})`,
-            existing,
+            existing
           );
         }
       }
@@ -221,14 +245,14 @@ async function acquireProfileLock(profileRoot, meta = {}) {
         throw lockOwnerError(
           'PROFILE_LOCK_UNRECOVERABLE',
           'Profile process scan is unconfirmed; refusing to remove profile lock',
-          existing,
+          existing
         );
       }
       if (processScan.pids.length) {
         throw lockOwnerError(
           'PROFILE_LOCKED',
           `Profile browser is still running (pid ${processScan.pids[0]})`,
-          { ...existing, browserPids: processScan.pids },
+          { ...existing, browserPids: processScan.pids }
         );
       }
       if (hasLockField(existing, 'browserPid') && existing.browserPid === null) {
@@ -237,7 +261,7 @@ async function acquireProfileLock(profileRoot, meta = {}) {
           throw lockOwnerError(
             'PROFILE_LOCK_UNRECOVERABLE',
             'Profile startup lock cannot be verified yet; refusing to remove it',
-            existing,
+            existing
           );
         }
       }
@@ -294,10 +318,17 @@ async function updateProfileLock(profileRoot, owner = null, patch = {}) {
   const file = lockPath(profileRoot);
   if (!owner?.token) return false;
   let existing;
-  try { existing = JSON.parse(await fsp.readFile(file, 'utf8')); } catch (_) { return false; }
+  try {
+    existing = JSON.parse(await fsp.readFile(file, 'utf8'));
+  } catch (_) {
+    return false;
+  }
   if (existing.pid !== owner.pid || existing.token !== owner.token) return false;
-  if (existing.profileRoot != null
-    && normalizedPath(existing.profileRoot) !== normalizedPath(path.resolve(profileRoot))) return false;
+  if (
+    existing.profileRoot != null &&
+    normalizedPath(existing.profileRoot) !== normalizedPath(path.resolve(profileRoot))
+  )
+    return false;
   if (hasLockField(patch, 'browserPid') && !validPid(patch.browserPid)) {
     throw lockOwnerError('PROFILE_LOCK_UPDATE_INVALID', 'Browser pid must be a positive integer');
   }
@@ -324,10 +355,17 @@ async function releaseProfileLock(profileRoot, owner = null) {
   const file = lockPath(profileRoot);
   if (!owner?.token) return false;
   let existing;
-  try { existing = JSON.parse(await fsp.readFile(file, 'utf8')); } catch (_) { return false; }
+  try {
+    existing = JSON.parse(await fsp.readFile(file, 'utf8'));
+  } catch (_) {
+    return false;
+  }
   if (existing.pid !== owner.pid || existing.token !== owner.token) return false;
-  if (existing.profileRoot != null
-    && normalizedPath(existing.profileRoot) !== normalizedPath(path.resolve(profileRoot))) return false;
+  if (
+    existing.profileRoot != null &&
+    normalizedPath(existing.profileRoot) !== normalizedPath(path.resolve(profileRoot))
+  )
+    return false;
   await fsp.rm(file, { force: true }).catch(() => {});
   if (fs.existsSync(file)) return false;
   return true;
@@ -369,11 +407,19 @@ function assertProfileId(value) {
 
 function realPathOrResolved(value) {
   const resolved = path.resolve(String(value || ''));
-  try { return fs.realpathSync.native(resolved); } catch (_) { return resolved; }
+  try {
+    return fs.realpathSync.native(resolved);
+  } catch (_) {
+    return resolved;
+  }
 }
 
 function isLinkLike(value) {
-  try { return fs.lstatSync(value).isSymbolicLink(); } catch (_) { return false; }
+  try {
+    return fs.lstatSync(value).isSymbolicLink();
+  } catch (_) {
+    return false;
+  }
 }
 
 /**
@@ -382,7 +428,11 @@ function isLinkLike(value) {
  * @param {string} [home]
  * @param {string} [platform] optional override for selftests (darwin|win32|linux)
  */
-function systemBrowserDataRoots(env = process.env, home = require('os').homedir(), platform = process.platform) {
+function systemBrowserDataRoots(
+  env = process.env,
+  home = require('os').homedir(),
+  platform = process.platform
+) {
   env = env || process.env;
   home = home || require('os').homedir();
   const plat = platform || process.platform;
@@ -427,17 +477,22 @@ function systemBrowserDataRoots(env = process.env, home = require('os').homedir(
   ];
 }
 
-function systemBrowserExecutablePaths(env = process.env, home = require('os').homedir(), platform = process.platform) {
+function systemBrowserExecutablePaths(
+  env = process.env,
+  home = require('os').homedir(),
+  platform = process.platform
+) {
   env = env || process.env;
   home = home || require('os').homedir();
   const plat = platform || process.platform;
-  if (plat === 'darwin') return [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    path.join(home, 'Applications', 'Google Chrome.app', 'Contents', 'MacOS', 'Google Chrome'),
-    '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  ];
+  if (plat === 'darwin')
+    return [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      path.join(home, 'Applications', 'Google Chrome.app', 'Contents', 'MacOS', 'Google Chrome'),
+      '/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    ];
   if (plat === 'win32') {
     const local = env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
     const programFiles = env.PROGRAMFILES || path.join('C:', 'Program Files');
@@ -451,39 +506,66 @@ function systemBrowserExecutablePaths(env = process.env, home = require('os').ho
       path.join(local, 'Chromium', 'Application', 'chrome.exe'),
     ];
   }
-  return ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+  return [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ];
 }
 
 function isSystemBrowserExecutable(binaryPath, options = {}) {
   const raw = path.resolve(String(binaryPath || ''));
   let resolved = normalizedPath(raw);
-  try { resolved = normalizedPath(fs.realpathSync.native(raw)); } catch (_) {}
-  const paths = (options.executablePaths || systemBrowserExecutablePaths(options.env, options.home)).map(normalizedPath);
+  try {
+    resolved = normalizedPath(fs.realpathSync.native(raw));
+  } catch (_) {}
+  const paths = (options.executablePaths || systemBrowserExecutablePaths(options.env, options.home)).map(
+    normalizedPath
+  );
   return paths.some((candidate) => candidate === resolved || candidate === normalizedPath(raw));
 }
 
 function validateDataRootIsolation(dataRoot, options = {}) {
   const root = path.resolve(String(dataRoot || ''));
-  if (!root || root === path.parse(root).root) return { ok: false, message: 'environment data directory is unsafe' };
+  if (!root || root === path.parse(root).root)
+    return { ok: false, message: 'environment data directory is unsafe' };
   const browserRoots = options.browserRoots || systemBrowserDataRoots(options.env, options.home);
-  const conflict = browserRoots.find((browserRoot) =>
-    isPathInsideOrEqual(root, browserRoot) || isPathInsideOrEqual(browserRoot, root)
+  const conflict = browserRoots.find(
+    (browserRoot) => isPathInsideOrEqual(root, browserRoot) || isPathInsideOrEqual(browserRoot, root)
   );
-  if (conflict) return { ok: false, message: 'environment data directory conflicts with a system browser data directory', conflict: path.resolve(conflict), root };
+  if (conflict)
+    return {
+      ok: false,
+      message: 'environment data directory conflicts with a system browser data directory',
+      conflict: path.resolve(conflict),
+      root,
+    };
   return { ok: true, root };
 }
 
 function validateDataRootIsolationSecure(dataRoot, options = {}) {
   const lexical = validateDataRootIsolation(dataRoot, options);
   if (!lexical.ok) return lexical;
-  if (isLinkLike(lexical.root)) return { ok: false, message: 'environment data directory must not be a symlink or junction', root: lexical.root };
+  if (isLinkLike(lexical.root))
+    return {
+      ok: false,
+      message: 'environment data directory must not be a symlink or junction',
+      root: lexical.root,
+    };
   const realRoot = realPathOrResolved(lexical.root);
   const browserRoots = options.browserRoots || systemBrowserDataRoots(options.env, options.home);
   const conflict = browserRoots.find((browserRoot) => {
     const realBrowserRoot = realPathOrResolved(browserRoot);
     return isPathInsideOrEqual(realRoot, realBrowserRoot) || isPathInsideOrEqual(realBrowserRoot, realRoot);
   });
-  if (conflict) return { ok: false, message: 'environment data directory resolves into a system browser data directory', conflict, root: lexical.root };
+  if (conflict)
+    return {
+      ok: false,
+      message: 'environment data directory resolves into a system browser data directory',
+      conflict,
+      root: lexical.root,
+    };
   return { ok: true, root: lexical.root, realRoot };
 }
 
@@ -568,7 +650,6 @@ function validateProfileRoot(dataRoot, profileRoot, profileId) {
   return { ok: true, root: expected };
 }
 
-
 async function validateProfileRootSecure(dataRoot, profileRoot, profileId, options = {}) {
   const lexical = validateProfileRoot(dataRoot, profileRoot, profileId);
   if (!lexical.ok) return lexical;
@@ -578,7 +659,8 @@ async function validateProfileRootSecure(dataRoot, profileRoot, profileId, optio
   }
   const dataCheck = validateDataRootIsolationSecure(dataRoot, options);
   if (!dataCheck.ok) return dataCheck;
-  if (isLinkLike(profileRoot)) return { ok: false, message: 'profile root must not be a symlink or junction', root: profileRoot };
+  if (isLinkLike(profileRoot))
+    return { ok: false, message: 'profile root must not be a symlink or junction', root: profileRoot };
   const realRoot = await fsp.realpath(profileRoot).catch(() => path.resolve(profileRoot));
   const realBase = await fsp.realpath(dataRoot).catch(() => path.resolve(dataRoot));
   if (!isPathInsideOrEqual(realRoot, realBase) || normalizedPath(realRoot) === normalizedPath(realBase)) {

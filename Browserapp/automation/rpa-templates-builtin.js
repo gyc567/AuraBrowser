@@ -18,20 +18,31 @@ function S(type, params = {}, children) {
 }
 
 const wait = (ms = 1000) => S('waitTime', { timeout: ms, timeoutType: 'fixed' });
-const waitRand = (min = 400, max = 1200) => S('waitTime', {
-  timeoutType: 'randomInterval', timeoutMin: min, timeoutMax: max,
-});
+const waitRand = (min = 400, max = 1200) =>
+  S('waitTime', {
+    timeoutType: 'randomInterval',
+    timeoutMin: min,
+    timeoutMax: max,
+  });
 const goto = (url) => S('gotoUrl', { url });
 const click = (selector) => S('click', { selector, selectorRadio: 'CSS', button: 'left', type: 'click' });
-const input = (selector, content, isClear = true) => S('inputContent', {
-  selector, selectorRadio: 'CSS', content, isClear,
-});
+const input = (selector, content, isClear = true) =>
+  S('inputContent', {
+    selector,
+    selectorRadio: 'CSS',
+    content,
+    isClear,
+  });
 const key = (k) => S('keyboard', { key: k });
 // `S` stores the action name in `type`, so motion style must use a distinct key.
 const scroll = (deltaY = 600) => S('scrollPage', { deltaY, motion: 'smooth', rangeType: 'window' });
-const waitSel = (selector, timeout = 12000) => S('waitForSelector', {
-  selector, selectorRadio: 'CSS', timeout, isShow: true,
-});
+const waitSel = (selector, timeout = 12000) =>
+  S('waitForSelector', {
+    selector,
+    selectorRadio: 'CSS',
+    timeout,
+    isShow: true,
+  });
 const js = (expression) => S('javaScript', { expression });
 const newPage = (url) => S('newPage', { url });
 const reload = () => S('refreshPage', {});
@@ -132,12 +143,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '当前页打开一个站点，再新建标签打开第二个。',
     tags: ['多标签'],
     uses: 540,
-    steps: [
-      goto('https://www.bing.com'),
-      wait(800),
-      newPage('https://www.wikipedia.org'),
-      wait(1200),
-    ],
+    steps: [goto('https://www.bing.com'), wait(800), newPage('https://www.wikipedia.org'), wait(1200)],
   }),
   tpl({
     id: 'builtin-wait-click',
@@ -146,12 +152,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开页面，等待选择器出现后点击。可按目标站改 selector。',
     tags: ['等待', '点击'],
     uses: 980,
-    steps: [
-      goto('https://example.com'),
-      waitSel('h1', 10000),
-      click('h1'),
-      wait(500),
-    ],
+    steps: [goto('https://example.com'), waitSel('h1', 10000), click('h1'), wait(500)],
   }),
   tpl({
     id: 'builtin-human-type',
@@ -165,8 +166,14 @@ const BUILTIN_TEMPLATES = Object.freeze([
       wait(1200),
       waitSel('#sb_form_q'),
       S('inputContent', {
-        selector: '#sb_form_q', selectorRadio: 'CSS', content: 'hello world',
-        isClear: true, intervals: true, human: true, minDelay: 40, maxDelay: 140,
+        selector: '#sb_form_q',
+        selectorRadio: 'CSS',
+        content: 'hello world',
+        isClear: true,
+        intervals: true,
+        human: true,
+        minDelay: 40,
+        maxDelay: 140,
       }),
       wait(400),
       key('Enter'),
@@ -202,12 +209,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     steps: [
       goto('https://example.com'),
       wait(1500),
-      loop(5, [
-        scroll(500),
-        waitRand(600, 1400),
-        scroll(400),
-        waitRand(400, 900),
-      ]),
+      loop(5, [scroll(500), waitRand(600, 1400), scroll(400), waitRand(400, 900)]),
     ],
   }),
   tpl({
@@ -217,11 +219,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开页面后循环刷新，适合检测登录态保持。',
     tags: ['刷新', '养号'],
     uses: 410,
-    steps: [
-      goto('https://example.com'),
-      wait(1000),
-      loop(3, [reload(), waitRand(1500, 3000)]),
-    ],
+    steps: [goto('https://example.com'), wait(1000), loop(3, [reload(), waitRand(1500, 3000)])],
   }),
   tpl({
     id: 'builtin-nurture-read-page',
@@ -230,15 +228,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '进入页面、滚动阅读、截图记录（日志里留下截图长度）。',
     tags: ['截图', '阅读'],
     uses: 520,
-    steps: [
-      goto('https://example.com'),
-      wait(1200),
-      scroll(600),
-      wait(1000),
-      scroll(600),
-      wait(800),
-      shot(),
-    ],
+    steps: [goto('https://example.com'), wait(1200), scroll(600), wait(1000), scroll(600), wait(800), shot()],
   }),
 
   // ─── 数据采集 ─────────────────────────────────────────
@@ -249,11 +239,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开页面并用 JS 读取 document.title，写入运行日志。',
     tags: ['JS', '采集'],
     uses: 760,
-    steps: [
-      goto('https://example.com'),
-      wait(1200),
-      js('document.title'),
-    ],
+    steps: [goto('https://example.com'), wait(1200), js('document.title')],
   }),
   tpl({
     id: 'builtin-get-url',
@@ -262,11 +248,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '等待后读取当前页 URL。',
     tags: ['URL'],
     uses: 690,
-    steps: [
-      goto('https://example.com'),
-      wait(800),
-      getUrl(),
-    ],
+    steps: [goto('https://example.com'), wait(800), getUrl()],
   }),
   tpl({
     id: 'builtin-extract-links',
@@ -278,7 +260,9 @@ const BUILTIN_TEMPLATES = Object.freeze([
     steps: [
       goto('https://example.com'),
       wait(1500),
-      js(`Array.from(document.querySelectorAll('a[href]')).slice(0,20).map(a=>({text:a.innerText.trim().slice(0,40),href:a.href}))`),
+      js(
+        `Array.from(document.querySelectorAll('a[href]')).slice(0,20).map(a=>({text:a.innerText.trim().slice(0,40),href:a.href}))`
+      ),
     ],
   }),
   tpl({
@@ -321,14 +305,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开 x.com，等待主栏，滚动时间线。登录态依赖当前环境 Cookie。',
     tags: ['X', 'Twitter', '滚动'],
     uses: 1450,
-    steps: [
-      goto('https://x.com'),
-      wait(2500),
-      scroll(800),
-      waitRand(800, 1600),
-      scroll(800),
-      wait(1000),
-    ],
+    steps: [goto('https://x.com'), wait(2500), scroll(800), waitRand(800, 1600), scroll(800), wait(1000)],
   }),
   tpl({
     id: 'builtin-reddit-browse',
@@ -352,13 +329,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开 YouTube 首页并向下浏览推荐。',
     tags: ['YouTube'],
     uses: 910,
-    steps: [
-      goto('https://www.youtube.com'),
-      wait(2500),
-      scroll(1000),
-      wait(1200),
-      scroll(1000),
-    ],
+    steps: [goto('https://www.youtube.com'), wait(2500), scroll(1000), wait(1200), scroll(1000)],
   }),
   tpl({
     id: 'builtin-github-trending',
@@ -438,12 +409,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '清除浏览器 Cookie 并刷新当前页。',
     tags: ['Cookie', '清理'],
     uses: 1180,
-    steps: [
-      clearCk(),
-      wait(300),
-      reload(),
-      wait(800),
-    ],
+    steps: [clearCk(), wait(300), reload(), wait(800)],
   }),
   tpl({
     id: 'builtin-cookie-check',
@@ -484,12 +450,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '清理 Cookie 后跳转到首页，模拟干净会话。',
     tags: ['退出', '清理'],
     uses: 390,
-    steps: [
-      clearCk(),
-      wait(300),
-      goto('https://example.com'),
-      wait(1000),
-    ],
+    steps: [clearCk(), wait(300), goto('https://example.com'), wait(1000)],
   }),
 
   // ─── 工具 ─────────────────────────────────────────────
@@ -500,11 +461,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '导航到目标页，等待加载后截图（记录在运行日志）。',
     tags: ['截图'],
     uses: 920,
-    steps: [
-      goto('https://example.com'),
-      wait(1500),
-      shot(),
-    ],
+    steps: [goto('https://example.com'), wait(1500), shot()],
   }),
   tpl({
     id: 'builtin-ua-probe',
@@ -535,11 +492,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开 ipify 纯文本接口页面读取出口 IP。',
     tags: ['IP', '代理'],
     uses: 1710,
-    steps: [
-      goto('https://api.ipify.org?format=json'),
-      wait(1500),
-      js(`document.body.innerText`),
-    ],
+    steps: [goto('https://api.ipify.org?format=json'), wait(1500), js(`document.body.innerText`)],
   }),
   tpl({
     id: 'builtin-timezone-check',
@@ -551,7 +504,9 @@ const BUILTIN_TEMPLATES = Object.freeze([
     steps: [
       goto('about:blank'),
       wait(300),
-      js(`({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone, now: new Date().toString(), offset: new Date().getTimezoneOffset() })`),
+      js(
+        `({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone, now: new Date().toString(), offset: new Date().getTimezoneOffset() })`
+      ),
     ],
   }),
   tpl({
@@ -588,11 +543,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: 'forTimes 循环刷新当前页。',
     tags: ['循环', '刷新'],
     uses: 580,
-    steps: [
-      goto('https://example.com'),
-      wait(600),
-      loop(3, [reload(), wait(800)]),
-    ],
+    steps: [goto('https://example.com'), wait(600), loop(3, [reload(), wait(800)])],
   }),
   tpl({
     id: 'builtin-nested-loop-browse',
@@ -604,10 +555,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     steps: [
       goto('https://example.com'),
       wait(1000),
-      loop(2, [
-        loop(2, [scroll(400), waitRand(300, 700)]),
-        wait(500),
-      ]),
+      loop(2, [loop(2, [scroll(400), waitRand(300, 700)]), wait(500)]),
     ],
   }),
   tpl({
@@ -617,13 +565,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '聚焦 body 后发送组合键（平台差异请自测）。',
     tags: ['键盘'],
     uses: 220,
-    steps: [
-      goto('https://example.com'),
-      wait(800),
-      js('document.body.focus()'),
-      key('a'),
-      wait(500),
-    ],
+    steps: [goto('https://example.com'), wait(800), js('document.body.focus()'), key('a'), wait(500)],
   }),
 
   // ─── 邮箱 / 验证 ───────────────────────────────────────
@@ -634,12 +576,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开常见网页邮箱登录页（Gmail）。需环境可访问。',
     tags: ['邮箱', 'Gmail'],
     uses: 640,
-    steps: [
-      goto('https://mail.google.com'),
-      wait(2500),
-      getUrl(),
-      shot(),
-    ],
+    steps: [goto('https://mail.google.com'), wait(2500), getUrl(), shot()],
   }),
   tpl({
     id: 'builtin-outlook-open',
@@ -648,11 +585,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '打开 Outlook 登录/收件箱入口。',
     tags: ['邮箱', 'Outlook'],
     uses: 410,
-    steps: [
-      goto('https://outlook.live.com/mail/'),
-      wait(2500),
-      getUrl(),
-    ],
+    steps: [goto('https://outlook.live.com/mail/'), wait(2500), getUrl()],
   }),
 
   // ─── 开发调试 ─────────────────────────────────────────
@@ -663,11 +596,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: 'about:blank 探针，验证 RPA/CDP 链路是否通。',
     tags: ['调试', 'CDP'],
     uses: 300,
-    steps: [
-      goto('about:blank'),
-      wait(200),
-      js('({ ready: document.readyState, href: location.href })'),
-    ],
+    steps: [goto('about:blank'), wait(200), js('({ ready: document.readyState, href: location.href })')],
   }),
   tpl({
     id: 'builtin-console-echo',
@@ -676,11 +605,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '执行 1+1 与 JSON 回显，验证 evaluate 通路。',
     tags: ['调试', 'JS'],
     uses: 250,
-    steps: [
-      goto('about:blank'),
-      js('1+1'),
-      js('JSON.stringify({ok:true,ts:Date.now()})'),
-    ],
+    steps: [goto('about:blank'), js('1+1'), js('JSON.stringify({ok:true,ts:Date.now()})')],
   }),
   tpl({
     id: 'builtin-selector-stress',
@@ -689,11 +614,7 @@ const BUILTIN_TEMPLATES = Object.freeze([
     desc: '等待 h1，再读 textContent。',
     tags: ['选择器'],
     uses: 180,
-    steps: [
-      goto('https://example.com'),
-      waitSel('h1'),
-      js('document.querySelector("h1")?.textContent'),
-    ],
+    steps: [goto('https://example.com'), waitSel('h1'), js('document.querySelector("h1")?.textContent')],
   }),
 ]);
 

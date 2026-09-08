@@ -1,0 +1,71 @@
+# ===== Node / pnpm =====
+node_modules/
+.pnpm-store/
+
+# ===== Logs =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Test / coverage =====
+coverage/
+.nyc_output/
+c8/
+*.lcov
+
+# ===== Editor =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== Build outputs =====
+Browserapp/dist/
+Browserapp/build/
+Browserapp/out/
+*.tsbuildinfo
+
+# ===== OpenBrowser runtime =====
+# User data (per-profile Chromium data dirs)
+Browserapp/browser-profiles/
+Browserapp/browser-profiles-v2/
+Browserapp/userData/
+
+# Bundled extension auto-generated markers / cache
+Browserapp/bundled-extension/.cache/
+Browserapp/bundled-extension/marker.js
+
+# Local settings / API key
+Browserapp/openbrowser-local-settings.json
+Browserapp/local-api-key.txt
+
+# Self-test temp directories
+*-selftest-data/
+*-selftest-*/
+.test-tmp/
+
+# Cached update status
+Browserapp/openbrowser-update-status.json
+
+# Browser startup logs
+browser-startup.log
+openbrowser-startup.log
+
+# Fingerprint / RPA logs (read via npm scripts)
+fingerprint-debug.log
+rpa-automation.log
+
+# OS
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+
+# ===== Pinned package manager =====
+.pnpm-debug.log

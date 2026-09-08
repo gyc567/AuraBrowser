@@ -78,14 +78,42 @@ const RPA_PLUS_ACTIONS = Object.freeze([
  */
 const ACTION_PARAM_SCHEMA = Object.freeze({
   gotoUrl: { fields: ['url', 'timeout'], defaults: { timeout: null } },
-  waitTime: { fields: ['timeout', 'timeoutType', 'timeoutMin', 'timeoutMax'], defaults: { timeout: 1000, timeoutType: 'fixed' } },
+  waitTime: {
+    fields: ['timeout', 'timeoutType', 'timeoutMin', 'timeoutMax'],
+    defaults: { timeout: 1000, timeoutType: 'fixed' },
+  },
   click: {
-    fields: ['selectorRadio', 'selector', 'serial', 'button', 'type', 'serialType', 'serialMin', 'serialMax', 'selectorType', 'element'],
+    fields: [
+      'selectorRadio',
+      'selector',
+      'serial',
+      'button',
+      'type',
+      'serialType',
+      'serialMin',
+      'serialMax',
+      'selectorType',
+      'element',
+    ],
     defaults: { selectorRadio: 'CSS', button: 'left', type: 'click' },
   },
-  inputContent: { fields: ['selector', 'selectorRadio', 'serial', 'content', 'intervals', 'isClear'], defaults: { selectorRadio: 'CSS' } },
+  inputContent: {
+    fields: ['selector', 'selectorRadio', 'serial', 'content', 'intervals', 'isClear'],
+    defaults: { selectorRadio: 'CSS' },
+  },
   scrollPage: {
-    fields: ['distance', 'type', 'scrollType', 'position', 'rangeType', 'selectorRadio', 'selector', 'serial', 'randomWheelDistance', 'randomWheelSleepTime'],
+    fields: [
+      'distance',
+      'type',
+      'scrollType',
+      'position',
+      'rangeType',
+      'selectorRadio',
+      'selector',
+      'serial',
+      'randomWheelDistance',
+      'randomWheelSleepTime',
+    ],
     defaults: { type: 'smooth', rangeType: 'window', selectorRadio: 'CSS' },
   },
   waitForSelector: {
@@ -93,7 +121,17 @@ const ACTION_PARAM_SCHEMA = Object.freeze({
     defaults: { selectorRadio: 'CSS' },
   },
   selectElement: {
-    fields: ['selectorRadio', 'selector', 'serialType', 'serialMin', 'serialMax', 'value', 'serial', 'selectorType', 'element'],
+    fields: [
+      'selectorRadio',
+      'selector',
+      'serialType',
+      'serialMin',
+      'serialMax',
+      'value',
+      'serial',
+      'selectorType',
+      'element',
+    ],
     defaults: { selectorRadio: 'CSS' },
   },
   newPage: { fields: ['url'], defaults: {} },
@@ -115,9 +153,7 @@ const ACTION_PARAM_SCHEMA = Object.freeze({
 
 function normalizeStep(step = {}) {
   const type = String(step.type || step.action || step.name || '').trim();
-  let params = step.params && typeof step.params === 'object'
-    ? { ...step.params }
-    : { ...step };
+  let params = step.params && typeof step.params === 'object' ? { ...step.params } : { ...step };
   // Marketplace graph nodes store action options under `config`.  Keep the
   // graph wrapper out of executable steps so every action reads one shape.
   if (params.config && typeof params.config === 'object' && !Array.isArray(params.config)) {
@@ -164,7 +200,11 @@ function isRegistered(type) {
 function parseProcessContent(raw) {
   let value = raw;
   if (typeof value === 'string') {
-    try { value = JSON.parse(value); } catch (_) { return []; }
+    try {
+      value = JSON.parse(value);
+    } catch (_) {
+      return [];
+    }
   }
   if (!value) return [];
   if (Array.isArray(value)) return value.map(normalizeStep);
@@ -210,7 +250,11 @@ function parseProcessContent(raw) {
           } else if (isLoopType(type)) {
             const bodyEdge = edges.find((edge) => /-output-start$/.test(edgeHandle(edge, currentId)));
             if (bodyEdge) {
-              step.children = compileSequence(bodyEdge.target, new Set([...stopIds, currentId]), new Set(path));
+              step.children = compileSequence(
+                bodyEdge.target,
+                new Set([...stopIds, currentId]),
+                new Set(path)
+              );
             }
           }
           ordered.push(step);

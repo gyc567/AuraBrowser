@@ -48,15 +48,38 @@ const {
   assertProfileId,
 } = require('./isolation');
 
-function pass(name) { console.log('  PASS  ' + name); }
+function pass(name) {
+  console.log('  PASS  ' + name);
+}
 
 async function main() {
   console.log('Isolation + fingerprint selftest\n');
 
   // deterministic fingerprints per profile id
-  const a1 = buildFingerprint({ id: 'env-aaa', name: 'A', width: 1280, height: 800, language: 'en-US', privacy: {} });
-  const a2 = buildFingerprint({ id: 'env-aaa', name: 'A', width: 1280, height: 800, language: 'en-US', privacy: {} });
-  const b1 = buildFingerprint({ id: 'env-bbb', name: 'B', width: 1280, height: 800, language: 'zh-CN', privacy: {} });
+  const a1 = buildFingerprint({
+    id: 'env-aaa',
+    name: 'A',
+    width: 1280,
+    height: 800,
+    language: 'en-US',
+    privacy: {},
+  });
+  const a2 = buildFingerprint({
+    id: 'env-aaa',
+    name: 'A',
+    width: 1280,
+    height: 800,
+    language: 'en-US',
+    privacy: {},
+  });
+  const b1 = buildFingerprint({
+    id: 'env-bbb',
+    name: 'B',
+    width: 1280,
+    height: 800,
+    language: 'zh-CN',
+    privacy: {},
+  });
   assert.strictEqual(a1.seed, a2.seed);
   assert.notStrictEqual(a1.seed, b1.seed);
   pass('fingerprint seed deterministic & unique per profile');
@@ -95,13 +118,16 @@ async function main() {
   // Custom UA + Client Hints consistency
   const customUa = buildFingerprint({
     id: 'env-ua',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     privacy: {},
   });
   assert.ok(customUa.userAgent.includes('Chrome/131'));
   assert.strictEqual(customUa.uaProfile.chromeMajor, 131);
   assert.strictEqual(customUa.clientHints.platform, 'Windows');
-  assert.ok(customUa.userAgentMetadata.brands.some((b) => b.brand === 'Chromium' || b.brand === 'Google Chrome'));
+  assert.ok(
+    customUa.userAgentMetadata.brands.some((b) => b.brand === 'Chromium' || b.brand === 'Google Chrome')
+  );
   const cdp = cdpUserAgentOverride(customUa.uaProfile, 'en-US');
   assert.ok(cdp.userAgentMetadata.fullVersionList?.length >= 2);
   assert.strictEqual(cdp.platform, 'Win32');
@@ -115,9 +141,12 @@ async function main() {
 
   const tlsArgs = chromeArgsForUa(buildUaProfile({ chromeMajor: 131, os: 'windows' }));
   assert.ok(tlsArgs.some((a) => a.includes('PermuteTLSExtensions')));
-  const oldTls = chromeArgsForUa(buildUaProfile({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36',
-  }));
+  const oldTls = chromeArgsForUa(
+    buildUaProfile({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36',
+    })
+  );
   assert.ok(oldTls.some((a) => a.startsWith('--disable-features=') && a.includes('PermuteTLSExtensions')));
   pass('TLS PermuteTLSExtensions follows Chrome major');
 
@@ -130,7 +159,12 @@ async function main() {
 
   const kernelAligned = buildFingerprint({ id: 'env-kernel', kernelVersion: '151.0.7922.34', privacy: {} });
   assert.strictEqual(kernelAligned.uaProfile.chromeMajor, 151);
-  assert.strictEqual(kernelAligned.userAgentMetadata.fullVersionList.find((item) => item.brand === 'Google Chrome')?.version.split('.')[0], '151');
+  assert.strictEqual(
+    kernelAligned.userAgentMetadata.fullVersionList
+      .find((item) => item.brand === 'Google Chrome')
+      ?.version.split('.')[0],
+    '151'
+  );
   pass('automatic UA and Client Hints align with installed kernel major');
 
   // OS-facing fingerprint values must follow the UA OS, not a separate random choice.
@@ -236,8 +270,16 @@ async function main() {
   assert.ok(scriptA.length > 500);
   assert.notStrictEqual(scriptA, scriptB);
   assert.ok(scriptA.includes('enumerateDevices') || scriptA.includes('mediaDevices'));
-  assert.ok(scriptA.includes('Integrated Camera') || scriptA.includes('Microphone Array') || scriptA.includes('audioinput'));
-  const speechNoise = buildFingerprint({ id: 'env-speech-noise', language: 'en-US', privacy: { speech: 'noise' } });
+  assert.ok(
+    scriptA.includes('Integrated Camera') ||
+      scriptA.includes('Microphone Array') ||
+      scriptA.includes('audioinput')
+  );
+  const speechNoise = buildFingerprint({
+    id: 'env-speech-noise',
+    language: 'en-US',
+    privacy: { speech: 'noise' },
+  });
   const speechScript = buildInjectionScript(speechNoise);
   assert.ok(speechScript.includes('getVoices'));
   pass('injection scripts profile-specific');
@@ -271,11 +313,17 @@ async function main() {
     socket: { send: (message) => sent.push(JSON.parse(message)), close() {} },
     onEvent: (event) => events.push(event),
   });
-  const routed = persistent.command('Runtime.evaluate', { expression: '1' }, { sessionId: 'worker-session', timeout: 1000 });
+  const routed = persistent.command(
+    'Runtime.evaluate',
+    { expression: '1' },
+    { sessionId: 'worker-session', timeout: 1000 }
+  );
   assert.strictEqual(sent[0].sessionId, 'worker-session');
   persistent.handleMessage({ data: JSON.stringify({ id: sent[0].id, result: { result: { value: 1 } } }) });
   assert.strictEqual((await routed).result.value, 1);
-  persistent.handleMessage({ data: JSON.stringify({ method: 'Target.attachedToTarget', params: { sessionId: 'worker-session' } }) });
+  persistent.handleMessage({
+    data: JSON.stringify({ method: 'Target.attachedToTarget', params: { sessionId: 'worker-session' } }),
+  });
   assert.strictEqual(events[0].method, 'Target.attachedToTarget');
   persistent.close();
   pass('persistent CDP connection routes flattened worker sessions and events');
@@ -327,9 +375,18 @@ async function main() {
     };
     const roots = systemBrowserDataRoots(env, fakeHome, 'win32');
     const chromeLocal = path.join(env.LOCALAPPDATA, 'Google', 'Chrome', 'User Data');
-    assert.ok(roots.some((r) => path.resolve(r) === path.resolve(chromeLocal)), 'Windows Chrome root must include LOCALAPPDATA path');
+    assert.ok(
+      roots.some((r) => path.resolve(r) === path.resolve(chromeLocal)),
+      'Windows Chrome root must include LOCALAPPDATA path'
+    );
     assert.ok(!validateDataRootIsolation(chromeLocal, { env, home: fakeHome, browserRoots: roots }).ok);
-    assert.ok(!validateDataRootIsolation(path.join(chromeLocal, 'Default'), { env, home: fakeHome, browserRoots: roots }).ok);
+    assert.ok(
+      !validateDataRootIsolation(path.join(chromeLocal, 'Default'), {
+        env,
+        home: fakeHome,
+        browserRoots: roots,
+      }).ok
+    );
   }
   pass('Windows Chrome LOCALAPPDATA user-data blocked');
 
@@ -364,7 +421,10 @@ async function main() {
     acquireProfileLock(raceRoot, { profileId: 'race' }),
   ]);
   assert.strictEqual(race.filter((entry) => entry.status === 'fulfilled').length, 1);
-  assert.strictEqual(race.filter((entry) => entry.status === 'rejected' && entry.reason.code === 'PROFILE_LOCKED').length, 1);
+  assert.strictEqual(
+    race.filter((entry) => entry.status === 'rejected' && entry.reason.code === 'PROFILE_LOCKED').length,
+    1
+  );
   const raceOwner = race.find((entry) => entry.status === 'fulfilled').value;
   await releaseProfileLock(raceRoot, raceOwner);
   pass('profile lock acquisition is atomic');

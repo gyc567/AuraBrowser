@@ -135,10 +135,17 @@ function rasterizeSvg(svgPath, size, outPng) {
   const fallback = path.join(path.dirname(svgPath), `${stem}.png`);
   if (fs.existsSync(fallback)) {
     try {
-      execFileSync('sips', ['-z', String(size), String(size), fallback, '--out', outPng], { stdio: 'ignore' });
+      execFileSync('sips', ['-z', String(size), String(size), fallback, '--out', outPng], {
+        stdio: 'ignore',
+      });
       return fs.existsSync(outPng);
     } catch (_) {
-      try { fs.copyFileSync(fallback, outPng); return true; } catch (__) { return false; }
+      try {
+        fs.copyFileSync(fallback, outPng);
+        return true;
+      } catch (__) {
+        return false;
+      }
     }
   }
   return false;
@@ -147,11 +154,13 @@ function rasterizeSvg(svgPath, size, outPng) {
 function ensureBaseLogoPng(kind = 'pixel', size = 1024) {
   const cache = kind === 'native' ? LOGO_NATIVE_PNG : LOGO_PIXEL_PNG;
   const tmp = path.join(os.tmpdir(), `ob-${kind}-${size}.png`);
-  const ok = kind === 'native'
-    ? renderNativeLogoPil(size, tmp)
-    : renderPixelLogoPil(size, tmp);
+  const ok = kind === 'native' ? renderNativeLogoPil(size, tmp) : renderPixelLogoPil(size, tmp);
   if (ok) {
-    try { fs.copyFileSync(tmp, cache); } catch (_) { /* assets may be read-only */ }
+    try {
+      fs.copyFileSync(tmp, cache);
+    } catch (_) {
+      /* assets may be read-only */
+    }
     return tmp;
   }
   if (fs.existsSync(cache)) return cache;
@@ -223,7 +232,7 @@ const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let i = 0; i < 256; i += 1) {
     let value = i;
-    for (let bit = 0; bit < 8; bit += 1) value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    for (let bit = 0; bit < 8; bit += 1) value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
     table[i] = value >>> 0;
   }
   return table;
@@ -294,10 +303,34 @@ function generateFallbackPng(number, size, outPng) {
   };
 
   fillRect(0, 0, size, size, [0, 122, 255, 255]);
-  fillRect(Math.floor(size * 0.18), Math.floor(size * 0.23), Math.floor(size * 0.64), Math.floor(size * 0.52), [255, 255, 255, 245]);
-  fillRect(Math.floor(size * 0.18), Math.floor(size * 0.23), Math.floor(size * 0.64), Math.floor(size * 0.14), [232, 232, 237, 255]);
-  fillRect(Math.floor(size * 0.27), Math.floor(size * 0.47), Math.floor(size * 0.32), Math.max(1, Math.floor(size * 0.05)), [0, 122, 255, 230]);
-  fillRect(Math.floor(size * 0.27), Math.floor(size * 0.58), Math.floor(size * 0.44), Math.max(1, Math.floor(size * 0.04)), [199, 199, 204, 255]);
+  fillRect(
+    Math.floor(size * 0.18),
+    Math.floor(size * 0.23),
+    Math.floor(size * 0.64),
+    Math.floor(size * 0.52),
+    [255, 255, 255, 245]
+  );
+  fillRect(
+    Math.floor(size * 0.18),
+    Math.floor(size * 0.23),
+    Math.floor(size * 0.64),
+    Math.floor(size * 0.14),
+    [232, 232, 237, 255]
+  );
+  fillRect(
+    Math.floor(size * 0.27),
+    Math.floor(size * 0.47),
+    Math.floor(size * 0.32),
+    Math.max(1, Math.floor(size * 0.05)),
+    [0, 122, 255, 230]
+  );
+  fillRect(
+    Math.floor(size * 0.27),
+    Math.floor(size * 0.58),
+    Math.floor(size * 0.44),
+    Math.max(1, Math.floor(size * 0.04)),
+    [199, 199, 204, 255]
+  );
 
   const label = normalizeEnvNumber(number);
   const badge = Math.max(10, Math.floor(size * 0.38));
@@ -328,7 +361,8 @@ function generateFallbackPng(number, size, outPng) {
     const pattern = patterns[char] || patterns[1];
     for (let row = 0; row < pattern.length; row += 1) {
       for (let col = 0; col < pattern[row].length; col += 1) {
-        if (pattern[row][col] === '1') fillRect(x0 + col * unit, y0 + row * unit, unit, unit, [255, 255, 255, 255]);
+        if (pattern[row][col] === '1')
+          fillRect(x0 + col * unit, y0 + row * unit, unit, unit, [255, 255, 255, 255]);
       }
     }
     x0 += 4 * unit;
@@ -398,7 +432,9 @@ function pngToIcns(pngPath, icnsPath) {
     fs.rmSync(iconset, { recursive: true, force: true });
     return fs.existsSync(icnsPath) ? icnsPath : null;
   } catch (_) {
-    try { fs.rmSync(iconset, { recursive: true, force: true }); } catch (__) {}
+    try {
+      fs.rmSync(iconset, { recursive: true, force: true });
+    } catch (__) {}
     return null;
   }
 }
@@ -448,12 +484,18 @@ function artifactIsFresh(stampPath, key, outputs) {
     return false;
   }
   return outputs.every((file) => {
-    try { return fs.existsSync(file); } catch (_) { return false; }
+    try {
+      return fs.existsSync(file);
+    } catch (_) {
+      return false;
+    }
   });
 }
 
 function writeArtifactStamp(stampPath, key) {
-  try { fs.writeFileSync(stampPath, key, 'utf8'); } catch (_) {}
+  try {
+    fs.writeFileSync(stampPath, key, 'utf8');
+  } catch (_) {}
 }
 
 /**
@@ -468,7 +510,8 @@ async function prepareMarkerExtension({ profileId, envNumber, userDataPath, temp
   // Icons are a pure function of the label; regenerating them costs four python3 spawns.
   const stampPath = path.join(dest, '.artifact-stamp');
   const stampKey = JSON.stringify({ v: ARTIFACT_STAMP_VERSION, label });
-  const expected = [16, 32, 48, 128].map((size) => path.join(dest, `icon-${size}.png`))
+  const expected = [16, 32, 48, 128]
+    .map((size) => path.join(dest, `icon-${size}.png`))
     .concat([path.join(dest, 'manifest.json'), path.join(dest, 'marker.js')]);
   if (artifactIsFresh(stampPath, stampKey, expected)) return dest;
 
@@ -555,7 +598,9 @@ async function prepareMarkerExtension({ profileId, envNumber, userDataPath, temp
 }
 
 async function forceSymlink(target, linkPath) {
-  try { await fsp.rm(linkPath, { recursive: true, force: true }); } catch (_) {}
+  try {
+    await fsp.rm(linkPath, { recursive: true, force: true });
+  } catch (_) {}
   await fsp.symlink(target, linkPath);
 }
 
@@ -600,12 +645,7 @@ function resolveKernelLayout(realBinary) {
  *     MacOS/OpenBrowser.bin -> real bin
  *     MacOS/OpenBrowser      = launcher (runs bin FROM this bundle)
  */
-async function prepareMacDockWrapper({
-  profileId,
-  envNumber,
-  userDataPath,
-  realBinary,
-}) {
+async function prepareMacDockWrapper({ profileId, envNumber, userDataPath, realBinary }) {
   if (process.platform !== 'darwin' || !realBinary || !fs.existsSync(realBinary)) return null;
   const label = normalizeEnvNumber(envNumber);
   const appName = `环境 ${label}`;
@@ -628,11 +668,13 @@ async function prepareMacDockWrapper({
     realBin: layout.realBin,
     frameworks: layout.frameworks,
   });
-  if (artifactIsFresh(stampPath, stampKey, [
-    launcherPath,
-    path.join(contents, 'Info.plist'),
-    path.join(resources, 'app.icns'),
-  ])) {
+  if (
+    artifactIsFresh(stampPath, stampKey, [
+      launcherPath,
+      path.join(contents, 'Info.plist'),
+      path.join(resources, 'app.icns'),
+    ])
+  ) {
     return launcherPath;
   }
 
@@ -657,19 +699,27 @@ async function prepareMacDockWrapper({
   const icnsPath = path.join(resources, 'app.icns');
   // Remove symlink before writing real icon files
   for (const iconName of ['app.icns', 'AppIcon_store.icns', 'AppIcon_wb.icns']) {
-    try { await fsp.rm(path.join(resources, iconName), { force: true }); } catch (_) {}
+    try {
+      await fsp.rm(path.join(resources, iconName), { force: true });
+    } catch (_) {}
   }
   pngToIcns(png512, icnsPath);
   if (!fs.existsSync(icnsPath)) {
-    try { execFileSync('sips', ['-s', 'format', 'icns', png512, '--out', icnsPath], { stdio: 'ignore' }); } catch (_) {}
+    try {
+      execFileSync('sips', ['-s', 'format', 'icns', png512, '--out', icnsPath], { stdio: 'ignore' });
+    } catch (_) {}
   }
   if (fs.existsSync(icnsPath)) {
     for (const iconName of ['AppIcon_store.icns', 'AppIcon_wb.icns']) {
-      try { await fsp.copyFile(icnsPath, path.join(resources, iconName)); } catch (_) {}
+      try {
+        await fsp.copyFile(icnsPath, path.join(resources, iconName));
+      } catch (_) {}
     }
   }
   // Keep a PNG preview in Resources for debugging
-  try { await fsp.copyFile(png512, path.join(resources, 'env-icon.png')); } catch (_) {}
+  try {
+    await fsp.copyFile(png512, path.join(resources, 'env-icon.png'));
+  } catch (_) {}
 
   // MacOS payloads: OpenBrowser.bin MUST be a real file under this .app.
   // Symlink back to the kernel .app makes Dock resolve the kernel icon (Chrome/Hub mark)
@@ -680,14 +730,16 @@ async function prepareMacDockWrapper({
     if (!fs.existsSync(src)) {
       throw new Error('Dock shell: kernel OpenBrowser.bin missing at ' + src);
     }
-    try { await fsp.rm(dest, { force: true }); } catch (_) {}
+    try {
+      await fsp.rm(dest, { force: true });
+    } catch (_) {}
     try {
       await fsp.copyFile(src, dest);
       await fsp.chmod(dest, 0o755);
     } catch (error) {
       throw new Error(
-        'Dock shell requires a real OpenBrowser.bin copy under the env app (refusing kernel symlink): '
-        + (error && error.message ? error.message : error)
+        'Dock shell requires a real OpenBrowser.bin copy under the env app (refusing kernel symlink): ' +
+          (error && error.message ? error.message : error)
       );
     }
     // Hard-fail if something re-created a symlink
@@ -722,13 +774,17 @@ async function prepareMacDockWrapper({
   } catch (_) {
     plistBody = '';
   }
-  const looksLikeXmlPlist = plistBody.includes('<?xml') || plistBody.includes('<plist') || plistBody.includes('<key>CFBundleIdentifier</key>');
+  const looksLikeXmlPlist =
+    plistBody.includes('<?xml') ||
+    plistBody.includes('<plist') ||
+    plistBody.includes('<key>CFBundleIdentifier</key>');
   if (plistBody && looksLikeXmlPlist && plistBody.includes('CFBundleIdentifier')) {
-    const xmlEscape = (value) => String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    const xmlEscape = (value) =>
+      String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     const patch = (key, value) => {
       const re = new RegExp(`(<key>${key}<\\/key>\\s*<string>)[^<]*(<\\/string>)`);
       if (re.test(plistBody)) plistBody = plistBody.replace(re, `$1${xmlEscape(value)}$2`);
@@ -946,11 +1002,15 @@ fi
   await fsp.writeFile(launcher, script, 'utf8');
   await fsp.chmod(launcher, 0o755);
 
-  try { execFileSync('touch', [appRoot], { stdio: 'ignore' }); } catch (_) {}
   try {
-    execFileSync('/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister', [
-      '-f', '-R', appRoot,
-    ], { stdio: 'ignore' });
+    execFileSync('touch', [appRoot], { stdio: 'ignore' });
+  } catch (_) {}
+  try {
+    execFileSync(
+      '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister',
+      ['-f', '-R', appRoot],
+      { stdio: 'ignore' }
+    );
   } catch (_) {}
 
   writeArtifactStamp(stampPath, stampKey);
@@ -968,7 +1028,9 @@ function rebuildBundledExtensionIcons() {
     try {
       execFileSync('sips', ['-z', String(size), String(size), base, '--out', out], { stdio: 'ignore' });
     } catch (_) {
-      try { fs.copyFileSync(base, out); } catch (__) {}
+      try {
+        fs.copyFileSync(base, out);
+      } catch (__) {}
     }
   }
 }

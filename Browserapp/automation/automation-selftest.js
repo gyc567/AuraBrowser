@@ -37,19 +37,22 @@ function createFakeEngine() {
     ['p2', { id: 'p2', name: 'Env 2', number: 2 }],
   ]);
   const extensions = new Map([
-    ['ext-local', {
-      id: 'ext-local',
-      name: 'Local Marker',
-      description: 'test',
-      version: '1.0.0',
-      manifestVersion: 3,
-      source: 'local',
-      builtIn: false,
-      enabledAll: true,
-      assignedProfiles: 2,
-      assignedProfileIds: ['p1', 'p2'],
-      path: '/tmp/fake-ext',
-    }],
+    [
+      'ext-local',
+      {
+        id: 'ext-local',
+        name: 'Local Marker',
+        description: 'test',
+        version: '1.0.0',
+        manifestVersion: 3,
+        source: 'local',
+        builtIn: false,
+        enabledAll: true,
+        assignedProfiles: 2,
+        assignedProfileIds: ['p1', 'p2'],
+        path: '/tmp/fake-ext',
+      },
+    ],
   ]);
   const running = new Map();
   return {
@@ -61,7 +64,9 @@ function createFakeEngine() {
         ...profile,
         running: running.has(profile.id),
         port: running.get(profile.id)?.port || null,
-        assignedExtensions: [...extensions.values()].filter((ext) => (ext.assignedProfileIds || []).includes(profile.id)).map((ext) => ext.id),
+        assignedExtensions: [...extensions.values()]
+          .filter((ext) => (ext.assignedProfileIds || []).includes(profile.id))
+          .map((ext) => ext.id),
       }));
     },
     listExtensions() {
@@ -94,26 +99,34 @@ function createFakeEngine() {
 async function httpJson(port, method, urlPath, body, headers = {}) {
   const payload = body === undefined ? null : JSON.stringify(body);
   return new Promise((resolve, reject) => {
-    const req = http.request({
-      host: '127.0.0.1',
-      port,
-      path: urlPath,
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-        ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
+    const req = http.request(
+      {
+        host: '127.0.0.1',
+        port,
+        path: urlPath,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+          ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
+        },
+        timeout: 5000,
       },
-      timeout: 5000,
-    }, (res) => {
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data || '{}') }); }
-        catch (error) { reject(error); }
-      });
-    });
+      (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          try {
+            resolve({ status: res.statusCode, body: JSON.parse(data || '{}') });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+    );
     req.on('error', reject);
     if (payload) req.write(payload);
     req.end();
@@ -134,16 +147,16 @@ async function main() {
   ok('app-center list builtin/recommended/local');
 
   // 2) RPA store
-  const storePath = path.join('/tmp', `openbrowser-automation-selftest-rpa-${process.pid}-${Date.now()}.json`);
+  const storePath = path.join(
+    '/tmp',
+    `openbrowser-automation-selftest-rpa-${process.pid}-${Date.now()}.json`
+  );
   const store = new RpaStore(storePath);
   await store.load();
   const plan = await store.upsertPlan({
     plan_name: 'selftest',
     profile_ids: ['p1'],
-    steps: [
-      { type: 'wait', ms: 5 },
-      { type: 'noop' },
-    ],
+    steps: [{ type: 'wait', ms: 5 }, { type: 'noop' }],
   });
   assert.ok(plan.id);
   assert.strictEqual(store.listPlans().length >= 1, true);
@@ -153,19 +166,37 @@ async function main() {
   assert.ok(templates.length >= 59, 'local catalog templates seeded');
   const catalog = templates.filter((template) => template.source === 'catalog');
   assert.ok(catalog.length >= 59, 'local catalog restored');
-  assert.ok(catalog.every((template) => template.external_id === null), 'catalog does not retain external ids');
+  assert.ok(
+    catalog.every((template) => template.external_id === null),
+    'catalog does not retain external ids'
+  );
   const brandPattern = new RegExp('ads(?:power)?', 'i');
-  assert.ok(catalog.every((template) => !brandPattern.test([
-    template.name,
-    template.cat,
-    template.desc,
-    template.developer,
-    ...(template.tags || []),
-  ].join(' '))), 'catalog visible fields have no external brand');
-  assert.ok(catalog.every((template) => Number(template.uses) === 0), 'catalog usage starts at zero locally');
-  assert.ok(cloneBuiltinTemplates().every((template) => findUnsupportedSteps(template.steps).length === 0), 'all builtin templates use executable steps');
-  assert.ok(catalog.every((template) => template.runnable), 'all local catalog templates use supported steps');
-  assert.strictEqual(store.listTemplates().length, templates.length, 'template store restores all local catalog templates');
+  assert.ok(
+    catalog.every(
+      (template) =>
+        !brandPattern.test(
+          [template.name, template.cat, template.desc, template.developer, ...(template.tags || [])].join(' ')
+        )
+    ),
+    'catalog visible fields have no external brand'
+  );
+  assert.ok(
+    catalog.every((template) => Number(template.uses) === 0),
+    'catalog usage starts at zero locally'
+  );
+  assert.ok(
+    cloneBuiltinTemplates().every((template) => findUnsupportedSteps(template.steps).length === 0),
+    'all builtin templates use executable steps'
+  );
+  assert.ok(
+    catalog.every((template) => template.runnable),
+    'all local catalog templates use supported steps'
+  );
+  assert.strictEqual(
+    store.listTemplates().length,
+    templates.length,
+    'template store restores all local catalog templates'
+  );
   ok('rpa-template compatibility gate');
   const runnableTemplate = templates.find((template) => template.runnable);
   assert.ok(runnableTemplate, 'at least one template is runnable');
@@ -204,10 +235,16 @@ async function main() {
   });
   const run = await rpa.runTask(task.id);
   assert.strictEqual(run.success, true, 'rpa wait/noop success: ' + JSON.stringify(run));
-  assert.ok(run.result && typeof run.result.variables === 'object' && !Array.isArray(run.result.variables), 'rpa result returns a variables snapshot');
+  assert.ok(
+    run.result && typeof run.result.variables === 'object' && !Array.isArray(run.result.variables),
+    'rpa result returns a variables snapshot'
+  );
   assert.ok(Array.isArray(run.result.remarks), 'rpa result returns remarks');
   const persistedTask = store.getTask(task.id);
-  assert.ok(persistedTask.process_result && typeof persistedTask.process_result.variables === 'object', 'finished task persists process_result.variables');
+  assert.ok(
+    persistedTask.process_result && typeof persistedTask.process_result.variables === 'object',
+    'finished task persists process_result.variables'
+  );
   ok('rpa-engine wait/noop task');
 
   // Failed tasks return the values collected before the failing step as well.
@@ -219,8 +256,14 @@ async function main() {
   });
   const failedRun = await rpa.runTask(failedTask.id);
   assert.strictEqual(failedRun.success, false, 'failure-result task fails');
-  assert.ok(failedRun.result && failedRun.result.variables?.before === 'kept', 'failed RPA run returns collected variables');
-  assert.ok(store.getTask(failedTask.id).process_result.variables?.before === 'kept', 'failed task persists collected variables');
+  assert.ok(
+    failedRun.result && failedRun.result.variables?.before === 'kept',
+    'failed RPA run returns collected variables'
+  );
+  assert.ok(
+    store.getTask(failedTask.id).process_result.variables?.before === 'kept',
+    'failed task persists collected variables'
+  );
   ok('rpa-engine failure result channel');
 
   // Result snapshots: strings capped at the result char limit, structure kept whole.
@@ -247,9 +290,13 @@ async function main() {
   const pruneStorePath = path.join(os.tmpdir(), `openbrowser-rpa-prune-${process.pid}-${Date.now()}.json`);
   const pruneStore = new RpaStore(pruneStorePath);
   await pruneStore.load();
-  await pruneStore.createTasks(Array.from({ length: 8 }, (_, index) => ({
-    profile_id: 'p1', process_name: 'prune-' + index, steps: [{ type: 'noop' }],
-  })));
+  await pruneStore.createTasks(
+    Array.from({ length: 8 }, (_, index) => ({
+      profile_id: 'p1',
+      process_name: 'prune-' + index,
+      steps: [{ type: 'noop' }],
+    }))
+  );
   assert.strictEqual(pruneStore.listTasks().length, 8, 'pending tasks are never pruned');
   for (const item of pruneStore.listTasks()) {
     await pruneStore.updateTask(item.id, { status: 'success' });
@@ -266,11 +313,18 @@ async function main() {
   await budgetStore.load();
   budgetStore.sizeLimitBytes = 4096;
   const bigPayload = 'z'.repeat(6000);
-  const budgetTasks = await budgetStore.createTasks(Array.from({ length: 4 }, (_, index) => ({
-    profile_id: 'p1', process_name: 'budget-' + index, steps: [],
-  })));
+  const budgetTasks = await budgetStore.createTasks(
+    Array.from({ length: 4 }, (_, index) => ({
+      profile_id: 'p1',
+      process_name: 'budget-' + index,
+      steps: [],
+    }))
+  );
   for (const item of budgetTasks) {
-    await budgetStore.updateTask(item.id, { status: 'success', process_result: { ok: true, variables: { a: bigPayload } } });
+    await budgetStore.updateTask(item.id, {
+      status: 'success',
+      process_result: { ok: true, variables: { a: bigPayload } },
+    });
   }
   await budgetStore.save();
   const remainingBudgetTasks = budgetStore.listTasks();
@@ -301,16 +355,30 @@ async function main() {
   ok('rpa-engine auto-starts stopped profile');
 
   const rpaLogPath = path.join(os.tmpdir(), `openbrowser-rpa-log-${process.pid}-${Date.now()}.log`);
-  const paidGateStorePath = path.join(os.tmpdir(), `openbrowser-paid-gate-rpa-${process.pid}-${Date.now()}.json`);
+  const paidGateStorePath = path.join(
+    os.tmpdir(),
+    `openbrowser-paid-gate-rpa-${process.pid}-${Date.now()}.json`
+  );
   const paidGateStore = new RpaStore(paidGateStorePath);
   await paidGateStore.load();
   const paidGateEngine = createFakeEngine();
   paidGateEngine.profiles.set('p4', { id: 'p4', name: 'Env 4', number: 4 });
   paidGateEngine.start = async () => {
-    throw new Error('Browser exited before CDP was ready (code 1) [browserOutput=Browser automation requires a paid Donut Browser plan.]');
+    throw new Error(
+      'Browser exited before CDP was ready (code 1) [browserOutput=Browser automation requires a paid Donut Browser plan.]'
+    );
   };
-  const paidGateRpa = new RpaEngine({ engine: paidGateEngine, store: paidGateStore, emit: () => {}, rpaLogPath });
-  const paidGateTask = await paidGateStore.createTask({ profile_id: 'p4', process_name: 'paid-gate', steps: [{ type: 'noop' }] });
+  const paidGateRpa = new RpaEngine({
+    engine: paidGateEngine,
+    store: paidGateStore,
+    emit: () => {},
+    rpaLogPath,
+  });
+  const paidGateTask = await paidGateStore.createTask({
+    profile_id: 'p4',
+    process_name: 'paid-gate',
+    steps: [{ type: 'noop' }],
+  });
   const paidGateRun = await paidGateRpa.runTask(paidGateTask.id);
   assert.strictEqual(paidGateRun.success, false, 'paid gate task fails');
   assert.ok(/当前浏览器内核拒绝 CDP\/RPA 自动化/.test(paidGateRun.error), 'paid gate error is actionable');
@@ -327,8 +395,10 @@ async function main() {
   assert.strictEqual(failingRun.success, false, 'unknown step type fails the task');
   const failingRecord = store.getTask(failingTask.id);
   assert.strictEqual(failingRecord.process_result.ok, false, 'failed task result marks ok=false');
-  assert.ok(failingRecord.process_result.variables && typeof failingRecord.process_result.variables === 'object',
-    'failed task still returns the variables collected before the error');
+  assert.ok(
+    failingRecord.process_result.variables && typeof failingRecord.process_result.variables === 'object',
+    'failed task still returns the variables collected before the error'
+  );
   ok('rpa-engine failure keeps collected variables');
 
   const parallelPlan = await store.upsertPlan({
@@ -353,7 +423,9 @@ async function main() {
   assert.ok(peakRuns >= 2, 'rpa tasks run concurrently across environments');
   ok('rpa-engine parallel multi-environment plan');
 
-  const proxyStore = new ProxyStore(path.join(os.tmpdir(), `openbrowser-automation-selftest-proxies-${process.pid}.json`));
+  const proxyStore = new ProxyStore(
+    path.join(os.tmpdir(), `openbrowser-automation-selftest-proxies-${process.pid}.json`)
+  );
   await proxyStore.load();
   const proxyCountBeforeImport = proxyStore.list().length;
   const importedProxies = await proxyStore.createMany([
@@ -361,28 +433,59 @@ async function main() {
     { raw: 'socks5://127.0.0.1:19090' },
   ]);
   assert.strictEqual(importedProxies.length, 2, 'proxy batch returns all created records');
-  assert.strictEqual(proxyStore.list().length, proxyCountBeforeImport + 2, 'proxy batch persists all records');
+  assert.strictEqual(
+    proxyStore.list().length,
+    proxyCountBeforeImport + 2,
+    'proxy batch persists all records'
+  );
   ok('proxy-store batch import');
 
   // 4) Native start page network detection
   const directNetwork = {
-    ip: '203.0.113.10', country: 'Testland', countryCode: 'TL',
-    region: 'Test Region', city: 'Test City', timezone: 'Etc/UTC',
-    isp: 'Test ISP', organization: 'Test Org', asn: 'AS64500', asName: 'TEST-AS',
-    mobile: false, proxy: false, hosting: false,
+    ip: '203.0.113.10',
+    country: 'Testland',
+    countryCode: 'TL',
+    region: 'Test Region',
+    city: 'Test City',
+    timezone: 'Etc/UTC',
+    isp: 'Test ISP',
+    organization: 'Test Org',
+    asn: 'AS64500',
+    asName: 'TEST-AS',
+    mobile: false,
+    proxy: false,
+    hosting: false,
   };
   const proxyNetwork = {
-    ip: '198.51.100.20', country: 'Proxyland', countryCode: 'PL',
-    region: 'Proxy Region', city: 'Proxy City', timezone: 'Etc/UTC',
-    isp: 'Proxy ISP', organization: 'Proxy Org', asn: 'AS64501', asName: 'PROXY-AS',
-    mobile: false, proxy: true, hosting: true,
+    ip: '198.51.100.20',
+    country: 'Proxyland',
+    countryCode: 'PL',
+    region: 'Proxy Region',
+    city: 'Proxy City',
+    timezone: 'Etc/UTC',
+    isp: 'Proxy ISP',
+    organization: 'Proxy Org',
+    asn: 'AS64501',
+    asName: 'PROXY-AS',
+    mobile: false,
+    proxy: true,
+    hosting: true,
   };
   let directLookups = 0;
   let proxyLookups = 0;
   const startPageEngine = {
     profiles: new Map([
       ['direct', { id: 'direct', name: 'Direct', number: 1, proxy: 'direct' }],
-      ['direct-with-stale-proxy', { id: 'direct-with-stale-proxy', name: 'Direct with stale proxy', number: 3, networkMode: 'direct', proxy: 'http://127.0.0.1:18080' }],
+      [
+        'direct-with-stale-proxy',
+        {
+          id: 'direct-with-stale-proxy',
+          name: 'Direct with stale proxy',
+          number: 3,
+          networkMode: 'direct',
+          proxy: 'http://127.0.0.1:18080',
+        },
+      ],
       ['proxy', { id: 'proxy', name: 'Proxy', number: 2, proxy: 'http://127.0.0.1:18080' }],
     ]),
     networkInfo: new Map(),
@@ -396,8 +499,13 @@ async function main() {
   const startPage = new StartPageServer({
     port: 0,
     engine: startPageEngine,
-    lookupDirectNetwork: async () => { directLookups += 1; return directNetwork; },
-    lookupReachability: async () => ({ google: { ok: true, status: 204, url: 'https://www.google.com/generate_204' } }),
+    lookupDirectNetwork: async () => {
+      directLookups += 1;
+      return directNetwork;
+    },
+    lookupReachability: async () => ({
+      google: { ok: true, status: 204, url: 'https://www.google.com/generate_204' },
+    }),
   });
   await startPage.start();
   const directUrl = startPage.registerSession(startPageEngine.profiles.get('direct'));
@@ -409,30 +517,64 @@ async function main() {
   const startHeaders = (token) => ({ 'X-OpenBrowser-Start-Token': token });
   const anonymousStartResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=direct&refresh=1');
   assert.strictEqual(anonymousStartResponse.status, 401);
-  const badStartOrigin = await httpJson(startPage.port, 'GET', '/api/network?pid=direct&refresh=1', undefined, {
-    ...startHeaders(directToken),
-    Origin: 'https://attacker.example',
-  });
+  const badStartOrigin = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/network?pid=direct&refresh=1',
+    undefined,
+    {
+      ...startHeaders(directToken),
+      Origin: 'https://attacker.example',
+    }
+  );
   assert.strictEqual(badStartOrigin.status, 403);
-  const directResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=direct&refresh=1', undefined, startHeaders(directToken));
+  const directResponse = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/network?pid=direct&refresh=1',
+    undefined,
+    startHeaders(directToken)
+  );
   assert.strictEqual(directResponse.status, 200);
   assert.strictEqual(directResponse.body.data.healthScore.score, 70);
   assert.strictEqual(directResponse.body.data.healthScore.level, 'review');
   assert.strictEqual(directResponse.body.data.healthScore.confidence, 'low');
   // Missing risk intel no longer surfaces a provider/unavailable factor in UI.
-  assert.ok(!directResponse.body.data.healthScore.factors.some((item) => /pure|unavailable|ip-api|ipwho|ipinfo/i.test(String(item.code || '') + String(item.label || ''))));
-  const proxyResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=proxy&refresh=1', undefined, startHeaders(proxyToken));
+  assert.ok(
+    !directResponse.body.data.healthScore.factors.some((item) =>
+      /pure|unavailable|ip-api|ipwho|ipinfo/i.test(String(item.code || '') + String(item.label || ''))
+    )
+  );
+  const proxyResponse = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/network?pid=proxy&refresh=1',
+    undefined,
+    startHeaders(proxyToken)
+  );
   assert.strictEqual(proxyResponse.status, 200);
   assert.strictEqual(proxyResponse.body.data.healthScore.score, 25);
   assert.strictEqual(proxyResponse.body.data.healthScore.level, 'risky');
   assert.strictEqual(proxyResponse.body.data.healthScore.label, '高风险');
-  assert.deepStrictEqual({ ...proxyResponse.body.data, healthScore: undefined }, { ...proxyNetwork, healthScore: undefined });
+  assert.deepStrictEqual(
+    { ...proxyResponse.body.data, healthScore: undefined },
+    { ...proxyNetwork, healthScore: undefined }
+  );
   assert.strictEqual(directLookups, 1, 'direct network lookup runs once');
   assert.strictEqual(proxyLookups, 1, 'proxy network lookup receives the real proxy config');
-  const staleProxyResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=direct-with-stale-proxy&refresh=1', undefined, startHeaders(staleProxyToken));
+  const staleProxyResponse = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/network?pid=direct-with-stale-proxy&refresh=1',
+    undefined,
+    startHeaders(staleProxyToken)
+  );
   assert.strictEqual(staleProxyResponse.status, 200);
   assert.strictEqual(staleProxyResponse.body.data.healthScore.score, 70);
-  assert.deepStrictEqual({ ...staleProxyResponse.body.data, healthScore: undefined }, { ...directNetwork, healthScore: undefined });
+  assert.deepStrictEqual(
+    { ...staleProxyResponse.body.data, healthScore: undefined },
+    { ...directNetwork, healthScore: undefined }
+  );
   assert.strictEqual(directLookups, 2, 'explicit direct mode ignores stale proxy fields');
   assert.strictEqual(proxyLookups, 1, 'explicit direct mode never checks the stale proxy');
   const staleSessionResponse = await httpJson(startPage.port, 'GET', '/api/session?pid=stale-link');
@@ -440,13 +582,27 @@ async function main() {
   const staleNetworkResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=stale-link&refresh=1');
   assert.strictEqual(staleNetworkResponse.status, 401);
   assert.strictEqual(directLookups, 2, 'stale start links cannot invoke a network lookup');
-  startPageEngine.checkProxy = async () => { throw new Error('connection refused'); };
+  startPageEngine.checkProxy = async () => {
+    throw new Error('connection refused');
+  };
   startPage.updateNetwork('proxy', null);
   startPage.getSession('proxy').network = null;
-  const failedProxyResponse = await httpJson(startPage.port, 'GET', '/api/network?pid=proxy&refresh=1', undefined, startHeaders(proxyToken));
+  const failedProxyResponse = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/network?pid=proxy&refresh=1',
+    undefined,
+    startHeaders(proxyToken)
+  );
   assert.strictEqual(failedProxyResponse.status, 500);
   assert.ok(failedProxyResponse.body.msg.includes('代理 127.0.0.1:18080 出口检测失败'));
-  const reachabilityResponse = await httpJson(startPage.port, 'GET', '/api/reachability?pid=direct', undefined, startHeaders(directToken));
+  const reachabilityResponse = await httpJson(
+    startPage.port,
+    'GET',
+    '/api/reachability?pid=direct',
+    undefined,
+    startHeaders(directToken)
+  );
   assert.strictEqual(reachabilityResponse.status, 200);
   assert.strictEqual(reachabilityResponse.body.data.google.status, 204);
   const startHtml = buildStartPageHtml({ pid: 'direct' });
@@ -478,8 +634,16 @@ async function main() {
     new Function(match[1]);
   }
   const profileSanitizer = new BrowserEngine({ getPath: () => '/tmp/openbrowser-selftest' });
-  assert.strictEqual(profileSanitizer.sanitizeProfile({ id: 'blank-proxy', name: 'Blank proxy', proxy: '   ' }).proxy, 'Direct');
-  const explicitDirect = profileSanitizer.sanitizeProfile({ id: 'explicit-direct', name: 'Explicit direct', networkMode: 'direct', proxy: 'http://127.0.0.1:18080' });
+  assert.strictEqual(
+    profileSanitizer.sanitizeProfile({ id: 'blank-proxy', name: 'Blank proxy', proxy: '   ' }).proxy,
+    'Direct'
+  );
+  const explicitDirect = profileSanitizer.sanitizeProfile({
+    id: 'explicit-direct',
+    name: 'Explicit direct',
+    networkMode: 'direct',
+    proxy: 'http://127.0.0.1:18080',
+  });
   assert.strictEqual(explicitDirect.networkMode, 'direct');
   assert.strictEqual(explicitDirect.proxy, 'Direct');
   await startPage.stop();
@@ -488,10 +652,20 @@ async function main() {
   // 5) Window sync bridge
   let syncActive = false;
   const bridge = new WindowSyncBridge({
-    beginSync: async (ids) => { syncActive = true; return { success: true, master: ids[0], selected: ids }; },
-    endSync: () => { syncActive = false; return { success: true }; },
+    beginSync: async (ids) => {
+      syncActive = true;
+      return { success: true, master: ids[0], selected: ids };
+    },
+    endSync: () => {
+      syncActive = false;
+      return { success: true };
+    },
     restartSync: async () => ({ success: true }),
-    getSyncState: () => ({ active: syncActive, master: syncActive ? 'p1' : null, selected: syncActive ? ['p1', 'p2'] : [] }),
+    getSyncState: () => ({
+      active: syncActive,
+      master: syncActive ? 'p1' : null,
+      selected: syncActive ? ['p1', 'p2'] : [],
+    }),
     setSelection: () => {},
     tile: async () => ({ success: true }),
     getSettings: () => ({ keyboard: true, click: true, scroll: true, track: true }),
@@ -533,7 +707,10 @@ async function main() {
   assert.strictEqual(anonymous.body.code, 401);
   ok('local-api rejects anonymous requests');
 
-  const badOrigin = await httpJson(port, 'GET', '/api/getVersion', undefined, { ...authHeaders, Origin: 'https://attacker.example' });
+  const badOrigin = await httpJson(port, 'GET', '/api/getVersion', undefined, {
+    ...authHeaders,
+    Origin: 'https://attacker.example',
+  });
   assert.strictEqual(badOrigin.status, 403);
   assert.strictEqual(badOrigin.headers, undefined);
   ok('local-api rejects untrusted browser origins');
@@ -553,7 +730,13 @@ async function main() {
   assert.ok(started.body.data.debug_port);
   ok('local-api browser/start');
 
-  const apps = await httpJson(port, 'GET', '/api/v1/application/list?tab=recommended', undefined, authHeaders);
+  const apps = await httpJson(
+    port,
+    'GET',
+    '/api/v1/application/list?tab=recommended',
+    undefined,
+    authHeaders
+  );
   assert.strictEqual(apps.body.code, 0);
   assert.ok(Array.isArray(apps.body.data.list));
   assert.ok(apps.body.data.list.length >= 5);
@@ -564,10 +747,16 @@ async function main() {
   assert.ok(appsAll.body.data.list.recommended);
   ok('local-api application/list all buckets');
 
-  const syncStart = await httpJson(port, 'POST', '/api/sync/start', {
-    profile_ids: ['p1', 'p2'],
-    operate: 'click,move,scroll,keyboard',
-  }, authHeaders);
+  const syncStart = await httpJson(
+    port,
+    'POST',
+    '/api/sync/start',
+    {
+      profile_ids: ['p1', 'p2'],
+      operate: 'click,move,scroll,keyboard',
+    },
+    authHeaders
+  );
   assert.strictEqual(syncStart.body.code, 0);
   ok('local-api sync/start');
 
@@ -582,15 +771,34 @@ async function main() {
   const rpaTasksLimited = await httpJson(port, 'GET', '/api/rpa/tasks?limit=2', undefined, authHeaders);
   assert.strictEqual(rpaTasksLimited.body.code, 0);
   assert.ok(rpaTasksLimited.body.data.list.length <= 2, 'rpa task list honors limit');
-  assert.ok(Number(rpaTasksLimited.body.data.total) >= rpaTasksLimited.body.data.list.length, 'rpa task list reports total');
+  assert.ok(
+    Number(rpaTasksLimited.body.data.total) >= rpaTasksLimited.body.data.list.length,
+    'rpa task list reports total'
+  );
   const rpaTasks = await httpJson(port, 'GET', '/api/rpa/tasks', undefined, authHeaders);
   const listedTask = rpaTasks.body.data.list[0];
   assert.ok(listedTask, 'rpa task list has entries');
-  const rpaTaskById = await httpJson(port, 'GET', '/api/rpa/tasks/' + encodeURIComponent(listedTask.id), undefined, authHeaders);
+  const rpaTaskById = await httpJson(
+    port,
+    'GET',
+    '/api/rpa/tasks/' + encodeURIComponent(listedTask.id),
+    undefined,
+    authHeaders
+  );
   assert.strictEqual(rpaTaskById.body.code, 0);
   assert.strictEqual(rpaTaskById.body.data.task.id, listedTask.id);
-  assert.ok(rpaTaskById.body.data.task.process_result && typeof rpaTaskById.body.data.task.process_result.variables === 'object', 'task endpoint exposes process_result.variables');
-  const rpaTaskDeleted = await httpJson(port, 'DELETE', '/api/rpa/tasks/' + encodeURIComponent(listedTask.id), undefined, authHeaders);
+  assert.ok(
+    rpaTaskById.body.data.task.process_result &&
+      typeof rpaTaskById.body.data.task.process_result.variables === 'object',
+    'task endpoint exposes process_result.variables'
+  );
+  const rpaTaskDeleted = await httpJson(
+    port,
+    'DELETE',
+    '/api/rpa/tasks/' + encodeURIComponent(listedTask.id),
+    undefined,
+    authHeaders
+  );
   assert.strictEqual(rpaTaskDeleted.body.code, 0);
   assert.strictEqual(rpaTaskDeleted.body.data.success, true, 'task endpoint deletes by id');
   ok('local-api rpa task result/limit/delete');
@@ -599,8 +807,14 @@ async function main() {
   assert.ok(TOOLS.some((tool) => tool.name === 'list_applications'));
   assert.ok(TOOLS.some((tool) => tool.name === 'window_sync_start'));
   assert.ok(TOOLS.some((tool) => tool.name === 'rpa_run_steps'));
-  assert.ok(TOOLS.some((tool) => tool.name === 'rpa_task_result'), 'mcp exposes task result retrieval');
-  assert.ok(TOOLS.some((tool) => tool.name === 'rpa_tasks'), 'mcp exposes task listing');
+  assert.ok(
+    TOOLS.some((tool) => tool.name === 'rpa_task_result'),
+    'mcp exposes task result retrieval'
+  );
+  assert.ok(
+    TOOLS.some((tool) => tool.name === 'rpa_tasks'),
+    'mcp exposes task listing'
+  );
   ok('mcp tools registered (' + TOOLS.length + ')');
 
   // Point MCP request helper at our server by temporarily monkey-patching env... callTool uses fixed env.

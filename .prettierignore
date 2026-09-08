@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+out/
+coverage/
+.pnpm-store/
+Browserapp/kernels/
+Browserapp/browser-profiles-v2/
+Browserapp/bundled-extension/.cache/
+**/*-selftest-data/
+**/.test-tmp/
+pnpm-lock.yaml
+*.md

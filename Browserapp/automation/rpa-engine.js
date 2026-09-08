@@ -5,12 +5,7 @@ const fs = require('fs/promises');
 const fssync = require('fs');
 const path = require('path');
 const os = require('os');
-const {
-  parseProcessContent,
-  randomNum,
-  RPA_PLUS_ACTIONS,
-  isRegistered,
-} = require('./protocol/rpa-registry');
+const { parseProcessContent, randomNum, RPA_PLUS_ACTIONS, isRegistered } = require('./protocol/rpa-registry');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const OUTPUT_DIRECTORY = path.join(process.cwd(), 'rpa-output');
@@ -21,9 +16,10 @@ const CDP_AUTOMATION_BLOCKED = 'Browser automation requires a paid Donut Browser
 // original full-content behavior — store growth is bounded by task-history
 // pruning and the store size budget, not by log trimming.
 const PARSED_RESULT_CHAR_LIMIT = Number(process.env.OPENBROWSER_RPA_RESULT_CHAR_LIMIT);
-const RPA_RESULT_CHAR_LIMIT = Number.isFinite(PARSED_RESULT_CHAR_LIMIT) && PARSED_RESULT_CHAR_LIMIT > 0
-  ? Math.floor(PARSED_RESULT_CHAR_LIMIT)
-  : 20000;
+const RPA_RESULT_CHAR_LIMIT =
+  Number.isFinite(PARSED_RESULT_CHAR_LIMIT) && PARSED_RESULT_CHAR_LIMIT > 0
+    ? Math.floor(PARSED_RESULT_CHAR_LIMIT)
+    : 20000;
 
 /** Per-string cap for result payloads; structure (arrays/objects) is kept, only string length is capped. */
 function capResultString(text) {
@@ -62,13 +58,22 @@ function snapshotVariables(variables) {
 function isOptionalElementStep(params = {}) {
   // Explicit optional only. Do NOT treat isShow=0 as optional: catalog often uses
   // isShow for visibility mode, not "skip if missing".
-  if (params.optional === true || params.optional === 1 || params.optional === '1' || params.optional === 'true') {
+  if (
+    params.optional === true ||
+    params.optional === 1 ||
+    params.optional === '1' ||
+    params.optional === 'true'
+  ) {
     return true;
   }
   const selector = String(params.selector || '');
   // Known ephemeral overlays / geo chrome that commonly absents on locale pages.
   // Keep this list narrow; prefer step.optional=true from sanitizeOptionalOverlaySteps.
-  if (/redir-overlay|redir-dismiss|nav-global-location|GLUXZip|GLUXZipUpdateInput|GLUXZipInputSection|GLUXConfirmClose|glow-ingress|#sp-cc-accept/i.test(selector)) {
+  if (
+    /redir-overlay|redir-dismiss|nav-global-location|GLUXZip|GLUXZipUpdateInput|GLUXZipInputSection|GLUXConfirmClose|glow-ingress|#sp-cc-accept/i.test(
+      selector
+    )
+  ) {
     return true;
   }
   return false;
@@ -79,13 +84,15 @@ function isMissingElementError(error) {
   const message = String(error?.message || error || '');
   if (!message) return false;
   if (message.includes(CDP_AUTOMATION_BLOCKED)) return false;
-  return /Element not found|Selector not found|selectElement failed|No page tab for CDP|useExcel file not found|file path required/i.test(message);
+  return /Element not found|Selector not found|selectElement failed|No page tab for CDP|useExcel file not found|file path required/i.test(
+    message
+  );
 }
 
 function isPathInsideRoot(candidate, root) {
   const child = path.resolve(candidate);
   const base = path.resolve(root);
-  const normalize = (value) => process.platform === 'win32' ? value.toLowerCase() : value;
+  const normalize = (value) => (process.platform === 'win32' ? value.toLowerCase() : value);
   return normalize(child) === normalize(base) || normalize(child).startsWith(normalize(base) + path.sep);
 }
 
@@ -99,9 +106,7 @@ function resolveSafeRpaPath(filePath, { extraRoots = [], mustExist = false } = {
   if (!raw) throw new Error('file path required');
   if (raw.includes('\0')) throw new Error('invalid file path');
   const roots = [OUTPUT_DIRECTORY, ...extraRoots].map((item) => path.resolve(item));
-  const resolved = path.isAbsolute(raw)
-    ? path.resolve(raw)
-    : path.resolve(OUTPUT_DIRECTORY, raw);
+  const resolved = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(OUTPUT_DIRECTORY, raw);
   if (!roots.some((root) => isPathInsideRoot(resolved, root))) {
     throw new Error('RPA file path must be inside the RPA output directory');
   }
@@ -109,27 +114,86 @@ function resolveSafeRpaPath(filePath, { extraRoots = [], mustExist = false } = {
 }
 
 const EXECUTABLE_STEP_TYPES = new Set([
-  'wait', 'sleep', 'delay', 'waittime',
-  'goto', 'navigate', 'open', 'gotourl',
-  'reload', 'refreshpage',
-  'newtab', 'new_tab', 'newpage',
-  'closetab', 'close_tab', 'closepage',
-  'typetext', 'type', 'input', 'inserttext', 'inputcontent',
-  'click', 'clickelement', 'waitforselector', 'fortimes',
-  'javascript', 'evaluate', 'script', 'js',
-  'scroll', 'scrollpage', 'screenshotpage', 'screenshot',
-  'geturl', 'clearcookies', 'startnode', 'noop', 'breakloop',
-  'key', 'press', 'keyboard',
-  'combineprocess', 'getelement', 'passingelement', 'focuselement',
-  'selectelement', 'getrequest',
-  'ifelse', 'forelements', 'forlists', 'whiledata', 'tojson', 'extractkey',
-  'extractdata', 'savedata', 'exportexcel', 'saveremark', 'variableoperation',
-  'goback', 'switchpage', 'uploadattachment', 'downloadfile',
-  'waitforresponse', 'getresponse', 'stoplinsten', 'closebrowser',
-  'opennewbrowser', 'getopenai',
+  'wait',
+  'sleep',
+  'delay',
+  'waittime',
+  'goto',
+  'navigate',
+  'open',
+  'gotourl',
+  'reload',
+  'refreshpage',
+  'newtab',
+  'new_tab',
+  'newpage',
+  'closetab',
+  'close_tab',
+  'closepage',
+  'typetext',
+  'type',
+  'input',
+  'inserttext',
+  'inputcontent',
+  'click',
+  'clickelement',
+  'waitforselector',
+  'fortimes',
+  'javascript',
+  'evaluate',
+  'script',
+  'js',
+  'scroll',
+  'scrollpage',
+  'screenshotpage',
+  'screenshot',
+  'geturl',
+  'clearcookies',
+  'startnode',
+  'noop',
+  'breakloop',
+  'key',
+  'press',
+  'keyboard',
+  'combineprocess',
+  'getelement',
+  'passingelement',
+  'focuselement',
+  'selectelement',
+  'getrequest',
+  'ifelse',
+  'forelements',
+  'forlists',
+  'whiledata',
+  'tojson',
+  'extractkey',
+  'extractdata',
+  'savedata',
+  'exportexcel',
+  'saveremark',
+  'variableoperation',
+  'goback',
+  'switchpage',
+  'uploadattachment',
+  'downloadfile',
+  'waitforresponse',
+  'getresponse',
+  'stoplinsten',
+  'closebrowser',
+  'opennewbrowser',
+  'getopenai',
   'useexcel',
-  'importtext', 'randomget', 'get2facode', 'googlesheet', 'getcookies', 'getclipboard', 'getactiveelement',
-  'keycombination', 'applysubprocess', 'getcaptcha', 'closeotherpage',
+  'importtext',
+  'randomget',
+  'get2facode',
+  'googlesheet',
+  'getcookies',
+  'getclipboard',
+  'getactiveelement',
+  'keycombination',
+  'applysubprocess',
+  'getcaptcha',
+  'closeotherpage',
 ]);
 
 function findUnsupportedSteps(steps, path = []) {
@@ -144,11 +208,15 @@ function findUnsupportedSteps(steps, path = []) {
     }
     const children = Array.isArray(step.children)
       ? step.children
-      : (Array.isArray(step.params?.children) ? step.params.children : null);
+      : Array.isArray(step.params?.children)
+        ? step.params.children
+        : null;
     if (children) unsupported.push(...findUnsupportedSteps(children, currentPath));
     const elseChildren = Array.isArray(step.elseChildren)
       ? step.elseChildren
-      : (Array.isArray(step.params?.elseChildren) ? step.params.elseChildren : null);
+      : Array.isArray(step.params?.elseChildren)
+        ? step.params.elseChildren
+        : null;
     if (elseChildren) unsupported.push(...findUnsupportedSteps(elseChildren, currentPath));
   }
   return unsupported;
@@ -177,7 +245,14 @@ function defaultRpaLogPath(userDataPath = null) {
   if (process.env.OPENBROWSER_RPA_LOG) return String(process.env.OPENBROWSER_RPA_LOG);
   if (userDataPath) return path.join(userDataPath, 'logs', 'rpa-automation.log');
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'openbrowser', 'logs', 'rpa-automation.log');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'openbrowser',
+      'logs',
+      'rpa-automation.log'
+    );
   }
   if (process.platform === 'win32') {
     const base = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
@@ -191,7 +266,10 @@ function compactError(error) {
   return {
     name: error?.name || 'Error',
     message,
-    stack: String(error?.stack || '').split(/\r?\n/).slice(0, 12).join('\n'),
+    stack: String(error?.stack || '')
+      .split(/\r?\n/)
+      .slice(0, 12)
+      .join('\n'),
   };
 }
 
@@ -256,31 +334,40 @@ class RpaEngine {
   async runPlan(planId, options = {}) {
     const plan = this.store.getPlan(planId);
     if (!plan) throw new Error('RPA plan not found: ' + planId);
-    const profileIds = Array.isArray(options.profile_ids) && options.profile_ids.length
-      ? options.profile_ids.map(String)
-      : (plan.profile_ids || []);
+    const profileIds =
+      Array.isArray(options.profile_ids) && options.profile_ids.length
+        ? options.profile_ids.map(String)
+        : plan.profile_ids || [];
     if (!profileIds.length) throw new Error('No profile_ids on plan');
 
-    const planVariables = plan.variables && typeof plan.variables === 'object' && !Array.isArray(plan.variables)
-      ? plan.variables
-      : {};
-    const tasks = typeof this.store.createTasks === 'function'
-      ? await this.store.createTasks(profileIds.map((profileId) => ({
-        plan_id: plan.id,
-        profile_id: profileId,
-        process_name: plan.process_name || plan.plan_name,
-        steps: plan.steps,
-        process_content: plan.process_content || null,
-        variables: planVariables,
-      })))
-      : await Promise.all(profileIds.map((profileId) => this.store.createTask({
-        plan_id: plan.id,
-        profile_id: profileId,
-        process_name: plan.process_name || plan.plan_name,
-        steps: plan.steps,
-        process_content: plan.process_content || null,
-        variables: planVariables,
-      })));
+    const planVariables =
+      plan.variables && typeof plan.variables === 'object' && !Array.isArray(plan.variables)
+        ? plan.variables
+        : {};
+    const tasks =
+      typeof this.store.createTasks === 'function'
+        ? await this.store.createTasks(
+            profileIds.map((profileId) => ({
+              plan_id: plan.id,
+              profile_id: profileId,
+              process_name: plan.process_name || plan.plan_name,
+              steps: plan.steps,
+              process_content: plan.process_content || null,
+              variables: planVariables,
+            }))
+          )
+        : await Promise.all(
+            profileIds.map((profileId) =>
+              this.store.createTask({
+                plan_id: plan.id,
+                profile_id: profileId,
+                process_name: plan.process_name || plan.plan_name,
+                steps: plan.steps,
+                process_content: plan.process_content || null,
+                variables: planVariables,
+              })
+            )
+          );
     const results = await Promise.all(tasks.map((task) => this.runTask(task.id, options)));
     return { success: results.every((item) => item.success), results };
   }
@@ -292,7 +379,11 @@ class RpaEngine {
 
     this.running.set(taskId, { startedAt: Date.now() });
     this.cancelled.delete(taskId);
-    await this.store.updateTask(taskId, { status: 'running', start_time: new Date().toISOString(), process_logs: [] }, { save: false });
+    await this.store.updateTask(
+      taskId,
+      { status: 'running', start_time: new Date().toISOString(), process_logs: [] },
+      { save: false }
+    );
     this.emit({ type: 'rpa-task', taskId, status: 'running', profileId: task.profile_id });
     await this.writeDiagnostic({
       type: 'rpa-task-start',
@@ -318,7 +409,7 @@ class RpaEngine {
       const port = entry.port;
       // process_content task field or steps array
       let steps = Array.isArray(task.steps) ? task.steps : [];
-      if ((!steps.length) && task.process_content) {
+      if (!steps.length && task.process_content) {
         steps = parseProcessContent(task.process_content);
       } else if (typeof task.steps === 'string') {
         steps = parseProcessContent(task.steps);
@@ -446,7 +537,10 @@ class RpaEngine {
       let ms = Number(params.ms ?? params.timeout ?? params.time ?? 1000);
       // timeoutType === "randomInterval" → random between timeoutMin/timeoutMax
       if (params.timeoutType === 'randomInterval' || params.timeoutType === 'random') {
-        ms = randomBetween(params.timeoutMin ?? params.minMs ?? 300, params.timeoutMax ?? params.maxMs ?? 800);
+        ms = randomBetween(
+          params.timeoutMin ?? params.minMs ?? 300,
+          params.timeoutMax ?? params.maxMs ?? 800
+        );
       }
       await sleep(Math.max(0, Math.min(120000, ms || 1000)));
       return;
@@ -474,8 +568,16 @@ class RpaEngine {
       return;
     }
 
-    if (type === 'typetext' || type === 'type' || type === 'input' || type === 'inserttext' || type === 'inputcontent') {
-      const inputText = text(params.text ?? params.value ?? params.content ?? (params.isRandom ? params.randomContent : ''));
+    if (
+      type === 'typetext' ||
+      type === 'type' ||
+      type === 'input' ||
+      type === 'inserttext' ||
+      type === 'inputcontent'
+    ) {
+      const inputText = text(
+        params.text ?? params.value ?? params.content ?? (params.isRandom ? params.randomContent : '')
+      );
       const clear = params.clear || params.isClear;
       const optional = isOptionalElementStep(params);
       if (clear && !params.selector) await cdp.clearFocused(port).catch(() => {});
@@ -484,8 +586,16 @@ class RpaEngine {
           await this.withPage(port, async (ws) => {
             await this.focusSelector(ws, params.selector, params.selectorRadio);
             if (clear) {
-              await cdp.call(ws, 'Input.dispatchKeyEvent', { type: 'keyDown', windowsVirtualKeyCode: 65, modifiers: 2 });
-              await cdp.call(ws, 'Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 65, modifiers: 2 });
+              await cdp.call(ws, 'Input.dispatchKeyEvent', {
+                type: 'keyDown',
+                windowsVirtualKeyCode: 65,
+                modifiers: 2,
+              });
+              await cdp.call(ws, 'Input.dispatchKeyEvent', {
+                type: 'keyUp',
+                windowsVirtualKeyCode: 65,
+                modifiers: 2,
+              });
               await cdp.call(ws, 'Input.dispatchKeyEvent', { type: 'keyDown', windowsVirtualKeyCode: 8 });
               await cdp.call(ws, 'Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 8 });
             }
@@ -535,8 +645,20 @@ class RpaEngine {
         } else if (Number.isFinite(Number(params.x)) && Number.isFinite(Number(params.y))) {
           const x = Number(params.x);
           const y = Number(params.y);
-          await cdp.call(ws, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-          await cdp.call(ws, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+          await cdp.call(ws, 'Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x,
+            y,
+            button: 'left',
+            clickCount: 1,
+          });
+          await cdp.call(ws, 'Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x,
+            y,
+            button: 'left',
+            clickCount: 1,
+          });
         } else {
           throw new Error('click requires selector or x/y');
         }
@@ -557,13 +679,17 @@ class RpaEngine {
       }
       try {
         await this.withPage(port, async (ws) => {
-          const expression = this.elementExpression(selector, params.selectorRadio, `el => {
+          const expression = this.elementExpression(
+            selector,
+            params.selectorRadio,
+            `el => {
             if (!(el instanceof HTMLSelectElement)) return false;
             el.value = ${JSON.stringify(selectedValue)};
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             return el.value === ${JSON.stringify(selectedValue)};
-          }`);
+          }`
+          );
           const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true });
           if (result.result?.value !== true) throw new Error('selectElement failed: ' + selector);
         });
@@ -588,7 +714,9 @@ class RpaEngine {
           try {
             await this.focusSelector(ws, selector, params.selectorRadio);
             return true;
-          } catch (_) { return false; }
+          } catch (_) {
+            return false;
+          }
         });
         if (found) return;
         await sleep(200);
@@ -599,7 +727,11 @@ class RpaEngine {
 
     if (type === 'fortimes') {
       const times = Math.max(0, Math.min(1000, Number(value(params.times)) || 1));
-      const children = Array.isArray(step.children) ? step.children : (Array.isArray(params.children) ? params.children : []);
+      const children = Array.isArray(step.children)
+        ? step.children
+        : Array.isArray(params.children)
+          ? params.children
+          : [];
       for (let i = 0; i < times; i += 1) {
         if (params.variableIndex) variables[params.variableIndex] = i;
         for (const child of children) await this.executeStep(port, child, ctx);
@@ -608,7 +740,11 @@ class RpaEngine {
     }
 
     if (type === 'combineprocess') {
-      const children = Array.isArray(step.children) ? step.children : (Array.isArray(params.children) ? params.children : []);
+      const children = Array.isArray(step.children)
+        ? step.children
+        : Array.isArray(params.children)
+          ? params.children
+          : [];
       for (const child of children) await this.executeStep(port, child, ctx);
       return;
     }
@@ -617,10 +753,19 @@ class RpaEngine {
       const list = value(params.content);
       let items = Array.isArray(list) ? list : [];
       if (!items.length && typeof list === 'string') {
-        try { items = JSON.parse(list); } catch (_) { items = list.split(/\r?\n/).filter(Boolean); }
+        try {
+          items = JSON.parse(list);
+        } catch (_) {
+          items = list.split(/\r?\n/).filter(Boolean);
+        }
       }
-      if (!Array.isArray(items)) throw new Error('forLists requires an array variable: ' + String(params.content || ''));
-      const children = Array.isArray(step.children) ? step.children : (Array.isArray(params.children) ? params.children : []);
+      if (!Array.isArray(items))
+        throw new Error('forLists requires an array variable: ' + String(params.content || ''));
+      const children = Array.isArray(step.children)
+        ? step.children
+        : Array.isArray(params.children)
+          ? params.children
+          : [];
       for (let index = 0; index < items.length; index += 1) {
         variables[params.variable || 'item'] = items[index];
         if (params.variableIndex) variables[params.variableIndex] = index;
@@ -631,14 +776,26 @@ class RpaEngine {
 
     if (type === 'ifelse' || type === 'whiledata') {
       const condition = this.evaluateCondition(params, variables);
-      const children = Array.isArray(step.children) ? step.children : (Array.isArray(params.children) ? params.children : []);
-      const elseChildren = Array.isArray(step.elseChildren) ? step.elseChildren : (Array.isArray(params.elseChildren) ? params.elseChildren : []);
+      const children = Array.isArray(step.children)
+        ? step.children
+        : Array.isArray(params.children)
+          ? params.children
+          : [];
+      const elseChildren = Array.isArray(step.elseChildren)
+        ? step.elseChildren
+        : Array.isArray(params.elseChildren)
+          ? params.elseChildren
+          : [];
       if (type === 'ifelse' && !condition) {
         for (const child of elseChildren) await this.executeStep(port, child, ctx);
         return;
       }
       const max = type === 'whiledata' ? 100 : 1;
-      for (let count = 0; count < max && (type === 'ifelse' || this.evaluateCondition(params, variables)); count += 1) {
+      for (
+        let count = 0;
+        count < max && (type === 'ifelse' || this.evaluateCondition(params, variables));
+        count += 1
+      ) {
         for (const child of children) await this.executeStep(port, child, ctx);
       }
       return;
@@ -646,7 +803,9 @@ class RpaEngine {
 
     if (type === 'getelement' || type === 'passingelement' || type === 'focuselement') {
       const optional = isOptionalElementStep(params);
-      const selector = text(params.selector || (params.selectorType === 'element' ? variables[params.element]?.selector : ''));
+      const selector = text(
+        params.selector || (params.selectorType === 'element' ? variables[params.element]?.selector : '')
+      );
       const referenced = params.element && variables[params.element];
       if (!selector && !referenced) {
         if (optional) {
@@ -657,7 +816,9 @@ class RpaEngine {
       }
       if (type === 'focuselement') {
         try {
-          await this.withPage(port, (ws) => this.focusSelector(ws, selector || referenced.selector, params.selectorRadio));
+          await this.withPage(port, (ws) =>
+            this.focusSelector(ws, selector || referenced.selector, params.selectorRadio)
+          );
         } catch (error) {
           if (optional && isMissingElementError(error)) {
             if (ctx?.log) await ctx.log('optional focus skipped: ' + (selector || referenced.selector));
@@ -667,10 +828,13 @@ class RpaEngine {
         }
         return;
       }
-      const result = await this.withPage(port, async (ws) => this.readElement(ws, selector || referenced.selector, params));
+      const result = await this.withPage(port, async (ws) =>
+        this.readElement(ws, selector || referenced.selector, params)
+      );
       if (result == null) {
         if (optional) {
-          if (ctx?.log) await ctx.log('optional getElement skipped (not found): ' + (selector || referenced.selector));
+          if (ctx?.log)
+            await ctx.log('optional getElement skipped (not found): ' + (selector || referenced.selector));
           if (params.variable) variables[params.variable] = null;
           return;
         }
@@ -684,7 +848,11 @@ class RpaEngine {
       const selector = text(params.selector);
       if (!selector) throw new Error('forElements requires selector');
       const elements = await this.withPage(port, (ws) => this.listElements(ws, selector, params));
-      const children = Array.isArray(step.children) ? step.children : (Array.isArray(params.children) ? params.children : []);
+      const children = Array.isArray(step.children)
+        ? step.children
+        : Array.isArray(params.children)
+          ? params.children
+          : [];
       for (let index = 0; index < elements.length; index += 1) {
         variables[params.variable || 'element'] = elements[index];
         if (params.variableIndex) variables[params.variableIndex] = index;
@@ -697,10 +865,18 @@ class RpaEngine {
       const source = value(params.content);
       let result = source;
       if (type === 'tojson') {
-        try { result = typeof source === 'string' ? JSON.parse(source) : source; } catch (error) { throw new Error('toJson failed: ' + error.message); }
+        try {
+          result = typeof source === 'string' ? JSON.parse(source) : source;
+        } catch (error) {
+          throw new Error('toJson failed: ' + error.message);
+        }
       } else if (type === 'extractkey') {
         const object = typeof source === 'string' ? JSON.parse(source) : source;
-        result = params.key ? String(params.key).split('.').reduce((item, key) => item?.[key], object) : object;
+        result = params.key
+          ? String(params.key)
+              .split('.')
+              .reduce((item, key) => item?.[key], object)
+          : object;
       } else {
         const sourceText = String(source ?? '');
         const match = new RegExp(String(params.reg || ''), params.notUpper ? '' : 'i').exec(sourceText);
@@ -720,12 +896,14 @@ class RpaEngine {
 
     if (type === 'exportexcel') {
       const records = this.exportRecords(params, variables);
-      const fields = Array.isArray(params.fields) && params.fields.length
-        ? params.fields.map(String)
-        : [...new Set(records.flatMap((record) => Object.keys(record || {})))];
-      const csv = [fields, ...records.map((record) => fields.map((field) => record?.[field] ?? ''))]
-        .map((row) => row.map((cell) => this.csvCell(cell)).join(','))
-        .join('\n') + '\n';
+      const fields =
+        Array.isArray(params.fields) && params.fields.length
+          ? params.fields.map(String)
+          : [...new Set(records.flatMap((record) => Object.keys(record || {})))];
+      const csv =
+        [fields, ...records.map((record) => fields.map((field) => record?.[field] ?? ''))]
+          .map((row) => row.map((cell) => this.csvCell(cell)).join(','))
+          .join('\n') + '\n';
       const filename = this.outputPath(text(params.name || 'export'), '.csv');
       await fs.mkdir(path.dirname(filename), { recursive: true });
       await fs.writeFile(filename, csv, 'utf8');
@@ -750,35 +928,38 @@ class RpaEngine {
 
     if (type === 'useexcel') {
       const targetVar = params.variable || 'data';
-      const skippable = (
-        params.isSkip === true
-        || params.isSkip === 1
-        || params.isSkip === '1'
-        || params.isSkip === 'true'
-        || params.optional === true
-        || params.optional === '1'
-        || params.optional === 'true'
-      );
-      let filePath = text(
-        params.path
-        ?? params.filePath
-        ?? params.file
-        ?? params.dataExcelPath
-        ?? params.excelPath
-        ?? params.content
+      const skippable =
+        params.isSkip === true ||
+        params.isSkip === 1 ||
+        params.isSkip === '1' ||
+        params.isSkip === 'true' ||
+        params.optional === true ||
+        params.optional === '1' ||
+        params.optional === 'true';
+      const filePath = text(
+        params.path ??
+          params.filePath ??
+          params.file ??
+          params.dataExcelPath ??
+          params.excelPath ??
+          params.content
       ).trim();
       // Unresolved ${var} placeholders mean the user has not configured a spreadsheet yet.
       if (!filePath || /\$\{[^}]+\}/.test(filePath)) {
         if (!skippable) {
           throw new Error(
             filePath
-              ? 'useExcel path is unresolved (' + filePath + '); set the template variable to a local CSV/JSON file'
+              ? 'useExcel path is unresolved (' +
+                  filePath +
+                  '); set the template variable to a local CSV/JSON file'
               : 'useExcel requires a CSV or JSON file path'
           );
         }
         variables[targetVar] = [];
         if (ctx?.log) {
-          await ctx.log('useExcel skipped: no spreadsheet path configured (set a CSV/JSON path in template variables)');
+          await ctx.log(
+            'useExcel skipped: no spreadsheet path configured (set a CSV/JSON path in template variables)'
+          );
         }
         return;
       }
@@ -797,7 +978,8 @@ class RpaEngine {
 
       const extension = path.extname(safePath).toLowerCase();
       if (extension === '.xlsx' || extension === '.xls') {
-        const message = 'useExcel does not read .xlsx/.xls yet; convert to .csv or .json and set the path variable';
+        const message =
+          'useExcel does not read .xlsx/.xls yet; convert to .csv or .json and set the path variable';
         if (skippable) {
           variables[targetVar] = [];
           if (ctx?.log) await ctx.log('useExcel skipped: ' + message);
@@ -837,9 +1019,13 @@ class RpaEngine {
           return;
         }
         const headers = lines[0].split(',').map((item) => item.trim());
-        records = lines.slice(1).map((row) => Object.fromEntries(
-          row.split(',').map((item, index) => [headers[index] || ('col' + index), item.trim()])
-        ));
+        records = lines
+          .slice(1)
+          .map((row) =>
+            Object.fromEntries(
+              row.split(',').map((item, index) => [headers[index] || 'col' + index, item.trim()])
+            )
+          );
       }
       if (!Array.isArray(records)) throw new Error('useExcel JSON content must be an array');
       variables[targetVar] = records;
@@ -861,7 +1047,9 @@ class RpaEngine {
       const source = getVariableValue(params.variable || params.list || params.content, variables);
       const list = Array.isArray(source)
         ? source
-        : String(source == null ? '' : source).split(/\r?\n/).filter((item) => item.length > 0);
+        : String(source == null ? '' : source)
+            .split(/\r?\n/)
+            .filter((item) => item.length > 0);
       if (!list.length) {
         variables[params.saveVariable || params.target || 'randomItem'] = '';
         return;
@@ -900,15 +1088,23 @@ class RpaEngine {
       return;
     }
 
-    if (type === 'keycombination' || type === 'applysubprocess' || type === 'getcaptcha' || type === 'closeotherpage') {
+    if (
+      type === 'keycombination' ||
+      type === 'applysubprocess' ||
+      type === 'getcaptcha' ||
+      type === 'closeotherpage'
+    ) {
       if (ctx?.log) await ctx.log(`${type}: best-effort no-op in current runtime`);
       return;
     }
 
     if (type === 'goback') {
-      await this.withPage(port, (ws) => cdp.call(ws, 'Runtime.evaluate', {
-        expression: 'history.back(); true', returnByValue: true,
-      }));
+      await this.withPage(port, (ws) =>
+        cdp.call(ws, 'Runtime.evaluate', {
+          expression: 'history.back(); true',
+          returnByValue: true,
+        })
+      );
       await sleep(Math.max(0, Math.min(30000, Number(params.timeout) || 500)));
       return;
     }
@@ -932,7 +1128,11 @@ class RpaEngine {
       if (!selector || !filePath) throw new Error('uploadAttachment requires selector and local file path');
       const safePath = resolveSafeRpaPath(filePath);
       await fs.access(safePath);
-      if (String(params.selectorRadio || 'CSS').toUpperCase().startsWith('X')) {
+      if (
+        String(params.selectorRadio || 'CSS')
+          .toUpperCase()
+          .startsWith('X')
+      ) {
         throw new Error('uploadAttachment currently requires a CSS selector');
       }
       await this.withPage(port, async (ws) => {
@@ -947,10 +1147,18 @@ class RpaEngine {
     if (type === 'downloadfile') {
       const url = text(params.url);
       if (!url) throw new Error('downloadFile requires url');
-      const target = this.outputPath(text(params.path || 'downloads'), path.extname(new URL(url, 'https://localhost').pathname) || '.bin');
+      const target = this.outputPath(
+        text(params.path || 'downloads'),
+        path.extname(new URL(url, 'https://localhost').pathname) || '.bin'
+      );
       const payload = await this.withPage(port, async (ws) => {
         const expression = `(async () => { const response = await fetch(${JSON.stringify(url)}, { credentials: 'include' }); if (!response.ok) throw new Error('HTTP ' + response.status); const bytes = new Uint8Array(await response.arrayBuffer()); let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte); return btoa(binary); })()`;
-        const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, 60000);
+        const result = await cdp.call(
+          ws,
+          'Runtime.evaluate',
+          { expression, returnByValue: true, awaitPromise: true },
+          60000
+        );
         if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'downloadFile failed');
         return result.result?.value;
       });
@@ -959,7 +1167,12 @@ class RpaEngine {
       return;
     }
 
-    if (type === 'getrequest' || type === 'waitforresponse' || type === 'getresponse' || type === 'stoplinsten') {
+    if (
+      type === 'getrequest' ||
+      type === 'waitforresponse' ||
+      type === 'getresponse' ||
+      type === 'stoplinsten'
+    ) {
       if (type === 'stoplinsten') return;
       const matcher = text(params.url || '');
       const timeout = Math.max(0, Math.min(120000, Number(params.timeout) || 30000));
@@ -969,13 +1182,19 @@ class RpaEngine {
         const requestUrl = resource.name;
         const key = text(params.key || '');
         let result = requestUrl;
-        if (String(params.type).toLowerCase() === 'getparams' && key) result = new URL(requestUrl).searchParams.get(key) || '';
+        if (String(params.type).toLowerCase() === 'getparams' && key)
+          result = new URL(requestUrl).searchParams.get(key) || '';
         if (params.variable) variables[params.variable] = result;
         return;
       }
       const body = await this.withPage(port, async (ws) => {
         const expression = `(async () => { const response = await fetch(${JSON.stringify(resource.name)}, { credentials: 'include' }); return await response.text(); })()`;
-        const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, 30000);
+        const result = await cdp.call(
+          ws,
+          'Runtime.evaluate',
+          { expression, returnByValue: true, awaitPromise: true },
+          30000
+        );
         if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'getResponse failed');
         return result.result?.value || '';
       });
@@ -989,7 +1208,11 @@ class RpaEngine {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: text(params.type || 'gpt-4o-mini'), messages: [{ role: 'user', content: text(params.prompt) }], max_tokens: Number(params.token) || 4096 }),
+        body: JSON.stringify({
+          model: text(params.type || 'gpt-4o-mini'),
+          messages: [{ role: 'user', content: text(params.prompt) }],
+          max_tokens: Number(params.token) || 4096,
+        }),
       });
       if (!response.ok) throw new Error(`getOpenAI request failed: HTTP ${response.status}`);
       const responseBody = await response.json();
@@ -1025,11 +1248,16 @@ class RpaEngine {
         const wrapped = names.length
           ? `(() => { const fn = new Function(...${JSON.stringify(names)}, ${JSON.stringify(expression)}); return fn(...${JSON.stringify(values)}); })()`
           : expression;
-        const result = await cdp.call(ws, 'Runtime.evaluate', {
-          expression: wrapped,
-          returnByValue: true,
-          awaitPromise: true,
-        }, 30000);
+        const result = await cdp.call(
+          ws,
+          'Runtime.evaluate',
+          {
+            expression: wrapped,
+            returnByValue: true,
+            awaitPromise: true,
+          },
+          30000
+        );
         if (result.exceptionDetails) {
           throw new Error(result.exceptionDetails.text || 'evaluate failed');
         }
@@ -1047,7 +1275,8 @@ class RpaEngine {
 
     if (type === 'screenshotpage' || type === 'screenshot') {
       const shot = await this.withPage(port, (ws) =>
-        cdp.call(ws, 'Page.captureScreenshot', { format: String(params.format || 'png') }, 15000));
+        cdp.call(ws, 'Page.captureScreenshot', { format: String(params.format || 'png') }, 15000)
+      );
       if (!shot?.data) throw new Error('screenshot failed: no image data returned');
       const format = String(params.format || 'png').toLowerCase();
       const extension = format === 'jpeg' || format === 'jpg' ? '.jpg' : format === 'webp' ? '.webp' : '.png';
@@ -1062,7 +1291,10 @@ class RpaEngine {
 
     if (type === 'geturl') {
       await this.withPage(port, async (ws) => {
-        const result = await cdp.call(ws, 'Runtime.evaluate', { expression: 'location.href', returnByValue: true });
+        const result = await cdp.call(ws, 'Runtime.evaluate', {
+          expression: 'location.href',
+          returnByValue: true,
+        });
         if (params.variable) variables[params.variable] = result.result?.value || '';
         if (ctx?.log) await ctx.log('getUrl=' + result.result?.value);
       });
@@ -1078,7 +1310,8 @@ class RpaEngine {
     }
 
     if (type === 'closebrowser') {
-      if (typeof this.engine?.stop !== 'function') throw new Error('closeBrowser is unavailable: browser engine cannot stop profiles');
+      if (typeof this.engine?.stop !== 'function')
+        throw new Error('closeBrowser is unavailable: browser engine cannot stop profiles');
       await this.engine.stop(ctx.activeProfileId || ctx.task.profile_id);
       return;
     }
@@ -1087,11 +1320,15 @@ class RpaEngine {
       if (!(this.engine?.profiles instanceof Map) || typeof this.engine?.start !== 'function') {
         throw new Error('openNewBrowser is unavailable: local profile management is not configured');
       }
-      const requestedNumber = Number(String(text(params.accounts || params.account || '')).split(/[\s,;]+/)[0]);
+      const requestedNumber = Number(
+        String(text(params.accounts || params.account || '')).split(/[\s,;]+/)[0]
+      );
       if (!Number.isInteger(requestedNumber) || requestedNumber < 1) {
         throw new Error('openNewBrowser requires a local environment number in accounts');
       }
-      const profile = [...this.engine.profiles.values()].find((item) => Number(item.number) === requestedNumber);
+      const profile = [...this.engine.profiles.values()].find(
+        (item) => Number(item.number) === requestedNumber
+      );
       if (!profile) throw new Error('openNewBrowser local environment not found: ' + requestedNumber);
       const started = await this.engine.start(profile);
       if (!started?.port) throw new Error('openNewBrowser did not return a CDP port');
@@ -1127,7 +1364,11 @@ class RpaEngine {
     }
     let process = task.process_content;
     if (typeof process === 'string') {
-      try { process = JSON.parse(process); } catch (_) { process = null; }
+      try {
+        process = JSON.parse(process);
+      } catch (_) {
+        process = null;
+      }
     }
     const start = process?.nodes?.find((node) => node.type === 'startNode');
     const definitions = start?.globalVariable || start?.config?.variableObjList || [];
@@ -1183,10 +1424,7 @@ class RpaEngine {
       }
     }
 
-    const allowedRoots = [
-      OUTPUT_DIRECTORY,
-      ...expandFolderRoots(home),
-    ];
+    const allowedRoots = [OUTPUT_DIRECTORY, ...expandFolderRoots(home)];
     if (process.platform === 'win32') {
       for (const root of expandFolderRoots(userProfile)) {
         if (!allowedRoots.includes(root)) allowedRoots.push(root);
@@ -1197,7 +1435,9 @@ class RpaEngine {
     for (const root of allowedRoots) {
       resolvedAllowed.push(root);
       try {
-        const real = fssync.realpathSync.native ? fssync.realpathSync.native(root) : fssync.realpathSync(root);
+        const real = fssync.realpathSync.native
+          ? fssync.realpathSync.native(root)
+          : fssync.realpathSync(root);
         if (real && !resolvedAllowed.includes(real)) resolvedAllowed.push(real);
       } catch (_) {}
     }
@@ -1206,13 +1446,19 @@ class RpaEngine {
     for (const candidate of candidates) {
       let realCandidate = candidate;
       try {
-        realCandidate = fssync.realpathSync.native ? fssync.realpathSync.native(candidate) : fssync.realpathSync(candidate);
+        realCandidate = fssync.realpathSync.native
+          ? fssync.realpathSync.native(candidate)
+          : fssync.realpathSync(candidate);
       } catch (_) {
         // file may not exist yet — still check lexical containment
       }
-      const okRoot = resolvedAllowed.some((root) => isPathInsideRoot(candidate, root) || isPathInsideRoot(realCandidate, root));
+      const okRoot = resolvedAllowed.some(
+        (root) => isPathInsideRoot(candidate, root) || isPathInsideRoot(realCandidate, root)
+      );
       if (!okRoot) {
-        lastError = new Error('useExcel path is outside allowed folders (home/Desktop/Documents/Downloads/rpa-output)');
+        lastError = new Error(
+          'useExcel path is outside allowed folders (home/Desktop/Documents/Downloads/rpa-output)'
+        );
         continue;
       }
       try {
@@ -1232,7 +1478,9 @@ class RpaEngine {
 
   evaluateCondition(params, variables) {
     const conditions = Array.isArray(params.condition) ? params.condition : [params.condition];
-    const values = conditions.filter((item) => item != null && item !== '').map((item) => valueOf(item, variables));
+    const values = conditions
+      .filter((item) => item != null && item !== '')
+      .map((item) => valueOf(item, variables));
     const actual = values.length <= 1 ? values[0] : values;
     const expected = valueOf(params.result, variables);
     const relation = String(params.relation || 'exist').toLowerCase();
@@ -1251,7 +1499,10 @@ class RpaEngine {
   async readElement(ws, selector, params) {
     const elementType = String(params.type || 'object');
     const key = String(params.key || '');
-    const expression = this.elementExpression(selector, params.selectorRadio, `el => {
+    const expression = this.elementExpression(
+      selector,
+      params.selectorRadio,
+      `el => {
       if (${JSON.stringify(elementType)} === 'object') return { selector: ${JSON.stringify(selector)} };
       if (${JSON.stringify(elementType)} === 'attribute') return el.getAttribute(${JSON.stringify(key)}) || '';
       if (${JSON.stringify(elementType)} === 'innerText') return el.innerText || el.textContent || '';
@@ -1259,7 +1510,8 @@ class RpaEngine {
       if (${JSON.stringify(elementType)} === 'value') return el.value || '';
       if (${JSON.stringify(elementType)} === 'childrenNode') { const child = el.querySelector(${JSON.stringify(key)}); return child ? { selector: ${JSON.stringify(selector)} + ' ' + ${JSON.stringify(key)} } : null; }
       return { selector: ${JSON.stringify(selector)} };
-    }`);
+    }`
+    );
     const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true });
     return result.result?.value ?? null;
   }
@@ -1267,24 +1519,33 @@ class RpaEngine {
   async listElements(ws, selector, params) {
     const elementType = String(params.type || 'object');
     const key = String(params.key || '');
-    const expression = this.elementExpression(selector, params.selectorRadio, `el => {
+    const expression = this.elementExpression(
+      selector,
+      params.selectorRadio,
+      `el => {
       if (${JSON.stringify(elementType)} === 'attribute') return el.getAttribute(${JSON.stringify(key)}) || '';
       if (${JSON.stringify(elementType)} === 'innerText') return el.innerText || el.textContent || '';
       return { selector: ${JSON.stringify(selector)} };
-    }`, true);
+    }`,
+      true
+    );
     const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true });
     return Array.isArray(result.result?.value) ? result.result.value : [];
   }
 
   elementExpression(selector, selectorRadio, mapper, multiple = false) {
-    const finder = String(selectorRadio || 'CSS').toUpperCase().startsWith('X')
+    const finder = String(selectorRadio || 'CSS')
+      .toUpperCase()
+      .startsWith('X')
       ? `Array.from(document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null), (_, i) => document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(i))`
       : `Array.from(document.querySelectorAll(${JSON.stringify(selector)}))`;
     return `(() => { const nodes = ${finder}; const map = ${mapper}; const values = nodes.map(map).filter((item) => item != null); return ${multiple ? 'values' : 'values[0] ?? null'}; })()`;
   }
 
   outputPath(name, extension) {
-    const raw = String(name || 'output').replace(/[\\/:*?"<>|]+/g, '_').replace(/^\.+$/, 'output');
+    const raw = String(name || 'output')
+      .replace(/[\\/:*?"<>|]+/g, '_')
+      .replace(/^\.+$/, 'output');
     const suffix = path.extname(raw) ? '' : extension;
     return path.join(OUTPUT_DIRECTORY, raw + suffix);
   }
@@ -1307,12 +1568,16 @@ class RpaEngine {
     do {
       const resources = await this.withPage(port, async (ws) => {
         const result = await cdp.call(ws, 'Runtime.evaluate', {
-          expression: 'performance.getEntriesByType("resource").map((entry) => ({ name: entry.name, initiatorType: entry.initiatorType }))',
+          expression:
+            'performance.getEntriesByType("resource").map((entry) => ({ name: entry.name, initiatorType: entry.initiatorType }))',
           returnByValue: true,
         });
         return result.result?.value || [];
       });
-      const resource = resources.slice().reverse().find((entry) => !matcher || String(entry.name).includes(matcher));
+      const resource = resources
+        .slice()
+        .reverse()
+        .find((entry) => !matcher || String(entry.name).includes(matcher));
       if (resource) return resource;
       if (!timeout) break;
       await sleep(250);
@@ -1328,18 +1593,20 @@ class RpaEngine {
 
   async focusSelector(ws, selector, selectorRadio = 'CSS') {
     const mode = String(selectorRadio || 'CSS').toUpperCase();
-    const expression = mode === 'XPATH' || mode === 'XP'
-      ? `(() => { const r = document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); const el = r.singleNodeValue; if (!el) return false; el.focus?.(); el.scrollIntoView?.({block:'center', inline:'center'}); return true; })()`
-      : `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.focus(); el.scrollIntoView({block:'center', inline:'center'}); return true; })()`;
+    const expression =
+      mode === 'XPATH' || mode === 'XP'
+        ? `(() => { const r = document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); const el = r.singleNodeValue; if (!el) return false; el.focus?.(); el.scrollIntoView?.({block:'center', inline:'center'}); return true; })()`
+        : `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.focus(); el.scrollIntoView({block:'center', inline:'center'}); return true; })()`;
     const result = await cdp.call(ws, 'Runtime.evaluate', { expression, returnByValue: true });
     if (result.result?.value !== true) throw new Error('Selector not found: ' + selector);
   }
 
   async boundingBox(ws, selector, selectorRadio = 'CSS') {
     const mode = String(selectorRadio || 'CSS').toUpperCase();
-    const expression = mode === 'XPATH' || mode === 'XP'
-      ? `(() => { const r = document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); const el = r.singleNodeValue; if (!el || !el.getBoundingClientRect) return null; el.scrollIntoView?.({block:'center', inline:'center'}); const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; })()`
-      : `(() => {
+    const expression =
+      mode === 'XPATH' || mode === 'XP'
+        ? `(() => { const r = document.evaluate(${JSON.stringify(selector)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); const el = r.singleNodeValue; if (!el || !el.getBoundingClientRect) return null; el.scrollIntoView?.({block:'center', inline:'center'}); const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; })()`
+        : `(() => {
       const el = document.querySelector(${JSON.stringify(selector)});
       if (!el) return null;
       el.scrollIntoView({block:'center', inline:'center'});
@@ -1355,4 +1622,10 @@ function valueOf(input, variables) {
   return getVariableValue(input, variables);
 }
 
-module.exports = { RpaEngine, RPA_PLUS_ACTIONS, parseProcessContent, findUnsupportedSteps, snapshotVariables };
+module.exports = {
+  RpaEngine,
+  RPA_PLUS_ACTIONS,
+  parseProcessContent,
+  findUnsupportedSteps,
+  snapshotVariables,
+};

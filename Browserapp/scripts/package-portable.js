@@ -34,7 +34,9 @@ const distRoot = path.join(appRoot, 'dist');
  * Opt out only with OPENBROWSER_PACKAGE_VARIANT=without-kernel or OPENBROWSER_BUNDLE_KERNEL=false.
  */
 function packageVariant() {
-  const variant = String(process.env.OPENBROWSER_PACKAGE_VARIANT || '').trim().toLowerCase();
+  const variant = String(process.env.OPENBROWSER_PACKAGE_VARIANT || '')
+    .trim()
+    .toLowerCase();
   if (variant === 'without-kernel' || variant === 'no-kernel' || variant === 'kernel-free') {
     return 'without-kernel';
   }
@@ -68,11 +70,12 @@ function packageArtifactStem(platform = process.platform, arch = packageArch) {
 }
 
 function resolvePackageArch() {
-  const raw = process.env.OPENBROWSER_PACKAGE_ARCH
-    || process.env.npm_config_target_arch
-    || process.env.npm_config_arch
-    || process.env.ELECTRON_INSTALL_ARCH
-    || os.arch();
+  const raw =
+    process.env.OPENBROWSER_PACKAGE_ARCH ||
+    process.env.npm_config_target_arch ||
+    process.env.npm_config_arch ||
+    process.env.ELECTRON_INSTALL_ARCH ||
+    os.arch();
   const normalized = String(raw).trim().toLowerCase();
   if (normalized === 'x64' || normalized === 'amd64') return 'x86_64';
   if (normalized === 'aarch64') return 'arm64';
@@ -124,8 +127,8 @@ function shouldShipOpenBrowser148Kernel(platform = process.platform, arch = pack
 function shouldShipIntegratedWayfern(platform = process.platform, arch = packageArch) {
   const p = String(platform || '').toLowerCase();
   const a = String(arch || '').toLowerCase();
-  const supportedPlatform = (p === 'win32' && ['x86_64', 'x64', 'amd64'].includes(a))
-    || (p === 'darwin' && a === 'arm64');
+  const supportedPlatform =
+    (p === 'win32' && ['x86_64', 'x64', 'amd64'].includes(a)) || (p === 'darwin' && a === 'arm64');
   return supportedPlatform && bundleKernelVariantEnabled();
 }
 
@@ -273,8 +276,8 @@ function assertKernelPackagePolicy(resourceApp) {
   if (shipOpenBrowser) {
     if (!fs.existsSync(openBrowserBin)) {
       throw new Error(
-        '[package] FATAL: macOS x86_64 package missing openbrowser-148 binary under kernels/macos-x64: '
-        + openBrowserBin
+        '[package] FATAL: macOS x86_64 package missing openbrowser-148 binary under kernels/macos-x64: ' +
+          openBrowserBin
       );
     }
     for (const foreign of ['windows-x64', 'macos-arm64']) {
@@ -286,8 +289,12 @@ function assertKernelPackagePolicy(resourceApp) {
     for (const name of ['macos-x64', 'openbrowser']) {
       if (fs.existsSync(path.join(kernelsDir, name))) {
         throw new Error(
-          `[package] FATAL: ${name} present but this SKU is not macOS x86_64`
-          + ' (platform=' + process.platform + ' arch=' + packageArch + ')'
+          `[package] FATAL: ${name} present but this SKU is not macOS x86_64` +
+            ' (platform=' +
+            process.platform +
+            ' arch=' +
+            packageArch +
+            ')'
         );
       }
     }
@@ -301,11 +308,13 @@ function assertKernelPackagePolicy(resourceApp) {
       throw new Error(`[package] FATAL: kernel binary not discovered under kernels/${expected}`);
     }
     // Fail packaging if companion library CDP readiness markers are missing.
-    if (!isIntegratedKernelCdpReady({ path: integrated.binary || integrated.path, source: 'donut-wayfern' })) {
+    if (
+      !isIntegratedKernelCdpReady({ path: integrated.binary || integrated.path, source: 'donut-wayfern' })
+    ) {
       const lib = companionLibraryForKernelBinary(integrated.binary || integrated.path);
       throw new Error(
-        '[package] FATAL: integrated kernel is not CDP-ready for RPA/Local API'
-        + ` (seed=${expected} companion=${lib || 'missing'})`
+        '[package] FATAL: integrated kernel is not CDP-ready for RPA/Local API' +
+          ` (seed=${expected} companion=${lib || 'missing'})`
       );
     }
   } else {
@@ -317,7 +326,9 @@ function assertKernelPackagePolicy(resourceApp) {
   }
   if (shipCft) {
     if (!cft) {
-      throw new Error('[package] FATAL: Linux package missing Chrome for Testing under kernels/chrome-for-testing/chrome-linux64');
+      throw new Error(
+        '[package] FATAL: Linux package missing Chrome for Testing under kernels/chrome-for-testing/chrome-linux64'
+      );
     }
     try {
       fs.accessSync(cft.binary, fs.constants.X_OK);
@@ -325,7 +336,9 @@ function assertKernelPackagePolicy(resourceApp) {
       throw new Error(`[package] FATAL: Linux Chrome for Testing is not executable: ${cft.binary}`);
     }
   } else if (fs.existsSync(path.join(kernelsDir, 'chrome-for-testing'))) {
-    throw new Error('[package] FATAL: Chrome for Testing present on a package without the Linux kernel variant');
+    throw new Error(
+      '[package] FATAL: Chrome for Testing present on a package without the Linux kernel variant'
+    );
   }
 }
 
@@ -343,24 +356,47 @@ function copyAppResources(resourceApp) {
     const path = require('path');
     const kernels = path.join(root, 'kernels');
     if (!fs.existsSync(kernels)) return;
-    const kill = (file) => { try { fs.rmSync(file, { recursive: true, force: true }); } catch (_) {} };
+    const kill = (file) => {
+      try {
+        fs.rmSync(file, { recursive: true, force: true });
+      } catch (_) {}
+    };
     kill(path.join(kernels, 'README.md'));
     const walk = (dir) => {
-      let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch (_) {
+        return;
+      }
       for (const ent of entries) {
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) walk(full);
-        else if (/readme\.md$/i.test(ent.name) || /\.orig$/i.test(ent.name) || /unlock/i.test(ent.name) || /^OPENBROWSER_/i.test(ent.name)) kill(full);
+        else if (
+          /readme\.md$/i.test(ent.name) ||
+          /\.orig$/i.test(ent.name) ||
+          /unlock/i.test(ent.name) ||
+          /^OPENBROWSER_/i.test(ent.name)
+        )
+          kill(full);
       }
     };
     walk(kernels);
   })(resourceApp);
 
-  console.log('[package] kernel policy: openbrowser-148=' + shouldShipOpenBrowser148Kernel()
-    + ' integrated-kernel=' + shouldShipIntegratedWayfern()
-    + ' chrome-for-testing=' + shouldShipChromeForTesting()
-    + ' auto-download=false'
-    + ' arch=' + packageArch + ' platform=' + process.platform);
+  console.log(
+    '[package] kernel policy: openbrowser-148=' +
+      shouldShipOpenBrowser148Kernel() +
+      ' integrated-kernel=' +
+      shouldShipIntegratedWayfern() +
+      ' chrome-for-testing=' +
+      shouldShipChromeForTesting() +
+      ' auto-download=false' +
+      ' arch=' +
+      packageArch +
+      ' platform=' +
+      process.platform
+  );
   assertKernelPackagePolicy(resourceApp);
 }
 
@@ -380,47 +416,50 @@ function packageWindowsInstaller(packageRoot) {
   const installDir = '$LOCALAPPDATA\\OpenBrowser';
   // Integrated kernels make the payload multi-hundred-MB. SOLID lzma often hits
   // NSIS "error mmapping datablock" on CI runners; zlib is larger but reliable.
-  writeText(script, [
-    '!include "MUI2.nsh"',
-    'Name "OpenBrowser"',
-    `OutFile "${nsisPath(output)}"`,
-    `InstallDir "${installDir}"`,
-    'RequestExecutionLevel user',
-    'Unicode true',
-    'SetCompressor /FINAL zlib',
-    'SetDatablockOptimize off',
-    '!define MUI_ABORTWARNING',
-    '!insertmacro MUI_PAGE_WELCOME',
-    '!insertmacro MUI_PAGE_DIRECTORY',
-    '!insertmacro MUI_PAGE_INSTFILES',
-    '!insertmacro MUI_PAGE_FINISH',
-    '!insertmacro MUI_LANGUAGE "English"',
-    'Section "OpenBrowser" SEC_MAIN',
-    '  SetOutPath "$INSTDIR"',
-    `  File /r "${installSource}"`,
-    '  CreateDirectory "$SMPROGRAMS\\OpenBrowser"',
-    '  CreateShortCut "$SMPROGRAMS\\OpenBrowser\\OpenBrowser.lnk" "$INSTDIR\\runtime\\OpenBrowser.exe" "" "$INSTDIR\\runtime\\OpenBrowser.exe" 0',
-    '  CreateShortCut "$DESKTOP\\OpenBrowser.lnk" "$INSTDIR\\runtime\\OpenBrowser.exe" "" "$INSTDIR\\runtime\\OpenBrowser.exe" 0',
-    '  WriteUninstaller "$INSTDIR\\Uninstall.exe"',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayName" "OpenBrowser"',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "UninstallString" \'"$INSTDIR\\Uninstall.exe"\'',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "QuietUninstallString" \'"$INSTDIR\\Uninstall.exe" /S\'',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "InstallLocation" "$INSTDIR"',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayIcon" "$INSTDIR\\runtime\\OpenBrowser.exe,0"',
-    '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "Publisher" "OpenBrowser"',
-    `  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayVersion" "${appVersion}"`,
-    '  WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "NoModify" 1',
-    '  WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "NoRepair" 1',
-    'SectionEnd',
-    'Section "Uninstall"',
-    '  DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser"',
-    '  Delete "$SMPROGRAMS\\OpenBrowser\\OpenBrowser.lnk"',
-    '  RMDir "$SMPROGRAMS\\OpenBrowser"',
-    '  Delete "$DESKTOP\\OpenBrowser.lnk"',
-    '  RMDir /r "$INSTDIR"',
-    'SectionEnd',
-    '',
-  ].join('\r\n'));
+  writeText(
+    script,
+    [
+      '!include "MUI2.nsh"',
+      'Name "OpenBrowser"',
+      `OutFile "${nsisPath(output)}"`,
+      `InstallDir "${installDir}"`,
+      'RequestExecutionLevel user',
+      'Unicode true',
+      'SetCompressor /FINAL zlib',
+      'SetDatablockOptimize off',
+      '!define MUI_ABORTWARNING',
+      '!insertmacro MUI_PAGE_WELCOME',
+      '!insertmacro MUI_PAGE_DIRECTORY',
+      '!insertmacro MUI_PAGE_INSTFILES',
+      '!insertmacro MUI_PAGE_FINISH',
+      '!insertmacro MUI_LANGUAGE "English"',
+      'Section "OpenBrowser" SEC_MAIN',
+      '  SetOutPath "$INSTDIR"',
+      `  File /r "${installSource}"`,
+      '  CreateDirectory "$SMPROGRAMS\\OpenBrowser"',
+      '  CreateShortCut "$SMPROGRAMS\\OpenBrowser\\OpenBrowser.lnk" "$INSTDIR\\runtime\\OpenBrowser.exe" "" "$INSTDIR\\runtime\\OpenBrowser.exe" 0',
+      '  CreateShortCut "$DESKTOP\\OpenBrowser.lnk" "$INSTDIR\\runtime\\OpenBrowser.exe" "" "$INSTDIR\\runtime\\OpenBrowser.exe" 0',
+      '  WriteUninstaller "$INSTDIR\\Uninstall.exe"',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayName" "OpenBrowser"',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "UninstallString" \'"$INSTDIR\\Uninstall.exe"\'',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "QuietUninstallString" \'"$INSTDIR\\Uninstall.exe" /S\'',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "InstallLocation" "$INSTDIR"',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayIcon" "$INSTDIR\\runtime\\OpenBrowser.exe,0"',
+      '  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "Publisher" "OpenBrowser"',
+      `  WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "DisplayVersion" "${appVersion}"`,
+      '  WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "NoModify" 1',
+      '  WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser" "NoRepair" 1',
+      'SectionEnd',
+      'Section "Uninstall"',
+      '  DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenBrowser"',
+      '  Delete "$SMPROGRAMS\\OpenBrowser\\OpenBrowser.lnk"',
+      '  RMDir "$SMPROGRAMS\\OpenBrowser"',
+      '  Delete "$DESKTOP\\OpenBrowser.lnk"',
+      '  RMDir /r "$INSTDIR"',
+      'SectionEnd',
+      '',
+    ].join('\r\n')
+  );
   try {
     run('makensis', ['/V2', script]);
   } catch (error) {
@@ -456,7 +495,11 @@ function packageWindows() {
   const mainExe = path.join(runtimeRoot, 'OpenBrowser.exe');
   const copiedHostExe = path.join(runtimeRoot, path.basename(hostExe));
   fs.renameSync(copiedHostExe, mainExe);
-  run(process.execPath, [path.join(__dirname, 'brand-exe.mjs'), mainExe, path.join(appRoot, 'assets', 'logo.ico')]);
+  run(process.execPath, [
+    path.join(__dirname, 'brand-exe.mjs'),
+    mainExe,
+    path.join(appRoot, 'assets', 'logo.ico'),
+  ]);
 
   copyAppResources(resourceApp);
 
@@ -468,44 +511,54 @@ function packageWindows() {
   const notice = path.join(appRoot, 'THIRD-PARTY-NOTICES.md');
   if (fs.existsSync(notice)) fs.copyFileSync(notice, path.join(packageRoot, 'THIRD-PARTY-NOTICES.md'));
 
-  writeText(path.join(packageRoot, 'START.cmd'), [
-    '@echo off',
-    'setlocal',
-    'chcp 65001 >nul',
-    // Prefer the branded host; fall back only if rename failed in packaging.
-    'if exist "%~dp0runtime\\OpenBrowser.exe" (',
-    '  start "" "%~dp0runtime\\OpenBrowser.exe"',
-    '  exit /b 0',
-    ')',
-    'for %%F in ("%~dp0runtime\\*.exe") do (',
-    '  start "" "%%~fF"',
-    '  exit /b 0',
-    ')',
-    'echo Runtime executable was not found.',
-    'pause',
-    'exit /b 1',
-    '',
-  ].join('\r\n'));
+  writeText(
+    path.join(packageRoot, 'START.cmd'),
+    [
+      '@echo off',
+      'setlocal',
+      'chcp 65001 >nul',
+      // Prefer the branded host; fall back only if rename failed in packaging.
+      'if exist "%~dp0runtime\\OpenBrowser.exe" (',
+      '  start "" "%~dp0runtime\\OpenBrowser.exe"',
+      '  exit /b 0',
+      ')',
+      'for %%F in ("%~dp0runtime\\*.exe") do (',
+      '  start "" "%%~fF"',
+      '  exit /b 0',
+      ')',
+      'echo Runtime executable was not found.',
+      'pause',
+      'exit /b 1',
+      '',
+    ].join('\r\n')
+  );
 
-  writeText(path.join(packageRoot, '运行说明.txt'), [
-    'OpenBrowser Windows 便携版',
-    '',
-    '1. 解压完整压缩包，不要只复制单个 EXE。',
-    '2. 双击 START.cmd 启动。',
-    '3. 本目录 runtime 内含 OpenBrowser 桌面主机与 Chromium 组件。',
-    bundleKernelVariantEnabled()
-      ? '4. 本 Windows x64 包已内置独立内核（kernels/windows-x64）；运行时不再自动下载内核。默认不会回退本机浏览器，如需回退请在“本地设置”手动选择并开启。'
-      : '4. 本 Windows x64 包未启用内核变体；请使用包含内置内核的正式安装包，或在“本地设置”选择自定义 Chromium。运行时不会自动下载内核。',
-    '5. 环境数据默认保存在当前 Windows 用户的 AppData\\Roaming\\openbrowser 中；也可在“本地设置”修改。',
-    '6. 请勿把 Cookies、代理密码或浏览器 Profile 上传到 GitHub。',
-    '',
-    '本便携包不包含任何第三方商业浏览器二进制。',
-    '',
-  ].join('\r\n'));
+  writeText(
+    path.join(packageRoot, '运行说明.txt'),
+    [
+      'OpenBrowser Windows 便携版',
+      '',
+      '1. 解压完整压缩包，不要只复制单个 EXE。',
+      '2. 双击 START.cmd 启动。',
+      '3. 本目录 runtime 内含 OpenBrowser 桌面主机与 Chromium 组件。',
+      bundleKernelVariantEnabled()
+        ? '4. 本 Windows x64 包已内置独立内核（kernels/windows-x64）；运行时不再自动下载内核。默认不会回退本机浏览器，如需回退请在“本地设置”手动选择并开启。'
+        : '4. 本 Windows x64 包未启用内核变体；请使用包含内置内核的正式安装包，或在“本地设置”选择自定义 Chromium。运行时不会自动下载内核。',
+      '5. 环境数据默认保存在当前 Windows 用户的 AppData\\Roaming\\openbrowser 中；也可在“本地设置”修改。',
+      '6. 请勿把 Cookies、代理密码或浏览器 Profile 上传到 GitHub。',
+      '',
+      '本便携包不包含任何第三方商业浏览器二进制。',
+      '',
+    ].join('\r\n')
+  );
 
   const zip = path.join(distRoot, `${packageArtifactStem()}.zip`);
   removeIfExists(zip);
-  run('powershell', ['-NoProfile', '-Command', `Compress-Archive -LiteralPath '${packageRoot.replace(/'/g, "''")}' -DestinationPath '${zip.replace(/'/g, "''")}' -CompressionLevel Optimal`]);
+  run('powershell', [
+    '-NoProfile',
+    '-Command',
+    `Compress-Archive -LiteralPath '${packageRoot.replace(/'/g, "''")}' -DestinationPath '${zip.replace(/'/g, "''")}' -CompressionLevel Optimal`,
+  ]);
   console.log('便携版压缩包：' + zip);
   try {
     packageWindowsInstaller(packageRoot);
@@ -559,7 +612,9 @@ function packageLinux() {
   if (bundleKernelVariantEnabled()) {
     const kernel = path.join(appRoot, 'kernels', 'chrome-for-testing', 'chrome-linux64', 'chrome');
     if (!fs.existsSync(kernel)) {
-      throw new Error('Linux kernel seed missing. Run npm run prepare:linux-kernel before npm run package:portable.');
+      throw new Error(
+        'Linux kernel seed missing. Run npm run prepare:linux-kernel before npm run package:portable.'
+      );
     }
     run(process.execPath, [path.join(__dirname, 'prepare-bundled-kernel.js')]);
   }
@@ -575,7 +630,8 @@ function packageLinux() {
 
   const mainBinary = path.join(runtimeRoot, 'OpenBrowser');
   const copiedHostBinary = path.join(runtimeRoot, path.basename(hostBinary));
-  if (path.resolve(copiedHostBinary) !== path.resolve(mainBinary)) fs.renameSync(copiedHostBinary, mainBinary);
+  if (path.resolve(copiedHostBinary) !== path.resolve(mainBinary))
+    fs.renameSync(copiedHostBinary, mainBinary);
   fs.chmodSync(mainBinary, 0o755);
   copyAppResources(resourceApp);
 
@@ -588,26 +644,32 @@ function packageLinux() {
   if (fs.existsSync(notice)) fs.copyFileSync(notice, path.join(packageRoot, 'THIRD-PARTY-NOTICES.md'));
 
   const launcher = path.join(packageRoot, 'OpenBrowser');
-  writeText(launcher, [
-    '#!/bin/sh',
-    'set -eu',
-    'ROOT="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"',
-    'exec "$ROOT/runtime/OpenBrowser" "$@"',
-    '',
-  ].join('\n'));
+  writeText(
+    launcher,
+    [
+      '#!/bin/sh',
+      'set -eu',
+      'ROOT="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"',
+      'exec "$ROOT/runtime/OpenBrowser" "$@"',
+      '',
+    ].join('\n')
+  );
   fs.chmodSync(launcher, 0o755);
-  writeText(path.join(packageRoot, 'README-Ubuntu.txt'), [
-    'OpenBrowser Ubuntu x86_64 portable package',
-    '',
-    '1. Extract the complete tar.gz archive and run ./OpenBrowser as a normal desktop user.',
-    '2. Do not run as root or via sudo: profile data belongs to the desktop user.',
-    '3. This package includes Chrome for Testing under kernels/chrome-for-testing/chrome-linux64; it never downloads a browser kernel at runtime.',
-    '4. Ubuntu desktop dependencies (install when missing):',
-    '   sudo apt-get install libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2',
-    '5. If audio support is missing, install libasound2 (Ubuntu 22.04) or libasound2t64 (Ubuntu 24.04+).',
-    '6. Native Chrome UI input mirroring is Windows-only; Ubuntu uses CDP page synchronization.',
-    '',
-  ].join('\n'));
+  writeText(
+    path.join(packageRoot, 'README-Ubuntu.txt'),
+    [
+      'OpenBrowser Ubuntu x86_64 portable package',
+      '',
+      '1. Extract the complete tar.gz archive and run ./OpenBrowser as a normal desktop user.',
+      '2. Do not run as root or via sudo: profile data belongs to the desktop user.',
+      '3. This package includes Chrome for Testing under kernels/chrome-for-testing/chrome-linux64; it never downloads a browser kernel at runtime.',
+      '4. Ubuntu desktop dependencies (install when missing):',
+      '   sudo apt-get install libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2',
+      '5. If audio support is missing, install libasound2 (Ubuntu 22.04) or libasound2t64 (Ubuntu 24.04+).',
+      '6. Native Chrome UI input mirroring is Windows-only; Ubuntu uses CDP page synchronization.',
+      '',
+    ].join('\n')
+  );
 
   const archive = path.join(distRoot, `${packageArtifactStem()}.tar.gz`);
   removeIfExists(archive);
@@ -644,15 +706,39 @@ function packageMac() {
   if (fs.existsSync(infoPlist)) {
     let plist = fs.readFileSync(infoPlist, 'utf8');
     plist = plist
-      .replace(/<key>CFBundleDisplayName<\/key>\s*<string>[^<]*<\/string>/, '<key>CFBundleDisplayName</key>\n\t<string>OpenBrowser</string>')
-      .replace(/<key>CFBundleName<\/key>\s*<string>[^<]*<\/string>/, '<key>CFBundleName</key>\n\t<string>OpenBrowser</string>')
-      .replace(/<key>CFBundleExecutable<\/key>\s*<string>[^<]*<\/string>/, '<key>CFBundleExecutable</key>\n\t<string>OpenBrowser</string>')
-      .replace(/<key>CFBundleIdentifier<\/key>\s*<string>[^<]*<\/string>/, '<key>CFBundleIdentifier</key>\n\t<string>com.openbrowser.app</string>')
-      .replace(/<key>CFBundleIconFile<\/key>\s*<string>[^<]*<\/string>/, '<key>CFBundleIconFile</key>\n\t<string>logo</string>')
-      .replace(/<key>CFBundleShortVersionString<\/key>\s*<string>[^<]*<\/string>/, `<key>CFBundleShortVersionString</key>\n\t<string>${productVersion}</string>`)
-      .replace(/<key>CFBundleVersion<\/key>\s*<string>[^<]*<\/string>/, `<key>CFBundleVersion</key>\n\t<string>${productVersion}</string>`);
+      .replace(
+        /<key>CFBundleDisplayName<\/key>\s*<string>[^<]*<\/string>/,
+        '<key>CFBundleDisplayName</key>\n\t<string>OpenBrowser</string>'
+      )
+      .replace(
+        /<key>CFBundleName<\/key>\s*<string>[^<]*<\/string>/,
+        '<key>CFBundleName</key>\n\t<string>OpenBrowser</string>'
+      )
+      .replace(
+        /<key>CFBundleExecutable<\/key>\s*<string>[^<]*<\/string>/,
+        '<key>CFBundleExecutable</key>\n\t<string>OpenBrowser</string>'
+      )
+      .replace(
+        /<key>CFBundleIdentifier<\/key>\s*<string>[^<]*<\/string>/,
+        '<key>CFBundleIdentifier</key>\n\t<string>com.openbrowser.app</string>'
+      )
+      .replace(
+        /<key>CFBundleIconFile<\/key>\s*<string>[^<]*<\/string>/,
+        '<key>CFBundleIconFile</key>\n\t<string>logo</string>'
+      )
+      .replace(
+        /<key>CFBundleShortVersionString<\/key>\s*<string>[^<]*<\/string>/,
+        `<key>CFBundleShortVersionString</key>\n\t<string>${productVersion}</string>`
+      )
+      .replace(
+        /<key>CFBundleVersion<\/key>\s*<string>[^<]*<\/string>/,
+        `<key>CFBundleVersion</key>\n\t<string>${productVersion}</string>`
+      );
     if (!plist.includes('CFBundleIconFile')) {
-      plist = plist.replace('</dict>\n</plist>', '\t<key>CFBundleIconFile</key>\n\t<string>logo</string>\n</dict>\n</plist>');
+      plist = plist.replace(
+        '</dict>\n</plist>',
+        '\t<key>CFBundleIconFile</key>\n\t<string>logo</string>\n</dict>\n</plist>'
+      );
     }
     fs.writeFileSync(infoPlist, plist, 'utf8');
   }
@@ -678,56 +764,75 @@ function packageMac() {
   const notice = path.join(appRoot, 'THIRD-PARTY-NOTICES.md');
   if (fs.existsSync(notice)) fs.copyFileSync(notice, path.join(packageRoot, 'THIRD-PARTY-NOTICES.md'));
 
-  writeText(path.join(packageRoot, '启动.command'), [
-    '#!/bin/bash',
-    'set -euo pipefail',
-    'cd "$(dirname "$0")"',
-    'APP="./OpenBrowser.app"',
-    'if [ ! -d "$APP" ]; then',
-    '  echo "未找到 OpenBrowser.app"',
-    '  exit 1',
-    'fi',
-    '# Clear quarantine from browser-downloaded copies (common "无法打开/已损坏" cause).',
-    'xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true',
-    'xattr -dr com.apple.quarantine "$0" 2>/dev/null || true',
-    'open "$APP"',
-    '',
-  ].join('\n'));
+  writeText(
+    path.join(packageRoot, '启动.command'),
+    [
+      '#!/bin/bash',
+      'set -euo pipefail',
+      'cd "$(dirname "$0")"',
+      'APP="./OpenBrowser.app"',
+      'if [ ! -d "$APP" ]; then',
+      '  echo "未找到 OpenBrowser.app"',
+      '  exit 1',
+      'fi',
+      '# Clear quarantine from browser-downloaded copies (common "无法打开/已损坏" cause).',
+      'xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true',
+      'xattr -dr com.apple.quarantine "$0" 2>/dev/null || true',
+      'open "$APP"',
+      '',
+    ].join('\n')
+  );
   fs.chmodSync(path.join(packageRoot, '启动.command'), 0o755);
   if (fs.existsSync(appBinary)) fs.chmodSync(appBinary, 0o755);
 
   // Must re-sign AFTER Info.plist / Resources mutations, otherwise Apple Silicon Gatekeeper rejects the app.
   signMacAppBundle(appBundle);
 
-  const kernelNote = packageArch === 'x86_64'
-    ? '3. 本包（macOS x86_64 / Intel）已内置 OpenBrowser 148 独立内核（kernels/macos-x64）；运行时不再自动下载内核。'
-    : bundleKernelVariantEnabled()
-      ? '3. 本包（macOS arm64）已内置独立内核（kernels/macos-arm64）；运行时不再自动下载内核。'
-      : '3. 本包（macOS arm64）未启用内核变体；请使用包含内置内核的正式安装包，或在“本地设置”选择自定义 Chromium。运行时不会自动下载内核。';
-  writeText(path.join(packageRoot, '运行说明.txt'), [
-    'OpenBrowser macOS 版（' + packageArch + '）',
-    '',
-    '1. 推荐双击“启动.command”（会自动清除隔离属性），或把 OpenBrowser.app 拖到“应用程序”后再打开。',
-    '2. 若提示“已损坏/无法打开”：',
-    '   a) 先运行“启动.command”',
-    '   b) 或在终端执行：xattr -dr com.apple.quarantine "/Applications/OpenBrowser.app"',
-    '   c) 或：右键 OpenBrowser.app → 打开 → 仍要打开',
-    '   d) 系统设置 → 隐私与安全性 → 仍要打开',
-    kernelNote,
-    '4. 默认不会自动回退到本机浏览器；如需回退，请在“本地设置”手动选择浏览器并开启。',
-    '5. 环境数据默认保存在 ~/Library/Application Support/openbrowser。',
-    '6. 窗口同步在 macOS 使用 CDP 页面同步 + 全局快捷键；Chrome 原生 UI（地址栏/标签栏）的原生输入镜像仅 Windows 可用。',
-    '7. 请勿把 Cookies、代理密码或浏览器 Profile 上传到 GitHub。',
-    '',
-  ].join('\n'));
+  const kernelNote =
+    packageArch === 'x86_64'
+      ? '3. 本包（macOS x86_64 / Intel）已内置 OpenBrowser 148 独立内核（kernels/macos-x64）；运行时不再自动下载内核。'
+      : bundleKernelVariantEnabled()
+        ? '3. 本包（macOS arm64）已内置独立内核（kernels/macos-arm64）；运行时不再自动下载内核。'
+        : '3. 本包（macOS arm64）未启用内核变体；请使用包含内置内核的正式安装包，或在“本地设置”选择自定义 Chromium。运行时不会自动下载内核。';
+  writeText(
+    path.join(packageRoot, '运行说明.txt'),
+    [
+      'OpenBrowser macOS 版（' + packageArch + '）',
+      '',
+      '1. 推荐双击“启动.command”（会自动清除隔离属性），或把 OpenBrowser.app 拖到“应用程序”后再打开。',
+      '2. 若提示“已损坏/无法打开”：',
+      '   a) 先运行“启动.command”',
+      '   b) 或在终端执行：xattr -dr com.apple.quarantine "/Applications/OpenBrowser.app"',
+      '   c) 或：右键 OpenBrowser.app → 打开 → 仍要打开',
+      '   d) 系统设置 → 隐私与安全性 → 仍要打开',
+      kernelNote,
+      '4. 默认不会自动回退到本机浏览器；如需回退，请在“本地设置”手动选择浏览器并开启。',
+      '5. 环境数据默认保存在 ~/Library/Application Support/openbrowser。',
+      '6. 窗口同步在 macOS 使用 CDP 页面同步 + 全局快捷键；Chrome 原生 UI（地址栏/标签栏）的原生输入镜像仅 Windows 可用。',
+      '7. 请勿把 Cookies、代理密码或浏览器 Profile 上传到 GitHub。',
+      '',
+    ].join('\n')
+  );
 
   const dmg = path.join(distRoot, `${packageArtifactStem()}.dmg`);
   removeIfExists(dmg);
-  const dmgFormat = String(process.env.OPENBROWSER_MAC_DMG_FORMAT || 'UDZO').trim().toUpperCase();
+  const dmgFormat = String(process.env.OPENBROWSER_MAC_DMG_FORMAT || 'UDZO')
+    .trim()
+    .toUpperCase();
   if (!['UDZO', 'ULMO'].includes(dmgFormat)) {
     throw new Error(`Unsupported macOS DMG format: ${dmgFormat}`);
   }
-  run('hdiutil', ['create', '-volname', 'OpenBrowser', '-srcfolder', packageRoot, '-ov', '-format', dmgFormat, dmg]);
+  run('hdiutil', [
+    'create',
+    '-volname',
+    'OpenBrowser',
+    '-srcfolder',
+    packageRoot,
+    '-ov',
+    '-format',
+    dmgFormat,
+    dmg,
+  ]);
   console.log('macOS 安装映像：' + dmg);
   console.log('macOS 打包目录：' + packageRoot);
   console.log('主机：' + os.platform() + ' ' + os.arch());

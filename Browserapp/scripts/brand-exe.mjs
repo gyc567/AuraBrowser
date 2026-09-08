@@ -11,10 +11,10 @@ await rcedit(exePath, {
     FileDescription: 'OpenBrowser',
     CompanyName: 'OpenBrowser 开源项目',
     LegalCopyright: 'AGPL-3.0-or-later',
-    OriginalFilename: 'OpenBrowser.exe'
+    OriginalFilename: 'OpenBrowser.exe',
   },
   'file-version': '1.0.4.0',
   'product-version': '1.0.4.0',
   icon: iconPath,
-  'requested-execution-level': 'asInvoker'
+  'requested-execution-level': 'asInvoker',
 });

@@ -15,7 +15,14 @@ const os = require('os');
 function defaultLogPath() {
   if (process.env.OPENBROWSER_FP_LOG) return String(process.env.OPENBROWSER_FP_LOG);
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'openbrowser', 'logs', 'fingerprint-inject.log');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'openbrowser',
+      'logs',
+      'fingerprint-inject.log'
+    );
   }
   if (process.platform === 'win32') {
     const base = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
@@ -66,11 +73,12 @@ function summarizeFp(fp = {}) {
 }
 
 async function fpLog(event, payload = {}) {
-  const line = JSON.stringify({
-    ts: new Date().toISOString(),
-    event: String(event || 'log'),
-    ...payload,
-  }) + '\n';
+  const line =
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      event: String(event || 'log'),
+      ...payload,
+    }) + '\n';
   const primary = logPath();
   try {
     await fsp.mkdir(path.dirname(primary), { recursive: true });
@@ -85,7 +93,9 @@ async function fpLog(event, payload = {}) {
           await fsp.unlink(primary).catch(() => {});
           await fsp.writeFile(primary, line, { encoding: 'utf8', mode: 0o644 });
           return;
-        } catch (_) { /* fall through */ }
+        } catch (_) {
+          /* fall through */
+        }
       }
       throw err;
     }
@@ -95,12 +105,16 @@ async function fpLog(event, payload = {}) {
       await fsp.appendFile(FALLBACK_LOG, line, 'utf8');
       if (writeFailCount <= 3) {
         try {
-          await fsp.appendFile(FALLBACK_LOG, JSON.stringify({
-            ts: new Date().toISOString(),
-            event: 'log.fallback',
-            primary,
-            fallback: FALLBACK_LOG,
-          }) + '\n', 'utf8');
+          await fsp.appendFile(
+            FALLBACK_LOG,
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              event: 'log.fallback',
+              primary,
+              fallback: FALLBACK_LOG,
+            }) + '\n',
+            'utf8'
+          );
         } catch (__) {}
       }
     } catch (__) {

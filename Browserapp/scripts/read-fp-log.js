@@ -33,7 +33,9 @@ function main() {
   const slice = lines.slice(-tail);
   for (const line of slice) {
     let row;
-    try { row = JSON.parse(line); } catch (_) {
+    try {
+      row = JSON.parse(line);
+    } catch (_) {
       console.log(line);
       continue;
     }

@@ -51,7 +51,10 @@ const MOUSE_ACTION = Object.freeze({
 function parseOperateList(operate) {
   if (Array.isArray(operate)) return operate.map(String);
   if (!operate) return ['click', 'move', 'scroll', 'keyboard'];
-  return String(operate).split(',').map((s) => s.trim()).filter(Boolean);
+  return String(operate)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function shouldHandle(operateList, eventKind) {
@@ -86,34 +89,53 @@ function translateToStandardCdp(command, params = {}) {
       return [{ method: 'Input.dispatchMouseEvent', params: { type: 'mouseMoved', x: sx, y: sy } }];
     }
     if (action === MOUSE_ACTION.DOWN || action === 1) {
-      return [{ method: 'Input.dispatchMouseEvent', params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 } }];
+      return [
+        {
+          method: 'Input.dispatchMouseEvent',
+          params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 },
+        },
+      ];
     }
     if (action === MOUSE_ACTION.UP || action === 2 || action === MOUSE_ACTION.CLICK_SAVE || action === 3) {
       // full click if only release/save action
       return [
-        { method: 'Input.dispatchMouseEvent', params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 } },
-        { method: 'Input.dispatchMouseEvent', params: { type: 'mouseReleased', x: sx, y: sy, button: 'left', clickCount: 1 } },
+        {
+          method: 'Input.dispatchMouseEvent',
+          params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 },
+        },
+        {
+          method: 'Input.dispatchMouseEvent',
+          params: { type: 'mouseReleased', x: sx, y: sy, button: 'left', clickCount: 1 },
+        },
       ];
     }
     // default: click
     return [
       { method: 'Input.dispatchMouseEvent', params: { type: 'mouseMoved', x: sx, y: sy } },
-      { method: 'Input.dispatchMouseEvent', params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 } },
-      { method: 'Input.dispatchMouseEvent', params: { type: 'mouseReleased', x: sx, y: sy, button: 'left', clickCount: 1 } },
+      {
+        method: 'Input.dispatchMouseEvent',
+        params: { type: 'mousePressed', x: sx, y: sy, button: 'left', clickCount: 1 },
+      },
+      {
+        method: 'Input.dispatchMouseEvent',
+        params: { type: 'mouseReleased', x: sx, y: sy, button: 'left', clickCount: 1 },
+      },
     ];
   }
 
   if (method === 'Browser.scroll' || method === 'Browser.scrollHeadBox') {
-    return [{
-      method: 'Input.dispatchMouseEvent',
-      params: {
-        type: 'mouseWheel',
-        x: Number(p.x) || 0,
-        y: Number(p.y) || 0,
-        deltaX: Number(p.dX ?? p.deltaX ?? 0),
-        deltaY: Number(p.dY ?? p.deltaY ?? 0),
+    return [
+      {
+        method: 'Input.dispatchMouseEvent',
+        params: {
+          type: 'mouseWheel',
+          x: Number(p.x) || 0,
+          y: Number(p.y) || 0,
+          deltaX: Number(p.dX ?? p.deltaX ?? 0),
+          deltaY: Number(p.dY ?? p.deltaY ?? 0),
+        },
       },
-    }];
+    ];
   }
 
   if (method === 'Browser.keyboard' || method === 'Browser.keyboard_toheadbox') {
@@ -211,7 +233,11 @@ function buildFanoutPlan(masterEvent, options = {}) {
 
 /** operateRang range=1: cascade left = left + vs * abs(indexFromEnd) */
 function computeCascadeBounds(handles, options = {}) {
-  const ids = Array.isArray(handles) ? handles : String(handles || '').split(',').filter(Boolean);
+  const ids = Array.isArray(handles)
+    ? handles
+    : String(handles || '')
+        .split(',')
+        .filter(Boolean);
   const width = Number(options.width) || 1200;
   const height = Number(options.height) || 800;
   const top = Number(options.top) || 0;

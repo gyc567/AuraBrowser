@@ -31,38 +31,71 @@ function main() {
   assert.ok(injectPos < keepPos, 'applyRuntimeSettings must run before keepDefaultTab (welcome page race)');
   assert.ok(block.includes('Fingerprint inject BEFORE'), 'order comment present');
   // CLI must not open start page before CDP inject
-  assert.ok(engineSrc.includes("args.push('about:blank')"), 'spawn must use about:blank instead of startUrl on CLI');
-  assert.ok(engineSrc.includes('do NOT put the OpenBrowser start page') || engineSrc.includes('Do NOT put the OpenBrowser start page'), 'CLI startUrl deferral comment');
+  assert.ok(
+    engineSrc.includes("args.push('about:blank')"),
+    'spawn must use about:blank instead of startUrl on CLI'
+  );
+  assert.ok(
+    engineSrc.includes('do NOT put the OpenBrowser start page') ||
+      engineSrc.includes('Do NOT put the OpenBrowser start page'),
+    'CLI startUrl deferral comment'
+  );
   // re-inject after navigate
-  assert.ok(block.includes('start-page re-inject') || block.includes('appliedTargetIds: new Set()'), 're-inject after start page navigate');
+  assert.ok(
+    block.includes('start-page re-inject') || block.includes('appliedTargetIds: new Set()'),
+    're-inject after start page navigate'
+  );
 
   // applyFingerprintToTab enables Page domain
   const fpSrc = fs.readFileSync(path.join(__dirname, 'automation/fingerprint.js'), 'utf8');
-  assert.ok(fpSrc.includes("invoke('Page.enable'") || fpSrc.includes('Page.enable'), 'Page.enable required before addScript');
-  assert.ok(!/Runtime\.evaluate[\s\S]{0,80}\.catch\(\(\) => \{\}\)/.test(
-    fpSrc.slice(fpSrc.indexOf('async function applyFingerprintToTab'))
-  ), 'Runtime.evaluate must not swallow inject errors');
+  assert.ok(
+    fpSrc.includes("invoke('Page.enable'") || fpSrc.includes('Page.enable'),
+    'Page.enable required before addScript'
+  );
+  assert.ok(
+    !/Runtime\.evaluate[\s\S]{0,80}\.catch\(\(\) => \{\}\)/.test(
+      fpSrc.slice(fpSrc.indexOf('async function applyFingerprintToTab'))
+    ),
+    'Runtime.evaluate must not swallow inject errors'
+  );
 
   // --- start-page re-samples fingerprint after inject settle ---
   const tpl = fs.readFileSync(path.join(__dirname, 'automation/start-page-template.js'), 'utf8');
   // Assert the intent — the page re-samples several times while the inject settles — rather
   // than exact delays. Pinning literal milliseconds made this fail the moment the early
   // re-collect was retuned (350ms -> 450ms) even though the behaviour was still correct.
-  const recollectDelays = [...tpl.matchAll(/setTimeout\(function\(\)\{collectFingerprint\([^)]*\)\},(\d+)\)/g)]
+  const recollectDelays = [
+    ...tpl.matchAll(/setTimeout\(function\(\)\{collectFingerprint\([^)]*\)\},(\d+)\)/g),
+  ]
     .map((match) => Number(match[1]))
     .sort((a, b) => a - b);
-  assert.ok(recollectDelays.length >= 3, `welcome page must re-collect several times (found ${recollectDelays.length})`);
-  assert.ok(recollectDelays.some((ms) => ms > 0 && ms <= 600), `welcome page needs an early re-collect (got ${recollectDelays.join(',')})`);
-  assert.ok(recollectDelays.some((ms) => ms >= 1200), `welcome page needs a settled re-collect (got ${recollectDelays.join(',')})`);
+  assert.ok(
+    recollectDelays.length >= 3,
+    `welcome page must re-collect several times (found ${recollectDelays.length})`
+  );
+  assert.ok(
+    recollectDelays.some((ms) => ms > 0 && ms <= 600),
+    `welcome page needs an early re-collect (got ${recollectDelays.join(',')})`
+  );
+  assert.ok(
+    recollectDelays.some((ms) => ms >= 1200),
+    `welcome page needs a settled re-collect (got ${recollectDelays.join(',')})`
+  );
   assert.ok(tpl.includes('/api/fingerprint-report'), 'welcome page must POST samples to fingerprint-report');
 
   // --- registerSession merges expectedFingerprint from engine ---
   const serverSrc = fs.readFileSync(path.join(__dirname, 'automation/start-page-server.js'), 'utf8');
-  assert.ok(serverSrc.includes('extras.expectedFingerprint'), 'start-page server must accept full expected fingerprint');
+  assert.ok(
+    serverSrc.includes('extras.expectedFingerprint'),
+    'start-page server must accept full expected fingerprint'
+  );
   assert.ok(serverSrc.includes('webglVendor'), 'expectedFingerprint should include webglVendor');
 
   // --- buildStartPageUrl passes expectedFingerprint from buildFingerprint ---
-  assert.ok(engineSrc.includes('expectedFingerprint:'), 'engine buildStartPageUrl must pass expectedFingerprint');
+  assert.ok(
+    engineSrc.includes('expectedFingerprint:'),
+    'engine buildStartPageUrl must pass expectedFingerprint'
+  );
   assert.ok(engineSrc.includes('webglVendor:'), 'engine expected includes webgl vendor');
 
   // --- 148 native inject: pixel noise off, meta spoof on ---
@@ -83,15 +116,27 @@ function main() {
   assert.ok(stripped.webgl.vendor || stripped.webgl.renderer);
 
   const mainInject = buildInjectionScript(stripped);
-  assert.ok(mainInject.includes('0x9245') || mainInject.includes('UNMASKED_VENDOR'), 'main inject must patch WebGL UNMASKED_* even when mode=real');
-  assert.ok(mainInject.includes('metaMode') || mainInject.includes('CFG.webgl.vendor'), 'meta spoof path present');
+  assert.ok(
+    mainInject.includes('0x9245') || mainInject.includes('UNMASKED_VENDOR'),
+    'main inject must patch WebGL UNMASKED_* even when mode=real'
+  );
+  assert.ok(
+    mainInject.includes('metaMode') || mainInject.includes('CFG.webgl.vendor'),
+    'meta spoof path present'
+  );
 
   const workerInject = buildWorkerInjectionScript(stripped);
-  assert.ok(workerInject.includes('0x9245') || workerInject.includes('metaMode'), 'worker inject must keep meta spoof path');
+  assert.ok(
+    workerInject.includes('0x9245') || workerInject.includes('metaMode'),
+    'worker inject must keep meta spoof path'
+  );
 
   // init fields still map vendor for Framework
   const fields = mapFingerprintToInitFields(fp, { id: 'order-env-1', language: 'en-US' });
-  assert.ok(fields.webgl_vendor || fields.webgl_renderer, 'init.json still gets webgl strings from full fingerprint');
+  assert.ok(
+    fields.webgl_vendor || fields.webgl_renderer,
+    'init.json still gets webgl strings from full fingerprint'
+  );
 
   console.log('fingerprint-inject-order-selftest: ok');
 }

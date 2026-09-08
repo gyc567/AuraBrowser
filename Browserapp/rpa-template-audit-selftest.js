@@ -15,7 +15,11 @@ const { findUnsupportedSteps, parseProcessContent } = require('./automation/rpa-
 
 const applyFree = RpaStore.prototype.applyFreeTemplateInPlace; // uses no `this`
 let passed = 0;
-const ok = (n, c) => { assert.ok(c, n); console.log('  PASS  ' + n); passed += 1; };
+const ok = (n, c) => {
+  assert.ok(c, n);
+  console.log('  PASS  ' + n);
+  passed += 1;
+};
 
 // --- load shipped templates (catalog + builtin) ---
 const catalogRaw = fs.readFileSync(path.join(__dirname, 'automation/data/catalog-templates.json'), 'utf8');
@@ -23,23 +27,30 @@ const catalog = JSON.parse(catalogRaw).templates || [];
 let builtin = [];
 try {
   const b = require('./automation/rpa-templates-builtin.js');
-  builtin = b.BUILTIN_TEMPLATES || (typeof b.cloneBuiltinTemplates === 'function' ? b.cloneBuiltinTemplates() : []);
-} catch (e) { console.log('  (builtin load note: ' + e.message + ')'); }
+  builtin =
+    b.BUILTIN_TEMPLATES || (typeof b.cloneBuiltinTemplates === 'function' ? b.cloneBuiltinTemplates() : []);
+} catch (e) {
+  console.log('  (builtin load note: ' + e.message + ')');
+}
 const all = [...catalog, ...builtin];
 ok(`loaded shipped templates (${all.length})`, all.length > 0);
 
-const execSteps = (t) => (Array.isArray(t.steps) && t.steps.length)
-  ? t.steps
-  : (t.process_content ? parseProcessContent(t.process_content) : []);
+const execSteps = (t) =>
+  Array.isArray(t.steps) && t.steps.length
+    ? t.steps
+    : t.process_content
+      ? parseProcessContent(t.process_content)
+      : [];
 
 // --- 1. Runtime-error gate: no template uses an unsupported step type ---
 {
   const offenders = [];
   for (const t of all) {
     const un = findUnsupportedSteps(execSteps(t)) || [];
-    if (un.length) offenders.push(`${t.name || t.id}: ${[...new Set(un.map((u) => u.type || '(empty)'))].join(',')}`);
+    if (un.length)
+      offenders.push(`${t.name || t.id}: ${[...new Set(un.map((u) => u.type || '(empty)'))].join(',')}`);
   }
-  ok(`no unsupported step types across all templates (would throw at runtime)`, offenders.length === 0);
+  ok('no unsupported step types across all templates (would throw at runtime)', offenders.length === 0);
   if (offenders.length) offenders.slice(0, 10).forEach((o) => console.log('     ✗ ' + o));
 }
 
@@ -61,14 +72,18 @@ const execSteps = (t) => (Array.isArray(t.steps) && t.steps.length)
   const evil = { pay_type: 2, price: 99, tags: ['付费', 'VIP', '电商'], source: 'catalog', steps: [] };
   applyFree.call({}, evil);
   ok('sanitizer forces an injected paid template to free', evil.pay_type === 1 && evil.price === 0);
-  ok('sanitizer strips paid tags but keeps normal ones', !evil.tags.some((t) => /付费|VIP/i.test(t)) && evil.tags.includes('电商'));
+  ok(
+    'sanitizer strips paid tags but keeps normal ones',
+    !evil.tags.some((t) => /付费|VIP/i.test(t)) && evil.tags.includes('电商')
+  );
 }
 
 // --- 4. No hardcoded secrets / non-variable API keys in the shipped catalog ---
 {
   const skKeys = catalogRaw.match(/sk-[A-Za-z0-9]{16,}/g) || [];
   const hardApiKeys = [...catalogRaw.matchAll(/"apiKey"\s*:\s*"([^"]+)"/g)]
-    .map((m) => m[1]).filter((v) => v && !/^\$\{/.test(v));
+    .map((m) => m[1])
+    .filter((v) => v && !/^\$\{/.test(v));
   ok('no hardcoded sk- secrets in catalog', skKeys.length === 0);
   ok('no hardcoded (non-variable) apiKey defaults in catalog', hardApiKeys.length === 0);
 }
@@ -97,7 +112,10 @@ const execSteps = (t) => (Array.isArray(t.steps) && t.steps.length)
       if (blob.includes(feat) && !marker.test(desc)) missing.push(`${t.name || t.id} (${feat})`);
     }
   }
-  ok('every config-requiring template (getOpenAI/get2faCode/googleSheet) has a desc hint', missing.length === 0);
+  ok(
+    'every config-requiring template (getOpenAI/get2faCode/googleSheet) has a desc hint',
+    missing.length === 0
+  );
   if (missing.length) missing.slice(0, 10).forEach((m) => console.log('     ✗ missing hint: ' + m));
 }
 

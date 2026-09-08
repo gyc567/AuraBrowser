@@ -11,36 +11,43 @@ async function main() {
   const filePath = path.join(directory, 'proxy-library.json');
 
   try {
-    await fs.writeFile(filePath, JSON.stringify({
-      version: 1,
-      items: [
+    await fs.writeFile(
+      filePath,
+      JSON.stringify(
         {
-          id: 'encoded-auth',
-          name: 'Encoded auth',
-          raw: 'socks5://user%40mail:p%3Aa%2Fss%25@proxy.test:1080',
-          username: '',
-          password: '',
-          create_time: '2026-01-01T00:00:00.000Z',
-          update_time: '2026-01-02T00:00:00.000Z',
+          version: 1,
+          items: [
+            {
+              id: 'encoded-auth',
+              name: 'Encoded auth',
+              raw: 'socks5://user%40mail:p%3Aa%2Fss%25@proxy.test:1080',
+              username: '',
+              password: '',
+              create_time: '2026-01-01T00:00:00.000Z',
+              update_time: '2026-01-02T00:00:00.000Z',
+            },
+            {
+              id: 'legacy-fields',
+              name: 'Legacy fields',
+              proxy_type: 'http',
+              proxy_host: 'legacy.test',
+              proxy_port: '3128',
+              proxy_user: 'legacy-user',
+              proxy_password: 'legacy-pass',
+            },
+            {
+              id: 'split-auth',
+              name: 'Split auth',
+              raw: 'socks5://split.test:1080',
+              username: 'split-user',
+              password: 'split-pass',
+            },
+          ],
         },
-        {
-          id: 'legacy-fields',
-          name: 'Legacy fields',
-          proxy_type: 'http',
-          proxy_host: 'legacy.test',
-          proxy_port: '3128',
-          proxy_user: 'legacy-user',
-          proxy_password: 'legacy-pass',
-        },
-        {
-          id: 'split-auth',
-          name: 'Split auth',
-          raw: 'socks5://split.test:1080',
-          username: 'split-user',
-          password: 'split-pass',
-        },
-      ],
-    }, null, 2));
+        null,
+        2
+      )
+    );
 
     const store = new ProxyStore(filePath);
     await store.load();
@@ -95,14 +102,22 @@ async function main() {
     assert.strictEqual(restarted.password, 'restart:pass/100%');
     assert.ok(restarted.raw.includes('restart%40user:restart%3Apass%2F100%25@'));
 
-    const created = await Promise.all(Array.from({ length: 40 }, (_, index) => store.create({
-      raw: `socks5://user-${index}:pass-${index}@proxy-${index}.test:${2000 + index}`,
-      name: `Concurrent ${index}`,
-    })));
-    await Promise.all(Array.from({ length: 20 }, (_, index) => store.update(created[0].id, {
-      username: 'race-user',
-      password: `race-pass-${index}`,
-    })));
+    const created = await Promise.all(
+      Array.from({ length: 40 }, (_, index) =>
+        store.create({
+          raw: `socks5://user-${index}:pass-${index}@proxy-${index}.test:${2000 + index}`,
+          name: `Concurrent ${index}`,
+        })
+      )
+    );
+    await Promise.all(
+      Array.from({ length: 20 }, (_, index) =>
+        store.update(created[0].id, {
+          username: 'race-user',
+          password: `race-pass-${index}`,
+        })
+      )
+    );
 
     const concurrentRestart = new ProxyStore(filePath);
     await concurrentRestart.load();
@@ -113,10 +128,13 @@ async function main() {
     assert.deepStrictEqual(leftovers, []);
 
     const recoveryPath = path.join(directory, 'recovery.json');
-    await fs.writeFile(recoveryPath + '.tmp', JSON.stringify({
-      version: 1,
-      items: [{ id: 'recovered', raw: 'http://recover-user:recover-pass@recovery.test:8080' }],
-    }));
+    await fs.writeFile(
+      recoveryPath + '.tmp',
+      JSON.stringify({
+        version: 1,
+        items: [{ id: 'recovered', raw: 'http://recover-user:recover-pass@recovery.test:8080' }],
+      })
+    );
     const recoveredStore = new ProxyStore(recoveryPath);
     await recoveredStore.load();
     assert.strictEqual(recoveredStore.get('recovered').password, 'recover-pass');
@@ -126,10 +144,13 @@ async function main() {
     const uniqueRecoveryPath = path.join(directory, 'unique-recovery.json');
     const validUniqueTemp = uniqueRecoveryPath + '.tmp-123-valid';
     const invalidUniqueTemp = uniqueRecoveryPath + '.tmp-124-invalid';
-    await fs.writeFile(validUniqueTemp, JSON.stringify({
-      version: 2,
-      items: [{ id: 'unique-recovered', raw: 'http://unique-user:unique-pass@unique.test:8081' }],
-    }));
+    await fs.writeFile(
+      validUniqueTemp,
+      JSON.stringify({
+        version: 2,
+        items: [{ id: 'unique-recovered', raw: 'http://unique-user:unique-pass@unique.test:8081' }],
+      })
+    );
     await fs.writeFile(invalidUniqueTemp, '{broken-json');
     const nowSeconds = Date.now() / 1000;
     await fs.utimes(validUniqueTemp, nowSeconds - 10, nowSeconds - 10);
@@ -141,7 +162,7 @@ async function main() {
     await fs.access(uniqueRecoveryPath + '.bak');
     assert.deepStrictEqual(
       (await fs.readdir(directory)).filter((name) => name.startsWith('unique-recovery.json.tmp-')),
-      [],
+      []
     );
 
     const backupPath = path.join(directory, 'backup-recovery.json');
@@ -159,12 +180,13 @@ async function main() {
     await restoredBackupStore.load();
     assert.strictEqual(restoredBackupStore.get(backupItem.id).password, 'old-pass');
     JSON.parse(await fs.readFile(backupPath, 'utf8'));
-    const corruptSnapshots = (await fs.readdir(directory))
-      .filter((name) => name.startsWith('backup-recovery.json.corrupt-'));
+    const corruptSnapshots = (await fs.readdir(directory)).filter((name) =>
+      name.startsWith('backup-recovery.json.corrupt-')
+    );
     assert.strictEqual(corruptSnapshots.length, 1);
     assert.strictEqual(
       await fs.readFile(path.join(directory, corruptSnapshots[0]), 'utf8'),
-      corruptMainBytes,
+      corruptMainBytes
     );
 
     const unrecoverablePath = path.join(directory, 'unrecoverable.json');
@@ -172,12 +194,15 @@ async function main() {
     const unrecoverableStore = new ProxyStore(unrecoverablePath);
     await assert.rejects(
       unrecoverableStore.load(),
-      (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message),
+      (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message)
     );
     assert.strictEqual(await fs.readFile(unrecoverablePath, 'utf8'), '{still-corrupt');
-    await assert.rejects(unrecoverableStore.create({
-      raw: 'http://should-not-overwrite:secret@unrecoverable.test:8080',
-    }), (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message));
+    await assert.rejects(
+      unrecoverableStore.create({
+        raw: 'http://should-not-overwrite:secret@unrecoverable.test:8080',
+      }),
+      (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message)
+    );
     assert.strictEqual(await fs.readFile(unrecoverablePath, 'utf8'), '{still-corrupt');
 
     const invalidShapePath = path.join(directory, 'invalid-shape.json');
@@ -186,7 +211,7 @@ async function main() {
     const invalidShapeStore = new ProxyStore(invalidShapePath);
     await assert.rejects(
       invalidShapeStore.load(),
-      (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message),
+      (error) => error.code === 'ERR_PROXY_STORE_CORRUPT' && /损坏且没有可用备份/.test(error.message)
     );
     assert.strictEqual(await fs.readFile(invalidShapePath, 'utf8'), invalidShapeBytes);
 
@@ -202,31 +227,51 @@ async function main() {
       const beforeMemory = JSON.stringify(rollbackStore.list());
       const beforeDisk = await fs.readFile(rollbackPath, 'utf8');
       const persist = rollbackStore._persistData;
-      rollbackStore._persistData = async () => { throw new Error('forced-persist-failure-' + label); };
+      rollbackStore._persistData = async () => {
+        throw new Error('forced-persist-failure-' + label);
+      };
       try {
         await assert.rejects(operation(), new RegExp('forced-persist-failure-' + label));
       } finally {
         rollbackStore._persistData = persist;
       }
-      assert.strictEqual(JSON.stringify(rollbackStore.list()), beforeMemory, label + ' must roll back memory');
-      assert.strictEqual(await fs.readFile(rollbackPath, 'utf8'), beforeDisk, label + ' must not change disk');
+      assert.strictEqual(
+        JSON.stringify(rollbackStore.list()),
+        beforeMemory,
+        label + ' must roll back memory'
+      );
+      assert.strictEqual(
+        await fs.readFile(rollbackPath, 'utf8'),
+        beforeDisk,
+        label + ' must not change disk'
+      );
     };
 
-    await assertRollback('create', () => rollbackStore.create({ raw: 'http://new-user:new-pass@new.test:8080' }));
-    await assertRollback('create-many', () => rollbackStore.createMany([{ raw: 'http://many-user:many-pass@many.test:8080' }]));
+    await assertRollback('create', () =>
+      rollbackStore.create({ raw: 'http://new-user:new-pass@new.test:8080' })
+    );
+    await assertRollback('create-many', () =>
+      rollbackStore.createMany([{ raw: 'http://many-user:many-pass@many.test:8080' }])
+    );
     await assertRollback('update', () => rollbackStore.update(rollbackItem.id, { password: 'changed-pass' }));
     await assertRollback('remove', () => rollbackStore.remove(rollbackItem.id));
     await assertRollback('mark-check', () => rollbackStore.markCheck(rollbackItem.id, { ip: '203.0.113.9' }));
-    await assertRollback('mark-check-error', () => rollbackStore.markCheckError(rollbackItem.id, { errorClass: 'auth' }));
-    await assertRollback('replace-all', () => rollbackStore.replaceAll([{ id: 'replacement-failed', raw: 'http://u:p@failed.test:8080' }]));
+    await assertRollback('mark-check-error', () =>
+      rollbackStore.markCheckError(rollbackItem.id, { errorClass: 'auth' })
+    );
+    await assertRollback('replace-all', () =>
+      rollbackStore.replaceAll([{ id: 'replacement-failed', raw: 'http://u:p@failed.test:8080' }])
+    );
 
     await rollbackStore.update(rollbackItem.id, { password: 'queue-recovered' });
     assert.strictEqual(rollbackStore.get(rollbackItem.id).password, 'queue-recovered');
 
-    const pendingCreates = Array.from({ length: 12 }, (_, index) => rollbackStore.create({
-      id: 'flush-' + index,
-      raw: `http://flush-user-${index}:flush-pass-${index}@flush-${index}.test:${3000 + index}`,
-    }));
+    const pendingCreates = Array.from({ length: 12 }, (_, index) =>
+      rollbackStore.create({
+        id: 'flush-' + index,
+        raw: `http://flush-user-${index}:flush-pass-${index}@flush-${index}.test:${3000 + index}`,
+      })
+    );
     await rollbackStore.flush();
     await Promise.all(pendingCreates);
     const flushedStore = new ProxyStore(rollbackPath);
@@ -234,11 +279,13 @@ async function main() {
     assert.strictEqual(flushedStore.list().filter((item) => item.id.startsWith('flush-')).length, 12);
 
     const longPassword = 'long-secret-' + 'x'.repeat(2048);
-    const replacement = await rollbackStore.replaceAll([{
-      id: 'long-credential',
-      name: 'Long credential',
-      raw: `http://long-user:${longPassword}@long.test:8088`,
-    }]);
+    const replacement = await rollbackStore.replaceAll([
+      {
+        id: 'long-credential',
+        name: 'Long credential',
+        raw: `http://long-user:${longPassword}@long.test:8088`,
+      },
+    ]);
     assert.strictEqual(replacement.length, 1);
     assert.strictEqual(rollbackStore.get('long-credential').password, longPassword);
     assert.ok(rollbackStore.get('long-credential').raw.length > 500);
@@ -247,7 +294,9 @@ async function main() {
     assert.strictEqual(replacedRestart.list().length, 1);
     assert.strictEqual(replacedRestart.get('long-credential').password, longPassword);
 
-    console.log('PROXY_PERSISTENCE_SELFTEST_OK migration=1 restart=1 encoding=1 blank_patch=1 explicit_clear=1 clear_restart=1 mutation_queue=1 flush=1 tmp_scan=1 backup_recovery=1 corrupt_preserved=1 rollback=1 replace_all=1 long_credentials=1');
+    console.log(
+      'PROXY_PERSISTENCE_SELFTEST_OK migration=1 restart=1 encoding=1 blank_patch=1 explicit_clear=1 clear_restart=1 mutation_queue=1 flush=1 tmp_scan=1 backup_recovery=1 corrupt_preserved=1 rollback=1 replace_all=1 long_credentials=1'
+    );
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }

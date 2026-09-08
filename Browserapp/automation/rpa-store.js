@@ -6,11 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { cloneBuiltinTemplates } = require('./rpa-templates-builtin');
 const localCatalog = require('./data/catalog-templates.json');
-const {
-  syncRemoteTemplateStore,
-  normalizeRemoteTemplate,
-  parseProcessContent,
-} = require('./template-sync');
+const { syncRemoteTemplateStore, normalizeRemoteTemplate, parseProcessContent } = require('./template-sync');
 const { findUnsupportedSteps } = require('./rpa-engine');
 
 /**
@@ -133,10 +129,24 @@ class RpaStore {
   static legacyConfigKeys() {
     const v = RpaStore.legacyVendorToken();
     return [
-      'remoteCategories', 'remoteLastSync', 'remoteSource',
-      'remoteToken', 'remoteCookie', 'remoteApiKey', 'remoteApiBase', 'remoteApiOrigin', 'remoteLang',
-      `${v}Categories`, `${v}LastSync`, `${v}Source`,
-      `${v}Token`, `${v}Cookie`, `${v}ApiKey`, `${v}ApiBase`, `${v}ApiOrigin`, `${v}Lang`,
+      'remoteCategories',
+      'remoteLastSync',
+      'remoteSource',
+      'remoteToken',
+      'remoteCookie',
+      'remoteApiKey',
+      'remoteApiBase',
+      'remoteApiOrigin',
+      'remoteLang',
+      `${v}Categories`,
+      `${v}LastSync`,
+      `${v}Source`,
+      `${v}Token`,
+      `${v}Cookie`,
+      `${v}ApiKey`,
+      `${v}ApiBase`,
+      `${v}ApiOrigin`,
+      `${v}Lang`,
     ];
   }
 
@@ -154,10 +164,10 @@ class RpaStore {
     const v = RpaStore.legacyVendorToken();
     const legacyId = template[RpaStore.legacyIdField()];
     return Boolean(
-      legacyId
-      || template.external_id
-      || new RegExp(`^(?:${v}|remote)-`, 'i').test(id)
-      || new RegExp(`^catalog-${v}-`, 'i').test(id)
+      legacyId ||
+      template.external_id ||
+      new RegExp(`^(?:${v}|remote)-`, 'i').test(id) ||
+      new RegExp(`^catalog-${v}-`, 'i').test(id)
     );
   }
 
@@ -172,20 +182,12 @@ class RpaStore {
   static catalogOriginalId(raw = {}) {
     const legacyIdField = RpaStore.legacyIdField();
     const v = RpaStore.legacyVendorToken();
-    const candidates = [
-      raw.external_id,
-      raw[legacyIdField],
-      raw.template_id,
-      raw.id,
-    ];
+    const candidates = [raw.external_id, raw[legacyIdField], raw.template_id, raw.id];
     const prefixRe = new RegExp(`^(?:catalog-)?(?:${v}|remote|legacy|catalog)-`, 'i');
     const prefixRe2 = new RegExp(`^(?:${v}|remote|legacy|catalog)-`, 'i');
     for (const candidate of candidates) {
       if (candidate == null || candidate === '') continue;
-      const cleaned = String(candidate)
-        .replace(prefixRe, '')
-        .replace(prefixRe2, '')
-        .trim();
+      const cleaned = String(candidate).replace(prefixRe, '').replace(prefixRe2, '').trim();
       if (cleaned) return cleaned;
     }
     return crypto.randomUUID();
@@ -193,9 +195,10 @@ class RpaStore {
 
   normalizeLocalCatalogTemplate(raw = {}) {
     const originalId = RpaStore.catalogOriginalId(raw);
-    const steps = Array.isArray(raw.steps) && raw.steps.length
-      ? raw.steps
-      : parseProcessContent(raw.process_content || raw);
+    const steps =
+      Array.isArray(raw.steps) && raw.steps.length
+        ? raw.steps
+        : parseProcessContent(raw.process_content || raw);
     const tags = (Array.isArray(raw.tags) ? raw.tags : [])
       .map(RpaStore.stripExternalBranding)
       .filter(Boolean);
@@ -232,11 +235,18 @@ class RpaStore {
     if (!Array.isArray(steps)) return steps;
     const mark = (step) => {
       if (!step || typeof step !== 'object') return;
-      const bag = step.params && typeof step.params === 'object'
-        ? step.params
-        : (step.config && typeof step.config === 'object' ? step.config : step);
+      const bag =
+        step.params && typeof step.params === 'object'
+          ? step.params
+          : step.config && typeof step.config === 'object'
+            ? step.config
+            : step;
       const selector = String(bag.selector || step.selector || '');
-      if (/redir-overlay|redir-dismiss|nav-global-location|GLUXZip|GLUXZipUpdateInput|GLUXZipInputSection|GLUXConfirmClose|glow-ingress|cookie[-_ ]?(banner|accept|consent)|#sp-cc-accept|onetrust|gdpr/i.test(selector)) {
+      if (
+        /redir-overlay|redir-dismiss|nav-global-location|GLUXZip|GLUXZipUpdateInput|GLUXZipInputSection|GLUXConfirmClose|glow-ingress|cookie[-_ ]?(banner|accept|consent)|#sp-cc-accept|onetrust|gdpr/i.test(
+          selector
+        )
+      ) {
         bag.optional = true;
         bag.isShow = '0';
         if (step.params && step.params !== bag) {
@@ -264,12 +274,12 @@ class RpaStore {
     if (!template || typeof template !== 'object') return template;
     const tags = Array.isArray(template.tags)
       ? template.tags
-        .map((tag) => String(tag || '').trim())
-        .filter((tag) => tag && !/付费|收费|会员|VIP|premium|paid/i.test(tag))
+          .map((tag) => String(tag || '').trim())
+          .filter((tag) => tag && !/付费|收费|会员|VIP|premium|paid/i.test(tag))
       : [];
     if (
-      !tags.includes('免费')
-      && (template.source === 'catalog' || template.builtin || template.source === 'builtin')
+      !tags.includes('免费') &&
+      (template.source === 'catalog' || template.builtin || template.source === 'builtin')
     ) {
       tags.push('免费');
     }
@@ -313,7 +323,11 @@ class RpaStore {
     const variables = {};
     let process = template.process_content;
     if (typeof process === 'string') {
-      try { process = JSON.parse(process); } catch (_) { process = null; }
+      try {
+        process = JSON.parse(process);
+      } catch (_) {
+        process = null;
+      }
     }
     const start = process?.nodes?.find((node) => node.type === 'startNode');
     const definitions = start?.globalVariable || start?.config?.variableObjList || [];
@@ -336,7 +350,11 @@ class RpaStore {
     const byCanonical = new Map();
     const retained = [];
     for (const template of this.data.templates) {
-      if (template.source === 'catalog' || RpaStore.isLegacyExternalSource(template.source) || RpaStore.hasLegacyExternalId(template)) {
+      if (
+        template.source === 'catalog' ||
+        RpaStore.isLegacyExternalSource(template.source) ||
+        RpaStore.hasLegacyExternalId(template)
+      ) {
         const canonical = this.normalizeLocalCatalogTemplate(template);
         const prev = byCanonical.get(canonical.id);
         if (!prev) {
@@ -372,7 +390,12 @@ class RpaStore {
 
   resetSeedTemplateUsage() {
     for (const template of this.data.templates) {
-      if (template.builtin || template.source === 'builtin' || template.source === 'catalog' || RpaStore.isLegacyExternalSource(template.source)) {
+      if (
+        template.builtin ||
+        template.source === 'builtin' ||
+        template.source === 'catalog' ||
+        RpaStore.isLegacyExternalSource(template.source)
+      ) {
         template.uses = 0;
       }
     }
@@ -429,7 +452,9 @@ class RpaStore {
 
   // ---------- plans ----------
   listPlans() {
-    return [...this.data.plans].sort((a, b) => String(b.update_time || '').localeCompare(String(a.update_time || '')));
+    return [...this.data.plans].sort((a, b) =>
+      String(b.update_time || '').localeCompare(String(a.update_time || ''))
+    );
   }
 
   getPlan(id) {
@@ -440,24 +465,26 @@ class RpaStore {
     const now = new Date().toISOString();
     const id = String(input.id || crypto.randomUUID());
     const existing = this.getPlan(id);
-    const variables = input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
-      ? { ...input.variables }
-      : (existing?.variables && typeof existing.variables === 'object' ? { ...existing.variables } : {});
+    const variables =
+      input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
+        ? { ...input.variables }
+        : existing?.variables && typeof existing.variables === 'object'
+          ? { ...existing.variables }
+          : {};
     const next = {
       id,
       plan_name: String(input.plan_name || input.name || 'untitled').slice(0, 120),
       process_name: String(input.process_name || input.plan_name || input.name || 'untitled').slice(0, 120),
       profile_ids: Array.isArray(input.profile_ids) ? input.profile_ids.map(String) : [],
-      steps: Array.isArray(input.steps) ? input.steps : (existing?.steps || []),
-      process_content: input.process_content !== undefined
-        ? input.process_content
-        : (existing?.process_content || null),
+      steps: Array.isArray(input.steps) ? input.steps : existing?.steps || [],
+      process_content:
+        input.process_content !== undefined ? input.process_content : existing?.process_content || null,
       variables,
       status: String(input.status || existing?.status || 'idle'),
       create_time: existing?.create_time || now,
       update_time: now,
-      ext: input.ext && typeof input.ext === 'object' ? input.ext : (existing?.ext || {}),
-      template_id: input.template_id != null ? String(input.template_id) : (existing?.template_id || null),
+      ext: input.ext && typeof input.ext === 'object' ? input.ext : existing?.ext || {},
+      template_id: input.template_id != null ? String(input.template_id) : existing?.template_id || null,
     };
     if (existing) {
       Object.assign(existing, next);
@@ -513,9 +540,10 @@ class RpaStore {
 
   async createTask(input = {}) {
     const now = new Date().toISOString();
-    const variables = input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
-      ? { ...input.variables }
-      : {};
+    const variables =
+      input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
+        ? { ...input.variables }
+        : {};
     const task = {
       id: String(input.id || crypto.randomUUID()),
       plan_id: input.plan_id ? String(input.plan_id) : null,
@@ -549,9 +577,10 @@ class RpaStore {
       status: 'pending',
       steps: Array.isArray(input.steps) ? input.steps : [],
       process_content: input.process_content !== undefined ? input.process_content : null,
-      variables: input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
-        ? { ...input.variables }
-        : {},
+      variables:
+        input.variables && typeof input.variables === 'object' && !Array.isArray(input.variables)
+          ? { ...input.variables }
+          : {},
       process_logs: [],
       process_result: null,
       create_time: now,
@@ -579,18 +608,22 @@ class RpaStore {
   // ---------- templates (script store) ----------
   listTemplates(filter = {}) {
     let items = [...this.data.templates];
-    const q = String(filter.q || filter.keyword || '').trim().toLowerCase();
+    const q = String(filter.q || filter.keyword || '')
+      .trim()
+      .toLowerCase();
     const cat = String(filter.cat || filter.category || '').trim();
     if (cat && cat !== '全部' && cat !== 'All') {
       items = items.filter((t) => String(t.cat || '') === cat);
     }
     if (q) {
       items = items.filter((t) => {
-        const hay = `${t.name || ''} ${t.desc || ''} ${(t.tags || []).join(' ')} ${t.cat || ''} ${t.developer || ''}`.toLowerCase();
+        const hay =
+          `${t.name || ''} ${t.desc || ''} ${(t.tags || []).join(' ')} ${t.cat || ''} ${t.developer || ''}`.toLowerCase();
         return hay.includes(q);
       });
     }
-    if (filter.source === 'custom') items = items.filter((t) => !t.builtin && t.source !== 'builtin' && t.source !== 'catalog');
+    if (filter.source === 'custom')
+      items = items.filter((t) => !t.builtin && t.source !== 'builtin' && t.source !== 'catalog');
     if (filter.source === 'builtin') items = items.filter((t) => t.builtin || t.source === 'builtin');
     // Open-source build: all templates are free; pay_type filters are ignored.
 
@@ -626,8 +659,17 @@ class RpaStore {
       if (t.cat) set.add(String(t.cat));
     }
     const preferred = [
-      '网页操作', '养号浏览', '社交媒体', '电商', '数据采集', '账号管理',
-      '邮箱验证', '工具', '流程控制', '开发调试', '我的模版',
+      '网页操作',
+      '养号浏览',
+      '社交媒体',
+      '电商',
+      '数据采集',
+      '账号管理',
+      '邮箱验证',
+      '工具',
+      '流程控制',
+      '开发调试',
+      '我的模版',
     ];
     const seen = new Set();
     const ordered = [];
@@ -648,7 +690,7 @@ class RpaStore {
 
   normalizeTemplate(input = {}, existing = null) {
     const now = new Date().toISOString();
-    const id = String(input.id || existing?.id || ('tpl-' + crypto.randomUUID()));
+    const id = String(input.id || existing?.id || 'tpl-' + crypto.randomUUID());
     let steps = Array.isArray(input.steps) ? input.steps : null;
     if ((!steps || !steps.length) && (input.process_content || existing?.process_content)) {
       steps = parseProcessContent(input.process_content || existing.process_content);
@@ -659,25 +701,26 @@ class RpaStore {
     const source = builtin ? 'builtin' : String(input.source || existing?.source || 'custom');
     return {
       id,
-      external_id: input.external_id != null ? String(input.external_id) : (existing?.external_id || null),
+      external_id: input.external_id != null ? String(input.external_id) : existing?.external_id || null,
       name: String(input.name || input.plan_name || existing?.name || '未命名模版').slice(0, 120),
-      cat: String(input.cat || input.category || input.category_name || existing?.cat || '我的模版').slice(0, 40),
-      category_id: input.category_id != null ? String(input.category_id) : (existing?.category_id || ''),
+      cat: String(input.cat || input.category || input.category_name || existing?.cat || '我的模版').slice(
+        0,
+        40
+      ),
+      category_id: input.category_id != null ? String(input.category_id) : existing?.category_id || '',
       desc: String(input.desc || input.description || input.abstract || existing?.desc || '').slice(0, 800),
-      tags: Array.isArray(input.tags)
-        ? input.tags.map(String).slice(0, 20)
-        : (existing?.tags || []),
+      tags: Array.isArray(input.tags) ? input.tags.map(String).slice(0, 20) : existing?.tags || [],
       steps: JSON.parse(JSON.stringify(steps)),
-      process_content: input.process_content !== undefined
-        ? input.process_content
-        : (existing?.process_content || null),
-      uses: Number.isFinite(Number(input.uses))
-        ? Number(input.uses)
-        : (Number(existing?.uses) || 0),
+      process_content:
+        input.process_content !== undefined ? input.process_content : existing?.process_content || null,
+      uses: Number.isFinite(Number(input.uses)) ? Number(input.uses) : Number(existing?.uses) || 0,
       // Local OpenBrowser templates are always free.
       pay_type: 1,
       price: null,
-      developer: String(input.developer || existing?.developer || (builtin ? 'OpenBrowser' : '')).slice(0, 80),
+      developer: String(input.developer || existing?.developer || (builtin ? 'OpenBrowser' : '')).slice(
+        0,
+        80
+      ),
       img_url: String(input.img_url || existing?.img_url || '').slice(0, 500),
       builtin,
       source,
@@ -743,7 +786,10 @@ class RpaStore {
     if (!steps.length) throw new Error('模版没有可执行步骤（未同步 process_content）');
     const unsupported = findUnsupportedSteps(steps);
     if (unsupported.length) {
-      const summary = unsupported.slice(0, 4).map((item) => `${item.path.join('.')}: ${item.type}`).join(', ');
+      const summary = unsupported
+        .slice(0, 4)
+        .map((item) => `${item.path.join('.')}: ${item.type}`)
+        .join(', ');
       throw new Error(`模版包含当前版本未支持的步骤，不能创建不可运行流程：${summary}`);
     }
     const variables = RpaStore.extractTemplateVariables(stored);
@@ -778,7 +824,9 @@ class RpaStore {
       apiKey: options.apiKey || cfg.remoteApiKey || '',
     };
     if (!String(auth.base || '').trim()) {
-      throw new Error('未配置远程模版 API base：仓库不内置长期连接域名。日常请使用本地离线模版包；仅在运维一次性同步时显式传入 base/origin');
+      throw new Error(
+        '未配置远程模版 API base：仓库不内置长期连接域名。日常请使用本地离线模版包；仅在运维一次性同步时显式传入 base/origin'
+      );
     }
     if (!auth.token && !auth.cookie && !auth.apiKey) {
       throw new Error('未配置远程模版登录态：请传入 token / cookie / apiKey');
@@ -891,13 +939,13 @@ class RpaStore {
           skipped.push({ name: raw.name, reason: '无步骤' });
           continue;
         }
-        let id = raw.id ? String(raw.id) : ('import-' + crypto.randomUUID());
+        let id = raw.id ? String(raw.id) : 'import-' + crypto.randomUUID();
         const v = RpaStore.legacyVendorToken();
         if (
-          new RegExp(`^(?:${v}|remote|legacy|catalog)-`, 'i').test(id)
-          || raw.external_id
-          || raw[RpaStore.legacyIdField()]
-          || RpaStore.isLegacyExternalSource(raw.source)
+          new RegExp(`^(?:${v}|remote|legacy|catalog)-`, 'i').test(id) ||
+          raw.external_id ||
+          raw[RpaStore.legacyIdField()] ||
+          RpaStore.isLegacyExternalSource(raw.source)
         ) {
           id = 'import-' + crypto.randomUUID();
         }
@@ -937,13 +985,15 @@ class RpaStore {
     return {
       version: 1,
       exported_at: new Date().toISOString(),
-      templates: [{
-        name: tpl.name,
-        cat: tpl.cat,
-        desc: tpl.desc,
-        tags: tpl.tags || [],
-        steps: JSON.parse(JSON.stringify(tpl.steps || [])),
-      }],
+      templates: [
+        {
+          name: tpl.name,
+          cat: tpl.cat,
+          desc: tpl.desc,
+          tags: tpl.tags || [],
+          steps: JSON.parse(JSON.stringify(tpl.steps || [])),
+        },
+      ],
     };
   }
 

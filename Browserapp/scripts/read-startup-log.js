@@ -15,7 +15,14 @@ const os = require('os');
 function defaultLogPath() {
   if (process.env.OPENBROWSER_STARTUP_LOG) return String(process.env.OPENBROWSER_STARTUP_LOG);
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'openbrowser', 'logs', 'browser-startup.log');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'openbrowser',
+      'logs',
+      'browser-startup.log'
+    );
   }
   if (process.platform === 'win32') {
     const base = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
@@ -44,7 +51,9 @@ function main() {
   const slice = lines.slice(-tail);
   for (const line of slice) {
     let row;
-    try { row = JSON.parse(line); } catch (_) {
+    try {
+      row = JSON.parse(line);
+    } catch (_) {
       console.log(line);
       continue;
     }

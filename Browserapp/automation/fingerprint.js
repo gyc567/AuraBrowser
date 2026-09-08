@@ -30,7 +30,10 @@ const {
 } = require('./user-agent');
 
 function hashSeed(input) {
-  return crypto.createHash('sha256').update(String(input || '')).digest();
+  return crypto
+    .createHash('sha256')
+    .update(String(input || ''))
+    .digest();
 }
 
 function u32(buf, offset = 0) {
@@ -39,7 +42,7 @@ function u32(buf, offset = 0) {
 
 function mulberry32(a) {
   return function next() {
-    let t = (a += 0x6D2B79F5);
+    let t = (a += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -49,27 +52,77 @@ function mulberry32(a) {
 // WebGL vendor/renderer presets + optional GPUAdapterInfo
 const WEBGL_PRESETS = {
   windows: [
-    { vendor: 'Google Inc. (NVIDIA)', renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)', gpu: { vendor: 'nvidia', architecture: 'turing' } },
-    { vendor: 'Google Inc. (Intel)', renderer: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)', gpu: { vendor: 'intel', architecture: 'gen9' } },
-    { vendor: 'Google Inc. (AMD)', renderer: 'ANGLE (AMD, AMD Radeon RX 580 Series Direct3D11 vs_5_0 ps_5_0, D3D11)', gpu: { vendor: 'amd', architecture: 'gcn-4' } },
-    { vendor: 'Google Inc. (NVIDIA)', renderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)', gpu: { vendor: 'nvidia', architecture: 'ampere' } },
+    {
+      vendor: 'Google Inc. (NVIDIA)',
+      renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      gpu: { vendor: 'nvidia', architecture: 'turing' },
+    },
+    {
+      vendor: 'Google Inc. (Intel)',
+      renderer: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      gpu: { vendor: 'intel', architecture: 'gen9' },
+    },
+    {
+      vendor: 'Google Inc. (AMD)',
+      renderer: 'ANGLE (AMD, AMD Radeon RX 580 Series Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      gpu: { vendor: 'amd', architecture: 'gcn-4' },
+    },
+    {
+      vendor: 'Google Inc. (NVIDIA)',
+      renderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      gpu: { vendor: 'nvidia', architecture: 'ampere' },
+    },
   ],
   macos: [
-    { vendor: 'Google Inc. (Apple)', renderer: 'ANGLE (Apple, Apple M1, OpenGL 4.1)', gpu: { vendor: 'apple', architecture: 'common-3' } },
-    { vendor: 'Google Inc. (Apple)', renderer: 'ANGLE (Apple, Apple M2, OpenGL 4.1)', gpu: { vendor: 'apple', architecture: 'common-3' } },
-    { vendor: 'Google Inc. (Apple)', renderer: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)', gpu: { vendor: 'apple', architecture: 'common-3' } },
-    { vendor: 'Google Inc. (Intel)', renderer: 'ANGLE (Intel, Intel(R) Iris(TM) Plus Graphics 640, OpenGL 4.1)', gpu: { vendor: 'intel', architecture: 'gen9' } },
+    {
+      vendor: 'Google Inc. (Apple)',
+      renderer: 'ANGLE (Apple, Apple M1, OpenGL 4.1)',
+      gpu: { vendor: 'apple', architecture: 'common-3' },
+    },
+    {
+      vendor: 'Google Inc. (Apple)',
+      renderer: 'ANGLE (Apple, Apple M2, OpenGL 4.1)',
+      gpu: { vendor: 'apple', architecture: 'common-3' },
+    },
+    {
+      vendor: 'Google Inc. (Apple)',
+      renderer: 'ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)',
+      gpu: { vendor: 'apple', architecture: 'common-3' },
+    },
+    {
+      vendor: 'Google Inc. (Intel)',
+      renderer: 'ANGLE (Intel, Intel(R) Iris(TM) Plus Graphics 640, OpenGL 4.1)',
+      gpu: { vendor: 'intel', architecture: 'gen9' },
+    },
   ],
   linux: [
-    { vendor: 'Google Inc. (Intel)', renderer: 'ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (KBL GT2), OpenGL 4.6)', gpu: { vendor: 'intel', architecture: 'gen9' } },
-    { vendor: 'Google Inc. (AMD)', renderer: 'ANGLE (AMD, AMD Radeon RX 580 Series (RADV POLARIS10), OpenGL 4.6)', gpu: { vendor: 'amd', architecture: 'gcn-4' } },
-    { vendor: 'Google Inc. (NVIDIA)', renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER/PCIe/SSE2, OpenGL 4.6)', gpu: { vendor: 'nvidia', architecture: 'turing' } },
+    {
+      vendor: 'Google Inc. (Intel)',
+      renderer: 'ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (KBL GT2), OpenGL 4.6)',
+      gpu: { vendor: 'intel', architecture: 'gen9' },
+    },
+    {
+      vendor: 'Google Inc. (AMD)',
+      renderer: 'ANGLE (AMD, AMD Radeon RX 580 Series (RADV POLARIS10), OpenGL 4.6)',
+      gpu: { vendor: 'amd', architecture: 'gcn-4' },
+    },
+    {
+      vendor: 'Google Inc. (NVIDIA)',
+      renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER/PCIe/SSE2, OpenGL 4.6)',
+      gpu: { vendor: 'nvidia', architecture: 'turing' },
+    },
   ],
 };
 
 const MEDIA_DEVICE_TEMPLATES = [
-  { input: 'Microphone Array (2- Realtek High Definition Audio)', output: 'Speaker/Headphone (2- Realtek High Definition Audio)' },
-  { input: 'Microphone Array (Realtek High Definition Audio)', output: 'Speaker/Headphone (Realtek High Definition Audio)' },
+  {
+    input: 'Microphone Array (2- Realtek High Definition Audio)',
+    output: 'Speaker/Headphone (2- Realtek High Definition Audio)',
+  },
+  {
+    input: 'Microphone Array (Realtek High Definition Audio)',
+    output: 'Speaker/Headphone (Realtek High Definition Audio)',
+  },
   { input: 'Microphone Array (Realtek(R) Audio)', output: 'Speaker (Realtek(R) Audio)' },
   { input: 'Microphone Array (Conexant SmartAudio HD)', output: 'Speaker (Conexant SmartAudio HD)' },
   { input: 'Microphone Array (2- Conexant SmartAudio HD)', output: 'Speaker (2- Conexant SmartAudio HD)' },
@@ -77,96 +130,215 @@ const MEDIA_DEVICE_TEMPLATES = [
 ];
 
 const SPEECH_VOICE_POOL = [
-  { name: 'Alex', lang: 'en-US' }, { name: 'Samantha', lang: 'en-US' }, { name: 'Victoria', lang: 'en-US' },
-  { name: 'Fred', lang: 'en-US' }, { name: 'Junior', lang: 'en-US' }, { name: 'Kathy', lang: 'en-US' },
-  { name: 'Daniel', lang: 'en-GB' }, { name: 'Kate', lang: 'en-GB' }, { name: 'Oliver', lang: 'en-GB' },
-  { name: 'Serena', lang: 'en-GB' }, { name: 'Moira', lang: 'en-IE' }, { name: 'Fiona', lang: 'en-GB' },
-  { name: 'Karen', lang: 'en-AU' }, { name: 'Lee', lang: 'en-AU' }, { name: 'Tessa', lang: 'en-ZA' },
-  { name: 'Google US English', lang: 'en-US' }, { name: 'Google UK English Female', lang: 'en-GB' },
+  { name: 'Alex', lang: 'en-US' },
+  { name: 'Samantha', lang: 'en-US' },
+  { name: 'Victoria', lang: 'en-US' },
+  { name: 'Fred', lang: 'en-US' },
+  { name: 'Junior', lang: 'en-US' },
+  { name: 'Kathy', lang: 'en-US' },
+  { name: 'Daniel', lang: 'en-GB' },
+  { name: 'Kate', lang: 'en-GB' },
+  { name: 'Oliver', lang: 'en-GB' },
+  { name: 'Serena', lang: 'en-GB' },
+  { name: 'Moira', lang: 'en-IE' },
+  { name: 'Fiona', lang: 'en-GB' },
+  { name: 'Karen', lang: 'en-AU' },
+  { name: 'Lee', lang: 'en-AU' },
+  { name: 'Tessa', lang: 'en-ZA' },
+  { name: 'Google US English', lang: 'en-US' },
+  { name: 'Google UK English Female', lang: 'en-GB' },
   { name: 'Google UK English Male', lang: 'en-GB' },
   { name: 'Microsoft David - English (United States)', lang: 'en-US' },
   { name: 'Microsoft Zira - English (United States)', lang: 'en-US' },
   { name: 'Microsoft Mark - English (United States)', lang: 'en-US' },
-  { name: 'Ting-Ting', lang: 'zh-CN' }, { name: 'Sin-ji', lang: 'zh-HK' }, { name: 'Mei-Jia', lang: 'zh-TW' },
-  { name: 'Google 普通话（中国大陆）', lang: 'zh-CN' }, { name: 'Google 粤語（香港）', lang: 'zh-HK' },
+  { name: 'Ting-Ting', lang: 'zh-CN' },
+  { name: 'Sin-ji', lang: 'zh-HK' },
+  { name: 'Mei-Jia', lang: 'zh-TW' },
+  { name: 'Google 普通话（中国大陆）', lang: 'zh-CN' },
+  { name: 'Google 粤語（香港）', lang: 'zh-HK' },
   { name: 'Google 國語（臺灣）', lang: 'zh-TW' },
   { name: 'Microsoft Huihui - Chinese (Simplified, PRC)', lang: 'zh-CN' },
   { name: 'Microsoft Yaoyao - Chinese (Simplified, PRC)', lang: 'zh-CN' },
   { name: 'Microsoft Kangkang - Chinese (Simplified, PRC)', lang: 'zh-CN' },
   { name: 'Microsoft Hanhan - Chinese (Traditional, Taiwan)', lang: 'zh-TW' },
   { name: 'Microsoft Tracy - Chinese (Traditional, Hong Kong S.A.R.)', lang: 'zh-HK' },
-  { name: 'Kyoko', lang: 'ja-JP' }, { name: 'Otoya', lang: 'ja-JP' },
+  { name: 'Kyoko', lang: 'ja-JP' },
+  { name: 'Otoya', lang: 'ja-JP' },
   { name: 'Google 日本語', lang: 'ja-JP' },
   { name: 'Microsoft Haruka - Japanese', lang: 'ja-JP' },
   { name: 'Microsoft Ichiro - Japanese', lang: 'ja-JP' },
-  { name: 'Yuna', lang: 'ko-KR' }, { name: 'Google 한국의', lang: 'ko-KR' },
+  { name: 'Yuna', lang: 'ko-KR' },
+  { name: 'Google 한국의', lang: 'ko-KR' },
   { name: 'Microsoft Heami - Korean', lang: 'ko-KR' },
-  { name: 'Thomas', lang: 'fr-FR' }, { name: 'Amelie', lang: 'fr-CA' }, { name: 'Audrey', lang: 'fr-FR' },
+  { name: 'Thomas', lang: 'fr-FR' },
+  { name: 'Amelie', lang: 'fr-CA' },
+  { name: 'Audrey', lang: 'fr-FR' },
   { name: 'Google français', lang: 'fr-FR' },
   { name: 'Microsoft Hortense - French', lang: 'fr-FR' },
-  { name: 'Anna', lang: 'de-DE' }, { name: 'Helena', lang: 'de-DE' }, { name: 'Markus', lang: 'de-DE' },
+  { name: 'Anna', lang: 'de-DE' },
+  { name: 'Helena', lang: 'de-DE' },
+  { name: 'Markus', lang: 'de-DE' },
   { name: 'Google Deutsch', lang: 'de-DE' },
   { name: 'Microsoft Hedda - German', lang: 'de-DE' },
-  { name: 'Monica', lang: 'es-ES' }, { name: 'Paulina', lang: 'es-MX' }, { name: 'Jorge', lang: 'es-ES' },
-  { name: 'Google español', lang: 'es-ES' }, { name: 'Google español de Estados Unidos', lang: 'es-US' },
+  { name: 'Monica', lang: 'es-ES' },
+  { name: 'Paulina', lang: 'es-MX' },
+  { name: 'Jorge', lang: 'es-ES' },
+  { name: 'Google español', lang: 'es-ES' },
+  { name: 'Google español de Estados Unidos', lang: 'es-US' },
   { name: 'Microsoft Helena - Spanish', lang: 'es-ES' },
-  { name: 'Alice', lang: 'it-IT' }, { name: 'Luca', lang: 'it-IT' },
+  { name: 'Alice', lang: 'it-IT' },
+  { name: 'Luca', lang: 'it-IT' },
   { name: 'Google italiano', lang: 'it-IT' },
   { name: 'Microsoft Cosimo - Italian', lang: 'it-IT' },
-  { name: 'Luciana', lang: 'pt-BR' }, { name: 'Joana', lang: 'pt-PT' },
+  { name: 'Luciana', lang: 'pt-BR' },
+  { name: 'Joana', lang: 'pt-PT' },
   { name: 'Google português do Brasil', lang: 'pt-BR' },
   { name: 'Microsoft Maria - Portuguese (Brazil)', lang: 'pt-BR' },
-  { name: 'Milena', lang: 'ru-RU' }, { name: 'Yuri', lang: 'ru-RU' },
+  { name: 'Milena', lang: 'ru-RU' },
+  { name: 'Yuri', lang: 'ru-RU' },
   { name: 'Google русский', lang: 'ru-RU' },
   { name: 'Microsoft Irina - Russian', lang: 'ru-RU' },
-  { name: 'Xander', lang: 'nl-NL' }, { name: 'Ellen', lang: 'nl-BE' },
+  { name: 'Xander', lang: 'nl-NL' },
+  { name: 'Ellen', lang: 'nl-BE' },
   { name: 'Google Nederlands', lang: 'nl-NL' },
-  { name: 'Alva', lang: 'sv-SE' }, { name: 'Oskar', lang: 'sv-SE' },
+  { name: 'Alva', lang: 'sv-SE' },
+  { name: 'Oskar', lang: 'sv-SE' },
   { name: 'Google svenska', lang: 'sv-SE' },
-  { name: 'Satu', lang: 'fi-FI' }, { name: 'Google suomi', lang: 'fi-FI' },
-  { name: 'Nora', lang: 'nb-NO' }, { name: 'Google norsk bokmål', lang: 'nb-NO' },
-  { name: 'Zosia', lang: 'pl-PL' }, { name: 'Google polski', lang: 'pl-PL' },
-  { name: 'Zuzana', lang: 'cs-CZ' }, { name: 'Google čeština', lang: 'cs-CZ' },
-  { name: 'Lekha', lang: 'hi-IN' }, { name: 'Google हिन्दी', lang: 'hi-IN' },
-  { name: 'Kanya', lang: 'th-TH' }, { name: 'Google ไทย', lang: 'th-TH' },
-  { name: 'Damayanti', lang: 'id-ID' }, { name: 'Google Bahasa Indonesia', lang: 'id-ID' },
-  { name: 'Melina', lang: 'el-GR' }, { name: 'Google ελληνικά', lang: 'el-GR' },
-  { name: 'Carmit', lang: 'he-IL' }, { name: 'Google עברית', lang: 'he-IL' },
-  { name: 'Maged', lang: 'ar-SA' }, { name: 'Google العربية', lang: 'ar-SA' },
+  { name: 'Satu', lang: 'fi-FI' },
+  { name: 'Google suomi', lang: 'fi-FI' },
+  { name: 'Nora', lang: 'nb-NO' },
+  { name: 'Google norsk bokmål', lang: 'nb-NO' },
+  { name: 'Zosia', lang: 'pl-PL' },
+  { name: 'Google polski', lang: 'pl-PL' },
+  { name: 'Zuzana', lang: 'cs-CZ' },
+  { name: 'Google čeština', lang: 'cs-CZ' },
+  { name: 'Lekha', lang: 'hi-IN' },
+  { name: 'Google हिन्दी', lang: 'hi-IN' },
+  { name: 'Kanya', lang: 'th-TH' },
+  { name: 'Google ไทย', lang: 'th-TH' },
+  { name: 'Damayanti', lang: 'id-ID' },
+  { name: 'Google Bahasa Indonesia', lang: 'id-ID' },
+  { name: 'Melina', lang: 'el-GR' },
+  { name: 'Google ελληνικά', lang: 'el-GR' },
+  { name: 'Carmit', lang: 'he-IL' },
+  { name: 'Google עברית', lang: 'he-IL' },
+  { name: 'Maged', lang: 'ar-SA' },
+  { name: 'Google العربية', lang: 'ar-SA' },
   { name: 'Tarik', lang: 'ar-SA' },
 ];
 
 const DEVICE_NAME_PREFIXES = [
-  'DESKTOP', 'LAPTOP', 'PC', 'WIN', 'MAC', 'HOME', 'WORK', 'OFFICE', 'STUDIO', 'DEV',
+  'DESKTOP',
+  'LAPTOP',
+  'PC',
+  'WIN',
+  'MAC',
+  'HOME',
+  'WORK',
+  'OFFICE',
+  'STUDIO',
+  'DEV',
 ];
 const DEVICE_NAME_SUFFIXES = [
-  'Alpha', 'Nova', 'Orbit', 'Pulse', 'Ridge', 'Summit', 'Vertex', 'Atlas', 'Cedar', 'Delta',
-  'Echo', 'Flint', 'Grove', 'Harbor', 'Ivory', 'Jade', 'Kepler', 'Lumen', 'Maple', 'Nimbus',
+  'Alpha',
+  'Nova',
+  'Orbit',
+  'Pulse',
+  'Ridge',
+  'Summit',
+  'Vertex',
+  'Atlas',
+  'Cedar',
+  'Delta',
+  'Echo',
+  'Flint',
+  'Grove',
+  'Harbor',
+  'Ivory',
+  'Jade',
+  'Kepler',
+  'Lumen',
+  'Maple',
+  'Nimbus',
 ];
-
 
 /** High-risk hosts where canvas/webgl noise stays tighter for session consistency. */
 const DEFAULT_STABILITY_HOSTS = [
-  'amazon.com', 'amazon.co.jp', 'amazon.co.uk', 'amazon.de', 'amazon.fr', 'amazon.es', 'amazon.it',
-  'amazonaws.com', 'smile.amazon.com',
-  'shopee.com', 'shopee.sg', 'shopee.co.id', 'shopee.tw', 'shopee.vn', 'shopee.co.th', 'shopee.ph', 'shopee.com.my', 'shopee.com.br',
-  'lazada.com', 'lazada.sg', 'lazada.co.id', 'lazada.com.my', 'lazada.vn', 'lazada.co.th', 'lazada.ph',
-  'tiktok.com', 'tiktokv.com', 'bytedance.com',
-  'ebay.com', 'ebay.co.uk', 'ebay.de',
-  'paypal.com', 'stripe.com', 'checkout.stripe.com',
-  'binance.com', 'coinbase.com', 'okx.com', 'bybit.com',
-  'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com',
-  'google.com', 'accounts.google.com', 'gmail.com',
-  'microsoft.com', 'login.live.com', 'account.microsoft.com',
-  'apple.com', 'icloud.com',
-  'browserleaks.com', 'browserleaks.org', 'creepjs.com', 'amiunique.org', 'coveryourtracks.eff.org',
-  'fingerprintjs.com', 'fingerprint.com', 'pixelscan.net', 'sannysoft.com', 'bot.sannysoft.com',
-  'iphey.com', 'whoer.net', 'whatismybrowser.com', 'deviceinfo.me',
+  'amazon.com',
+  'amazon.co.jp',
+  'amazon.co.uk',
+  'amazon.de',
+  'amazon.fr',
+  'amazon.es',
+  'amazon.it',
+  'amazonaws.com',
+  'smile.amazon.com',
+  'shopee.com',
+  'shopee.sg',
+  'shopee.co.id',
+  'shopee.tw',
+  'shopee.vn',
+  'shopee.co.th',
+  'shopee.ph',
+  'shopee.com.my',
+  'shopee.com.br',
+  'lazada.com',
+  'lazada.sg',
+  'lazada.co.id',
+  'lazada.com.my',
+  'lazada.vn',
+  'lazada.co.th',
+  'lazada.ph',
+  'tiktok.com',
+  'tiktokv.com',
+  'bytedance.com',
+  'ebay.com',
+  'ebay.co.uk',
+  'ebay.de',
+  'paypal.com',
+  'stripe.com',
+  'checkout.stripe.com',
+  'binance.com',
+  'coinbase.com',
+  'okx.com',
+  'bybit.com',
+  'facebook.com',
+  'instagram.com',
+  'twitter.com',
+  'x.com',
+  'linkedin.com',
+  'google.com',
+  'accounts.google.com',
+  'gmail.com',
+  'microsoft.com',
+  'login.live.com',
+  'account.microsoft.com',
+  'apple.com',
+  'icloud.com',
+  'browserleaks.com',
+  'browserleaks.org',
+  'creepjs.com',
+  'amiunique.org',
+  'coveryourtracks.eff.org',
+  'fingerprintjs.com',
+  'fingerprint.com',
+  'pixelscan.net',
+  'sannysoft.com',
+  'bot.sannysoft.com',
+  'iphey.com',
+  'whoer.net',
+  'whatismybrowser.com',
+  'deviceinfo.me',
 ];
 
 /** Hosts that should keep normal noise even when parent domains match. */
 const DEFAULT_STABILITY_SKIP_HOSTS = [
-  'sephora.com', 'whatsapp.com', 'web.whatsapp.com', 'dhgate.com', 'cdn.', 'static.',
+  'sephora.com',
+  'whatsapp.com',
+  'web.whatsapp.com',
+  'dhgate.com',
+  'cdn.',
+  'static.',
 ];
 
 function normalizeHost(value) {
@@ -207,17 +379,31 @@ function resolveStabilityPolicy(privacy = {}, options = {}) {
   const mode = ['off', 'auto', 'force'].includes(modeRaw) ? modeRaw : 'auto';
   const customHosts = Array.isArray(fpIn.stabilityHosts)
     ? fpIn.stabilityHosts
-    : (Array.isArray(privacy.stabilityHosts) ? privacy.stabilityHosts : null);
+    : Array.isArray(privacy.stabilityHosts)
+      ? privacy.stabilityHosts
+      : null;
   const customSkip = Array.isArray(fpIn.stabilitySkipHosts)
     ? fpIn.stabilitySkipHosts
-    : (Array.isArray(privacy.stabilitySkipHosts) ? privacy.stabilitySkipHosts : null);
+    : Array.isArray(privacy.stabilitySkipHosts)
+      ? privacy.stabilitySkipHosts
+      : null;
   const hosts = (customHosts && customHosts.length ? customHosts : DEFAULT_STABILITY_HOSTS)
-    .map(normalizeHost).filter(Boolean).slice(0, 800);
+    .map(normalizeHost)
+    .filter(Boolean)
+    .slice(0, 800);
   const skipHosts = (customSkip && customSkip.length ? customSkip : DEFAULT_STABILITY_SKIP_HOSTS)
-    .map(normalizeHost).filter(Boolean).slice(0, 200);
+    .map(normalizeHost)
+    .filter(Boolean)
+    .slice(0, 200);
   const hamming = Math.min(64, Math.max(1, Number(fpIn.stabilityHamming ?? privacy.stabilityHamming) || 12));
-  const maxWidth = Math.min(4096, Math.max(64, Number(fpIn.stabilityMaxWidth ?? privacy.stabilityMaxWidth) || 600));
-  const maxHeight = Math.min(4096, Math.max(64, Number(fpIn.stabilityMaxHeight ?? privacy.stabilityMaxHeight) || 600));
+  const maxWidth = Math.min(
+    4096,
+    Math.max(64, Number(fpIn.stabilityMaxWidth ?? privacy.stabilityMaxWidth) || 600)
+  );
+  const maxHeight = Math.min(
+    4096,
+    Math.max(64, Number(fpIn.stabilityMaxHeight ?? privacy.stabilityMaxHeight) || 600)
+  );
   const square = Math.min(64, Math.max(2, Number(fpIn.stabilitySquare ?? privacy.stabilitySquare) || 8));
   const host = normalizeHost(options.host || options.hostname || '');
   const skipped = host ? listIncludesHost(skipHosts, host) : false;
@@ -263,7 +449,7 @@ function sampleCanvasBlocks(data, width, height, options = {}) {
   const len = data.length;
   for (let y = 0; y < limitH; y += square) {
     for (let x = 0; x < limitW; x += square) {
-      const px = ((y * w) + x) * 4;
+      const px = (y * w + x) * 4;
       if (px >= len) continue;
       samples.push(data[px] & 0xff);
     }
@@ -301,12 +487,13 @@ function applyStableCanvasNoise(imageData, mark, options = {}) {
   const square = Math.min(64, Math.max(2, Number(options.square) || 8));
   const amp = Math.max(1, Number(options.noiseAmplitude) || 1);
   const seedNum = Number(options.seedNum) || 1;
-  const noise = typeof options.noise === 'function'
-    ? options.noise
-    : ((n) => {
-      let x = Math.sin((n + 1) * seedNum) * 10000;
-      return x - Math.floor(x);
-    });
+  const noise =
+    typeof options.noise === 'function'
+      ? options.noise
+      : (n) => {
+          const x = Math.sin((n + 1) * seedNum) * 10000;
+          return x - Math.floor(x);
+        };
   const limitW = width > 0 ? Math.min(width, maxWidth) : width;
   const limitH = height > 0 ? Math.min(height, maxHeight) : height;
   const lockMap = options.lockMap || null;
@@ -316,7 +503,7 @@ function applyStableCanvasNoise(imageData, mark, options = {}) {
     locked = [];
     for (let y = 0; y < (limitH || height); y += square) {
       for (let x = 0; x < (limitW || width); x += square) {
-        const px = ((y * width) + x) * 4;
+        const px = (y * width + x) * 4;
         if (px + 3 >= data.length) continue;
         const delta = Math.floor(noise(px + mark) * amp) - Math.floor(amp / 2);
         locked.push({ px, delta });
@@ -338,8 +525,6 @@ function withinHammingThreshold(a, b, threshold = 12) {
   return hammingDistance(a, b) <= limit;
 }
 
-
-
 /** Deterministic battery snapshot derived from seed. */
 function createBatteryFromSeed(seedInput, override = null) {
   if (override && typeof override === 'object') {
@@ -350,16 +535,20 @@ function createBatteryFromSeed(seedInput, override = null) {
       // null means "unknown / Infinity" for JSON-safe transport into injection
       chargingTime: Number.isFinite(Number(override.chargingTime))
         ? Math.max(0, Number(override.chargingTime))
-        : (charging ? 0 : null),
+        : charging
+          ? 0
+          : null,
       dischargingTime: Number.isFinite(Number(override.dischargingTime))
         ? Math.max(0, Number(override.dischargingTime))
-        : (charging ? null : 7200),
+        : charging
+          ? null
+          : 7200,
       level: Number.isFinite(level) ? level : 0.87,
     };
   }
   const seed = hashSeed(String(seedInput || 'battery'));
   const levelRaw = 55 + (u32(seed, 0) % 40); // 0.55 - 0.94
-  const charging = (u32(seed, 4) % 5) !== 0; // mostly charging on desktop
+  const charging = u32(seed, 4) % 5 !== 0; // mostly charging on desktop
   const level = levelRaw / 100;
   if (charging) {
     return {
@@ -398,22 +587,34 @@ function createMediaDevicesFromSeed(seedInput, options = {}) {
   const tpl = MEDIA_DEVICE_TEMPLATES[acc % MEDIA_DEVICE_TEMPLATES.length] || MEDIA_DEVICE_TEMPLATES[0];
   const emptyLabels = options.emptyLabels === true;
   const labelOverride = options.labels && typeof options.labels === 'object' ? options.labels : null;
-  const inputLabel = emptyLabels ? '' : String(labelOverride?.audioinput || labelOverride?.input || tpl.input);
-  const videoLabel = emptyLabels ? '' : String(labelOverride?.videoinput || labelOverride?.video || `Integrated Camera (${head}:${tail})`);
-  const outputLabel = emptyLabels ? '' : String(labelOverride?.audiooutput || labelOverride?.output || tpl.output);
+  const inputLabel = emptyLabels
+    ? ''
+    : String(labelOverride?.audioinput || labelOverride?.input || tpl.input);
+  const videoLabel = emptyLabels
+    ? ''
+    : String(labelOverride?.videoinput || labelOverride?.video || `Integrated Camera (${head}:${tail})`);
+  const outputLabel = emptyLabels
+    ? ''
+    : String(labelOverride?.audiooutput || labelOverride?.output || tpl.output);
   const devices = [
     { kind: 'audioinput', label: inputLabel, deviceId: `ob-ai-${head}`, groupId: `ob-g-${tail}` },
     { kind: 'videoinput', label: videoLabel, deviceId: `ob-vi-${tail}`, groupId: `ob-g-${tail}` },
-    { kind: 'audiooutput', label: outputLabel, deviceId: `ob-ao-${head}${tail.slice(0, 2)}`, groupId: `ob-g-${tail}` },
+    {
+      kind: 'audiooutput',
+      label: outputLabel,
+      deviceId: `ob-ao-${head}${tail.slice(0, 2)}`,
+      groupId: `ob-g-${tail}`,
+    },
   ];
   if (Array.isArray(options.extra) && options.extra.length) {
     for (const item of options.extra.slice(0, 8)) {
-      if (item && item.kind) devices.push({
-        kind: String(item.kind),
-        label: String(item.label || ''),
-        deviceId: String(item.deviceId || `ob-x-${devices.length}`),
-        groupId: String(item.groupId || `ob-g-${tail}`),
-      });
+      if (item && item.kind)
+        devices.push({
+          kind: String(item.kind),
+          label: String(item.label || ''),
+          deviceId: String(item.deviceId || `ob-x-${devices.length}`),
+          groupId: String(item.groupId || `ob-g-${tail}`),
+        });
     }
   }
   return devices;
@@ -458,18 +659,20 @@ function createSpeechVoicesFromSeed(seedInput, languages = ['en-US'], mode = 'no
   const seed = hashSeed(String(seedInput || primary));
   // 18-32 voices, closer to full system tables — but never more than the platform has.
   const count = Math.min(pool.length, 18 + (u32(seed, 4) % 15));
-  const scored = pool.map((base, index) => {
-    let score = 0;
-    const lang = String(base.lang || '').toLowerCase();
-    const prefix = lang.split('-')[0];
-    if (lang === primary.toLowerCase()) score += 100;
-    else if (langSet.has(lang)) score += 80;
-    else if (prefix === primaryLang) score += 60;
-    else if (langPrefixSet.has(prefix)) score += 40;
-    else if (prefix === 'en') score += 10;
-    score += (u32(seed, 8 + (index % 24)) % 7);
-    return { base, score, index };
-  }).sort((a, b) => b.score - a.score || a.index - b.index);
+  const scored = pool
+    .map((base, index) => {
+      let score = 0;
+      const lang = String(base.lang || '').toLowerCase();
+      const prefix = lang.split('-')[0];
+      if (lang === primary.toLowerCase()) score += 100;
+      else if (langSet.has(lang)) score += 80;
+      else if (prefix === primaryLang) score += 60;
+      else if (langPrefixSet.has(prefix)) score += 40;
+      else if (prefix === 'en') score += 10;
+      score += u32(seed, 8 + (index % 24)) % 7;
+      return { base, score, index };
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index);
 
   const picked = [];
   const used = new Set();
@@ -490,9 +693,10 @@ function createSpeechVoicesFromSeed(seedInput, languages = ['en-US'], mode = 'no
       voiceURI: options.os ? base.name : `ob-voice://${encodeURIComponent(base.name)}/${base.lang}`,
     });
   }
-  let def = picked.find((v) => v.lang === primary)
-    || picked.find((v) => v.lang.toLowerCase().startsWith(primaryLang))
-    || picked[0];
+  const def =
+    picked.find((v) => v.lang === primary) ||
+    picked.find((v) => v.lang.toLowerCase().startsWith(primaryLang)) ||
+    picked[0];
   if (def) {
     def.default = true;
     if (def.localService == null) def.localService = true;
@@ -503,14 +707,16 @@ function createSpeechVoicesFromSeed(seedInput, languages = ['en-US'], mode = 'no
 /** Seeded host-style device name for machine / product surfaces. */
 function createDeviceNameFromSeed(seedInput, options = {}) {
   const mode = String(options.mode || 'noise');
-  const custom = String(options.custom || '').trim().slice(0, 120);
+  const custom = String(options.custom || '')
+    .trim()
+    .slice(0, 120);
   if (mode === 'real') return null;
   if (mode === 'custom' && custom) return custom;
   const seed = hashSeed(String(seedInput || 'device'));
   const prefix = DEVICE_NAME_PREFIXES[u32(seed, 0) % DEVICE_NAME_PREFIXES.length];
   const suffix = DEVICE_NAME_SUFFIXES[u32(seed, 4) % DEVICE_NAME_SUFFIXES.length];
   const num = 1000 + (u32(seed, 8) % 9000);
-  if ((u32(seed, 12) % 3) === 0) return `${suffix}-${num}`;
+  if (u32(seed, 12) % 3 === 0) return `${suffix}-${num}`;
   return `${prefix}-${suffix}${String(num).slice(0, 3)}`;
 }
 
@@ -602,8 +808,14 @@ function buildFingerprint(profile = {}) {
 
   const rawCoresOverride = fpIn.cores ?? privacy.cores;
   const rawMemoryOverride = fpIn.memory ?? privacy.memory;
-  const coresOverride = rawCoresOverride === '' || rawCoresOverride === null || rawCoresOverride === undefined ? NaN : Number(rawCoresOverride);
-  const memoryOverride = rawMemoryOverride === '' || rawMemoryOverride === null || rawMemoryOverride === undefined ? NaN : Number(rawMemoryOverride);
+  const coresOverride =
+    rawCoresOverride === '' || rawCoresOverride === null || rawCoresOverride === undefined
+      ? NaN
+      : Number(rawCoresOverride);
+  const memoryOverride =
+    rawMemoryOverride === '' || rawMemoryOverride === null || rawMemoryOverride === undefined
+      ? NaN
+      : Number(rawMemoryOverride);
   const useRealCores = coresOverride === 0;
   const useRealMemory = memoryOverride === 0;
   // These are reassigned below when a coherent device persona is selected (opt-in), so the
@@ -627,26 +839,70 @@ function buildFingerprint(profile = {}) {
   const audioIdDefault = audioMarkFromSeed(seed.toString('hex'));
   const clientRectsIdDefault = clientRectMarkFromSeed(seed);
   const audioId = Number.isFinite(Number(fpIn.audioId)) ? Number(fpIn.audioId) : audioIdDefault;
-  const clientRectsId = Number.isFinite(Number(fpIn.clientRectsId)) ? Number(fpIn.clientRectsId) : clientRectsIdDefault;
+  const clientRectsId = Number.isFinite(Number(fpIn.clientRectsId))
+    ? Number(fpIn.clientRectsId)
+    : clientRectsIdDefault;
 
   const mode = (name, allowed, fallback) => {
     const value = fpIn[name] ?? privacy[name];
     return allowed.includes(String(value || '')) ? String(value) : fallback;
   };
 
-  const canvasMode = mode('canvas', ['real', 'noise', 'blocked'], privacy.canvas === 'blocked' ? 'blocked' : 'noise');
-  const webglMode = mode('webgl', ['real', 'noise', 'blocked'], privacy.webgl === 'blocked' ? 'blocked' : 'noise');
+  const canvasMode = mode(
+    'canvas',
+    ['real', 'noise', 'blocked'],
+    privacy.canvas === 'blocked' ? 'blocked' : 'noise'
+  );
+  const webglMode = mode(
+    'webgl',
+    ['real', 'noise', 'blocked'],
+    privacy.webgl === 'blocked' ? 'blocked' : 'noise'
+  );
   // Metadata (UNMASKED vendor/renderer) can stay real while image noise still runs.
-  const webglMetaMode = mode('webglMeta', ['real', 'noise', 'blocked', 'custom'], privacy.webglMeta === 'real' ? 'real' : (privacy.webglMeta === 'blocked' ? 'blocked' : (privacy.webglMeta === 'custom' ? 'custom' : 'noise')));
+  const webglMetaMode = mode(
+    'webglMeta',
+    ['real', 'noise', 'blocked', 'custom'],
+    privacy.webglMeta === 'real'
+      ? 'real'
+      : privacy.webglMeta === 'blocked'
+        ? 'blocked'
+        : privacy.webglMeta === 'custom'
+          ? 'custom'
+          : 'noise'
+  );
   const audioMode = mode('audio', ['real', 'noise', 'muted'], privacy.audio === 'muted' ? 'muted' : 'noise');
   const clientRectsMode = mode('clientRects', ['real', 'noise'], 'noise');
   const webrtcMode = mode('webrtc', ['real', 'proxy', 'disabled'], privacy.webrtc || 'proxy');
   // Numeric shadow of webrtc mode only (not an independent control).
-  const webrtcPolicy = webrtcMode === 'disabled' ? 0 : (webrtcMode === 'proxy' ? 3 : 1);
-  const mediaDevicesMode = mode('mediaDevices', ['real', 'noise', 'empty'], privacy.mediaDevices === 'real' ? 'real' : (privacy.mediaDevices === 'empty' ? 'empty' : (privacy.media === 'noise' ? 'noise' : (privacy.media === 'blocked' ? 'empty' : 'noise'))));
-  const speechMode = mode('speech', ['real', 'noise', 'blocked'], privacy.speech === 'blocked' ? 'blocked' : (privacy.speech === 'noise' ? 'noise' : 'real'));
-  const batteryMode = mode('battery', ['real', 'noise', 'blocked'], privacy.battery === 'blocked' ? 'blocked' : (privacy.battery === 'real' ? 'real' : 'noise'));
-  const webgpuMode = mode('webgpu', ['real', 'blocked', 'webgl'], privacy.webgpu === 'blocked' ? 'blocked' : (privacy.webgpu === 'webgl' ? 'webgl' : 'real'));
+  const webrtcPolicy = webrtcMode === 'disabled' ? 0 : webrtcMode === 'proxy' ? 3 : 1;
+  const mediaDevicesMode = mode(
+    'mediaDevices',
+    ['real', 'noise', 'empty'],
+    privacy.mediaDevices === 'real'
+      ? 'real'
+      : privacy.mediaDevices === 'empty'
+        ? 'empty'
+        : privacy.media === 'noise'
+          ? 'noise'
+          : privacy.media === 'blocked'
+            ? 'empty'
+            : 'noise'
+  );
+  const speechMode = mode(
+    'speech',
+    ['real', 'noise', 'blocked'],
+    privacy.speech === 'blocked' ? 'blocked' : privacy.speech === 'noise' ? 'noise' : 'real'
+  );
+  const batteryMode = mode(
+    'battery',
+    ['real', 'noise', 'blocked'],
+    privacy.battery === 'blocked' ? 'blocked' : privacy.battery === 'real' ? 'real' : 'noise'
+  );
+  const webgpuMode = mode(
+    'webgpu',
+    ['real', 'blocked', 'webgl'],
+    privacy.webgpu === 'blocked' ? 'blocked' : privacy.webgpu === 'webgl' ? 'webgl' : 'real'
+  );
   const stability = resolveStabilityPolicy(privacy, {
     host: fpIn.stabilityHost || privacy.stabilityHost || profile.stabilityHost || '',
     mode: fpIn.stabilityMode || privacy.stabilityMode,
@@ -656,9 +912,12 @@ function buildFingerprint(profile = {}) {
   // Custom profile.userAgent wins; otherwise deterministic seeded UA.
   // clientHints / privacy.fingerprint.clientHints feed UserAgentMetadata.
   const uaOverride = String(fpIn.userAgent || profile.userAgent || '').trim();
-  const clientHintsIn = (fpIn.clientHints && typeof fpIn.clientHints === 'object')
-    ? fpIn.clientHints
-    : (privacy.clientHints && typeof privacy.clientHints === 'object' ? privacy.clientHints : {});
+  const clientHintsIn =
+    fpIn.clientHints && typeof fpIn.clientHints === 'object'
+      ? fpIn.clientHints
+      : privacy.clientHints && typeof privacy.clientHints === 'object'
+        ? privacy.clientHints
+        : {};
   const kernelMajor = Number(String(profile.kernelVersion || '').match(/^\d+/)?.[0]) || 0;
   let uaProfile;
   if (uaOverride) {
@@ -705,7 +964,8 @@ function buildFingerprint(profile = {}) {
   // the combination rather than each value. A persona bundles axes that co-occur on real
   // hardware. Off by default: switching an existing profile's hardware identity mid-life is
   // itself a risk, so this only applies where it was explicitly requested.
-  const personaRequested = String(fpIn.deviceProfile ?? privacy.deviceProfile ?? '').toLowerCase() === 'persona';
+  const personaRequested =
+    String(fpIn.deviceProfile ?? privacy.deviceProfile ?? '').toLowerCase() === 'persona';
   let devicePersona = null;
   if (personaRequested) {
     devicePersona = pickPersona(uaOs, u32(seed, 36));
@@ -720,51 +980,78 @@ function buildFingerprint(profile = {}) {
       gpu: devicePersona.webgl.gpu || webglPreset.gpu,
     };
   }
-  const webglGpu = (fpIn.webgpu && typeof fpIn.webgpu === 'object')
-    ? {
-      vendor: String(fpIn.webgpu.vendor || fpIn.gpuVendor || webglPreset.gpu?.vendor || ''),
-      architecture: String(fpIn.webgpu.architecture || fpIn.gpuArchitecture || webglPreset.gpu?.architecture || ''),
-    }
-    : (webglPreset.gpu || null);
+  const webglGpu =
+    fpIn.webgpu && typeof fpIn.webgpu === 'object'
+      ? {
+          vendor: String(fpIn.webgpu.vendor || fpIn.gpuVendor || webglPreset.gpu?.vendor || ''),
+          architecture: String(
+            fpIn.webgpu.architecture || fpIn.gpuArchitecture || webglPreset.gpu?.architecture || ''
+          ),
+        }
+      : webglPreset.gpu || null;
 
   // Prefer already-resolved profile.language (engine sets JP→ja-JP when languageMode=ip)
   let languagePrimary = String(profile.language || 'en-US').trim() || 'en-US';
   try {
     const { resolveProfileLanguage } = require('./locale-from-country');
-    languagePrimary = resolveProfileLanguage(profile, {
-      countryCode: profile.exitCountryCode,
-    }) || languagePrimary;
+    languagePrimary =
+      resolveProfileLanguage(profile, {
+        countryCode: profile.exitCountryCode,
+      }) || languagePrimary;
   } catch (_) {}
-  const languages = String(languagePrimary).split(',').map((s) => s.trim()).filter(Boolean);
+  const languages = String(languagePrimary)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (!languages.length) languages.push('en-US');
 
   // A persona carries its own panel size; without it the reported screen follows the window,
   // which is what makes "screen smaller than the viewport" style inconsistencies show up.
-  const screenWidth = Math.max(640, Math.round(Number(fpIn.screenWidth) || devicePersona?.screen?.width || width));
-  const screenHeight = Math.max(480, Math.round(Number(fpIn.screenHeight) || devicePersona?.screen?.height || height));
-  const taskbarHeight = Math.max(0, Math.round(Number(fpIn.taskbarHeight) || (uaOs === 'macos' || uaOs === 'macos_arm' ? 25 : 40)));
+  const screenWidth = Math.max(
+    640,
+    Math.round(Number(fpIn.screenWidth) || devicePersona?.screen?.width || width)
+  );
+  const screenHeight = Math.max(
+    480,
+    Math.round(Number(fpIn.screenHeight) || devicePersona?.screen?.height || height)
+  );
+  const taskbarHeight = Math.max(
+    0,
+    Math.round(Number(fpIn.taskbarHeight) || (uaOs === 'macos' || uaOs === 'macos_arm' ? 25 : 40))
+  );
   const availLeft = Math.round(Number(fpIn.availLeft) || 0);
   const availTop = Math.round(Number(fpIn.availTop) || 0);
   const availWidth = Math.min(screenWidth, Math.max(1, Math.round(Number(fpIn.availWidth) || screenWidth)));
-  const availHeight = Math.min(screenHeight, Math.max(1, Math.round(Number(fpIn.availHeight) || (screenHeight - taskbarHeight))));
+  const availHeight = Math.min(
+    screenHeight,
+    Math.max(1, Math.round(Number(fpIn.availHeight) || screenHeight - taskbarHeight))
+  );
   const screenX = Math.max(availLeft, Math.round(Number(fpIn.screenX) || availLeft));
   const screenY = Math.max(availTop, Math.round(Number(fpIn.screenY) || availTop));
 
-  const mediaLabelTemplates = (fpIn.mediaLabels && typeof fpIn.mediaLabels === 'object')
-    ? fpIn.mediaLabels
-    : ((privacy.mediaLabels && typeof privacy.mediaLabels === 'object') ? privacy.mediaLabels : null);
-  const mediaDevices = mediaDevicesMode === 'real'
-    ? null
-    : createMediaDevicesFromSeed(stableIdentity + ':' + seed.toString('hex').slice(0, 12), {
-      emptyLabels: mediaDevicesMode === 'empty',
-      extra: Array.isArray(fpIn.mediaDevices) ? fpIn.mediaDevices : null,
-      labels: mediaLabelTemplates,
-    });
-  const battery = batteryMode === 'real'
-    ? null
-    : (batteryMode === 'blocked'
-      ? { blocked: true }
-      : createBatteryFromSeed(stableIdentity + ':battery:' + seed.toString('hex').slice(0, 8), fpIn.battery || privacy.batterySnapshot || null));
+  const mediaLabelTemplates =
+    fpIn.mediaLabels && typeof fpIn.mediaLabels === 'object'
+      ? fpIn.mediaLabels
+      : privacy.mediaLabels && typeof privacy.mediaLabels === 'object'
+        ? privacy.mediaLabels
+        : null;
+  const mediaDevices =
+    mediaDevicesMode === 'real'
+      ? null
+      : createMediaDevicesFromSeed(stableIdentity + ':' + seed.toString('hex').slice(0, 12), {
+          emptyLabels: mediaDevicesMode === 'empty',
+          extra: Array.isArray(fpIn.mediaDevices) ? fpIn.mediaDevices : null,
+          labels: mediaLabelTemplates,
+        });
+  const battery =
+    batteryMode === 'real'
+      ? null
+      : batteryMode === 'blocked'
+        ? { blocked: true }
+        : createBatteryFromSeed(
+            stableIdentity + ':battery:' + seed.toString('hex').slice(0, 8),
+            fpIn.battery || privacy.batterySnapshot || null
+          );
   const speechVoices = createSpeechVoicesFromSeed(
     stableIdentity + ':speech:' + seed.toString('hex').slice(0, 8),
     Array.isArray(fpIn.languages) ? fpIn.languages : languages,
@@ -773,7 +1060,11 @@ function buildFingerprint(profile = {}) {
     // reported voices, and an existing profile's fingerprint must not move on upgrade.
     { os: devicePersona ? uaOs : '' }
   );
-  const deviceNameMode = mode('deviceNameMode', ['noise', 'custom', 'real'], privacy.deviceNameMode || 'noise');
+  const deviceNameMode = mode(
+    'deviceNameMode',
+    ['noise', 'custom', 'real'],
+    privacy.deviceNameMode || 'noise'
+  );
   const deviceName = createDeviceNameFromSeed(
     stableIdentity + ':device:' + seed.toString('hex').slice(0, 8),
     {
@@ -781,28 +1072,27 @@ function buildFingerprint(profile = {}) {
       custom: fpIn.deviceName || privacy.deviceName || '',
     }
   );
-  const webrtcLocalIp = String(
-    fpIn.webrtcLocalIp
-    || privacy.webrtcLocalIp
-    || ''
-  ).trim() || createLocalIpFromSeed(stableIdentity + ':webrtc-local:' + seed.toString('hex').slice(0, 8));
+  const webrtcLocalIp =
+    String(fpIn.webrtcLocalIp || privacy.webrtcLocalIp || '').trim() ||
+    createLocalIpFromSeed(stableIdentity + ':webrtc-local:' + seed.toString('hex').slice(0, 8));
 
   // Dynamic layer: may change with proxy/exit IP without rebuilding static seeds
-  const webrtcAddress = String(
-    fpIn.webrtcAddress
-    || privacy.webrtcAddress
-    || profile.exitIp
-    || profile.exitIP
-    || ''
-  ).trim() || null;
-  const timezoneDynamic = String(
-    profile.exitTimezone
-    || (privacy.timezoneMode === 'custom' ? privacy.timezone : '')
-    || privacy.timezone
-    || ''
-  ).trim() || null;
+  const webrtcAddress =
+    String(fpIn.webrtcAddress || privacy.webrtcAddress || profile.exitIp || profile.exitIP || '').trim() ||
+    null;
+  const timezoneDynamic =
+    String(
+      profile.exitTimezone ||
+        (privacy.timezoneMode === 'custom' ? privacy.timezone : '') ||
+        privacy.timezone ||
+        ''
+    ).trim() || null;
   let geoposition = null;
-  if (privacy.geoMode === 'custom' && Number.isFinite(Number(privacy.latitude)) && Number.isFinite(Number(privacy.longitude))) {
+  if (
+    privacy.geoMode === 'custom' &&
+    Number.isFinite(Number(privacy.latitude)) &&
+    Number.isFinite(Number(privacy.longitude))
+  ) {
     geoposition = {
       latitude: Number(privacy.latitude),
       longitude: Number(privacy.longitude),
@@ -816,12 +1106,18 @@ function buildFingerprint(profile = {}) {
     }
   }
 
-  const webglVendor = (webglMetaMode === 'real')
-    ? null
-    : (webglMetaMode === 'blocked' ? '' : (fpIn.webglVendor || webglPreset.vendor));
-  const webglRenderer = (webglMetaMode === 'real')
-    ? null
-    : (webglMetaMode === 'blocked' ? '' : (fpIn.webglRenderer || webglPreset.renderer));
+  const webglVendor =
+    webglMetaMode === 'real'
+      ? null
+      : webglMetaMode === 'blocked'
+        ? ''
+        : fpIn.webglVendor || webglPreset.vendor;
+  const webglRenderer =
+    webglMetaMode === 'real'
+      ? null
+      : webglMetaMode === 'blocked'
+        ? ''
+        : fpIn.webglRenderer || webglPreset.renderer;
   const webgl = {
     mode: webglMode,
     metaMode: webglMetaMode,
@@ -842,8 +1138,12 @@ function buildFingerprint(profile = {}) {
     clientHints: uaProfile.clientHints,
     userAgentMetadata: uaProfile.metadata,
     languages: Array.isArray(fpIn.languages) ? fpIn.languages : languages,
-    hardwareConcurrency: useRealCores ? null : (Number(fpIn.hardwareConcurrency) > 0 ? Number(fpIn.hardwareConcurrency) : cores),
-    deviceMemory: useRealMemory ? null : (Number(fpIn.deviceMemory) > 0 ? Number(fpIn.deviceMemory) : memory),
+    hardwareConcurrency: useRealCores
+      ? null
+      : Number(fpIn.hardwareConcurrency) > 0
+        ? Number(fpIn.hardwareConcurrency)
+        : cores,
+    deviceMemory: useRealMemory ? null : Number(fpIn.deviceMemory) > 0 ? Number(fpIn.deviceMemory) : memory,
     screen: {
       width: screenWidth,
       height: screenHeight,
@@ -901,18 +1201,22 @@ function buildFingerprint(profile = {}) {
     // as absent. Null when no persona is selected: no persona means no claim to enforce.
     fonts: devicePersona
       ? {
-        os: uaOs,
-        list: fontsForOs(uaOs),
-        foreign: exclusiveFontsForOtherOs(uaOs),
-      }
+          os: uaOs,
+          list: fontsForOs(uaOs),
+          foreign: exclusiveFontsForOtherOs(uaOs),
+        }
       : null,
     maxTouchPoints: Number(fpIn.maxTouchPoints) >= 0 ? Number(fpIn.maxTouchPoints) : 0,
     vendor: fpIn.vendor || 'Google Inc.',
     doNotTrack: privacy.dnt ? '1' : null,
     // Static noise identity vs dynamic exit-IP layer
     staticConfig: {
-      hardwareConcurrency: useRealCores ? null : (Number(fpIn.hardwareConcurrency) > 0 ? Number(fpIn.hardwareConcurrency) : cores),
-      deviceMemory: useRealMemory ? null : (Number(fpIn.deviceMemory) > 0 ? Number(fpIn.deviceMemory) : memory),
+      hardwareConcurrency: useRealCores
+        ? null
+        : Number(fpIn.hardwareConcurrency) > 0
+          ? Number(fpIn.hardwareConcurrency)
+          : cores,
+      deviceMemory: useRealMemory ? null : Number(fpIn.deviceMemory) > 0 ? Number(fpIn.deviceMemory) : memory,
       platform: fpIn.platform || uaProfile.platform || OS_PRESETS[uaOs].platformNav,
       langs: Array.isArray(fpIn.languages) ? fpIn.languages : languages,
       canvasMark: Number.isFinite(Number(fpIn.canvasId)) ? Number(fpIn.canvasId) : canvasId,
@@ -959,37 +1263,74 @@ function fingerprintConsistencyIssues(fp) {
 
   const add = (code, message, severity = 'warning') => issues.push({ code, severity, message });
   if (fp?.platform !== expectedPlatform) {
-    add('platform-ua-mismatch', `navigator.platform (${fp?.platform || 'empty'}) does not match the ${uaOs} user agent.`);
+    add(
+      'platform-ua-mismatch',
+      `navigator.platform (${fp?.platform || 'empty'}) does not match the ${uaOs} user agent.`
+    );
   }
   if (fp?.userAgentMetadata?.platform !== expectedChPlatform) {
-    add('client-hints-ua-mismatch', `Client Hints platform (${fp?.userAgentMetadata?.platform || 'empty'}) does not match the ${uaOs} user agent.`);
+    add(
+      'client-hints-ua-mismatch',
+      `Client Hints platform (${fp?.userAgentMetadata?.platform || 'empty'}) does not match the ${uaOs} user agent.`
+    );
   }
   if (uaOs === 'windows' && /Apple M[0-9]|OpenGL 4\.1|Mesa|RADV/i.test(renderer)) {
     add('webgl-ua-mismatch', 'WebGL renderer does not look like a Windows renderer.');
   }
-  if ((uaOs === 'macos' || uaOs === 'macos_arm') && (/Direct3D|D3D11|Mesa|RADV/i.test(renderer) || !/Apple|Intel/i.test(vendor + renderer))) {
+  if (
+    (uaOs === 'macos' || uaOs === 'macos_arm') &&
+    (/Direct3D|D3D11|Mesa|RADV/i.test(renderer) || !/Apple|Intel/i.test(vendor + renderer))
+  ) {
     add('webgl-ua-mismatch', 'WebGL renderer does not look like a macOS renderer.');
   }
-  if (uaOs === 'linux' && (/Direct3D|D3D11|Apple M[0-9]/i.test(renderer) || !/Mesa|RADV|OpenGL/i.test(renderer))) {
+  if (
+    uaOs === 'linux' &&
+    (/Direct3D|D3D11|Apple M[0-9]/i.test(renderer) || !/Mesa|RADV|OpenGL/i.test(renderer))
+  ) {
     add('webgl-ua-mismatch', 'WebGL renderer does not look like a Linux renderer.');
   }
   const screen = fp?.screen || {};
-  if (!(Number(screen.width) > 0 && Number(screen.height) > 0 && Number(screen.availWidth) > 0 && Number(screen.availHeight) > 0)) {
+  if (!(
+    Number(screen.width) > 0 &&
+    Number(screen.height) > 0 &&
+    Number(screen.availWidth) > 0 &&
+    Number(screen.availHeight) > 0
+  )) {
     add('screen-invalid', 'Screen dimensions must be positive.', 'error');
-  } else if (Number(screen.availWidth) > Number(screen.width) || Number(screen.availHeight) > Number(screen.height)) {
-    add('screen-available-invalid', 'Available screen dimensions cannot exceed total screen dimensions.', 'error');
+  } else if (
+    Number(screen.availWidth) > Number(screen.width) ||
+    Number(screen.availHeight) > Number(screen.height)
+  ) {
+    add(
+      'screen-available-invalid',
+      'Available screen dimensions cannot exceed total screen dimensions.',
+      'error'
+    );
   }
-  if (Number(screen.availLeft) + Number(screen.availWidth) > Number(screen.width)
-      || Number(screen.availTop) + Number(screen.availHeight) > Number(screen.height)) {
-    add('screen-origin-invalid', 'Available screen origin and dimensions must remain inside the screen.', 'error');
+  if (
+    Number(screen.availLeft) + Number(screen.availWidth) > Number(screen.width) ||
+    Number(screen.availTop) + Number(screen.availHeight) > Number(screen.height)
+  ) {
+    add(
+      'screen-origin-invalid',
+      'Available screen origin and dimensions must remain inside the screen.',
+      'error'
+    );
   }
   if (Number(screen.screenX) < Number(screen.availLeft) || Number(screen.screenY) < Number(screen.availTop)) {
     add('window-origin-invalid', 'Window origin must not precede the available screen origin.', 'error');
   }
   if (!(Number(screen.devicePixelRatio) > 0 && Number(screen.devicePixelRatio) <= 4)) {
-    add('device-pixel-ratio-invalid', 'devicePixelRatio must be within the supported desktop range.', 'error');
+    add(
+      'device-pixel-ratio-invalid',
+      'devicePixelRatio must be within the supported desktop range.',
+      'error'
+    );
   }
-  if (fp?.hardwareConcurrency != null && !(Number(fp.hardwareConcurrency) >= 1 && Number(fp.hardwareConcurrency) <= 64)) {
+  if (
+    fp?.hardwareConcurrency != null &&
+    !(Number(fp.hardwareConcurrency) >= 1 && Number(fp.hardwareConcurrency) <= 64)
+  ) {
     add('cores-invalid', 'hardwareConcurrency must be between 1 and 64 when overridden.', 'error');
   }
   if (fp?.deviceMemory != null && !(Number(fp.deviceMemory) >= 1 && Number(fp.deviceMemory) <= 128)) {
@@ -1050,7 +1391,9 @@ function buildInjectionScript(fp) {
   // UA + Client Hints (userAgentData) injected first
   const uaScript = fp.uaProfile
     ? buildUaInjectionScript(fp.uaProfile)
-    : (fp.userAgent ? buildUaInjectionScript(buildUaProfile({ userAgent: fp.userAgent, platform: fp.platform })) : '');
+    : fp.userAgent
+      ? buildUaInjectionScript(buildUaProfile({ userAgent: fp.userAgent, platform: fp.platform }))
+      : '';
 
   return `${uaScript}
 (() => {
@@ -2123,7 +2466,10 @@ function chromeArgsForFingerprint(fp, profile = {}) {
         const val = flag.slice(key.length + 1);
         const existing = args.findIndex((a) => a.startsWith(key + '='));
         if (existing >= 0) {
-          const cur = args[existing].slice(key.length + 1).split(',').filter(Boolean);
+          const cur = args[existing]
+            .slice(key.length + 1)
+            .split(',')
+            .filter(Boolean);
           for (const part of val.split(',')) {
             if (part && !cur.includes(part)) cur.push(part);
           }
@@ -2148,7 +2494,8 @@ function chromeArgsForFingerprint(fp, profile = {}) {
   }
   if (fp.webgl?.mode === 'blocked') args.push('--disable-webgl', '--disable-webgl2', '--disable-3d-apis');
   if (fp.audio?.mode === 'muted' || profile.privacy?.audio === 'muted') args.push('--mute-audio');
-  if (fp.doNotTrack === '1' || profile.privacy?.dnt || profile.privacy?.dntMode === 'on') args.push('--do-not-track');
+  if (fp.doNotTrack === '1' || profile.privacy?.dnt || profile.privacy?.dntMode === 'on')
+    args.push('--do-not-track');
   // Use full BCP47 when present (ja-JP / zh-CN); Chrome accepts --lang=ja-JP
   const lang = (fp.languages && fp.languages[0]) || profile.language;
   if (lang) {
@@ -2168,11 +2515,12 @@ function chromeArgsForFingerprint(fp, profile = {}) {
 
 async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile = {}) {
   const privacy = profile.privacy || {};
-  const timezone = privacy.timezoneMode === 'custom'
-    ? privacy.timezone
-    : privacy.timezoneMode === 'real'
-      ? ''
-      : (profile.exitTimezone || '');
+  const timezone =
+    privacy.timezoneMode === 'custom'
+      ? privacy.timezone
+      : privacy.timezoneMode === 'real'
+        ? ''
+        : profile.exitTimezone || '';
   // geoMode: custom coords | disabled/prompt (no override) | ip/allow (from exit IP)
   let latitude = null;
   let longitude = null;
@@ -2206,7 +2554,7 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
     try {
       await invoke(method, params);
     } catch (error) {
-      const msg = String(error && error.message || error || '');
+      const msg = String((error && error.message) || error || '');
       if (/already in effect|cannot be overridden|not available/i.test(msg)) return;
       throw error;
     }
@@ -2214,10 +2562,12 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
 
   // Network/Emulation.setUserAgentOverride + UserAgentMetadata (Client Hints)
   if (fp.userAgent || fp.uaProfile) {
-    const uaProfile = fp.uaProfile || buildUaProfile({
-      userAgent: fp.userAgent,
-      platform: fp.platform,
-    });
+    const uaProfile =
+      fp.uaProfile ||
+      buildUaProfile({
+        userAgent: fp.userAgent,
+        platform: fp.platform,
+      });
     const acceptLanguage = (fp.languages || []).join(',');
     const override = cdpUserAgentOverride(uaProfile, acceptLanguage);
     // Emulation affects navigator + most page JS
@@ -2257,7 +2607,7 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
     await invoke('Page.addScriptToEvaluateOnNewDocument', { source });
     documentStartOk = true;
   } catch (error) {
-    const msg = String(error && error.message || error || '');
+    const msg = String((error && error.message) || error || '');
     if (!/already|duplicate|exists/i.test(msg)) {
       // Retry once after re-enabling Page domain.
       await invoke('Page.enable', {}).catch(() => {});
@@ -2265,7 +2615,7 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
         await invoke('Page.addScriptToEvaluateOnNewDocument', { source });
         documentStartOk = true;
       } catch (retryError) {
-        const retryMsg = String(retryError && retryError.message || retryError || '');
+        const retryMsg = String((retryError && retryError.message) || retryError || '');
         if (!/already|duplicate|exists/i.test(retryMsg)) {
           // Soft: still try Runtime.evaluate on current document.
           documentStartOk = false;
@@ -2287,9 +2637,8 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
     });
     if (evaluated && evaluated.exceptionDetails) {
       // leave a soft signal for callers that inspect return value; do not throw
-      const text = evaluated.exceptionDetails.text
-        || evaluated.exceptionDetails.exception?.description
-        || 'Uncaught';
+      const text =
+        evaluated.exceptionDetails.text || evaluated.exceptionDetails.exception?.description || 'Uncaught';
       const err = new Error(text);
       err.softInject = true;
       err.exceptionDetails = evaluated.exceptionDetails;
@@ -2297,7 +2646,7 @@ async function applyFingerprintToTab(cdpCall, webSocketDebuggerUrl, fp, profile 
       // Soft path: swallow so keepDefaultTab can still open the welcome page.
     }
   } catch (error) {
-    const msg = String(error && error.message || error || '');
+    const msg = String((error && error.message) || error || '');
     if (!/Uncaught|already in effect|cannot be overridden/i.test(msg)) {
       // unexpected CDP transport errors still surface
       throw error;

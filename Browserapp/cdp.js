@@ -5,9 +5,12 @@ function request(url, method = 'GET') {
     const req = http.request(url, { method, timeout: 5000 }, (res) => {
       let body = '';
       res.setEncoding('utf8');
-      res.on('data', (chunk) => { body += chunk; });
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
       res.on('end', () => {
-        if (res.statusCode >= 400) return reject(new Error(`CDP HTTP ${res.statusCode}: ${body.slice(0, 200)}`));
+        if (res.statusCode >= 400)
+          return reject(new Error(`CDP HTTP ${res.statusCode}: ${body.slice(0, 200)}`));
         resolve(body);
       });
     });
@@ -23,7 +26,8 @@ async function json(url, method = 'GET') {
 
 function call(webSocketUrl, method, params = {}, timeout = 6000) {
   return new Promise((resolve, reject) => {
-    if (typeof WebSocket !== 'function') return reject(new Error('WebSocket API is unavailable in this host runtime'));
+    if (typeof WebSocket !== 'function')
+      return reject(new Error('WebSocket API is unavailable in this host runtime'));
     const id = Math.floor(Math.random() * 1_000_000_000);
     const socket = new WebSocket(webSocketUrl);
     let settled = false;
@@ -31,17 +35,26 @@ function call(webSocketUrl, method, params = {}, timeout = 6000) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      try { socket.close(); } catch (_) {}
+      try {
+        socket.close();
+      } catch (_) {}
       fn(arg);
     };
     const timer = setTimeout(() => finish(reject, new Error(`CDP timeout: ${method}`)), timeout);
     socket.addEventListener('open', () => {
-      try { socket.send(JSON.stringify({ id, method, params })); }
-      catch (error) { finish(reject, error instanceof Error ? error : new Error(`CDP send failed: ${method}`)); }
+      try {
+        socket.send(JSON.stringify({ id, method, params }));
+      } catch (error) {
+        finish(reject, error instanceof Error ? error : new Error(`CDP send failed: ${method}`));
+      }
     });
     socket.addEventListener('message', (event) => {
       let value;
-      try { value = JSON.parse(String(event.data)); } catch (_) { return; }
+      try {
+        value = JSON.parse(String(event.data));
+      } catch (_) {
+        return;
+      }
       if (value.id !== id) return;
       if (value.error) finish(reject, new Error(value.error.message || `CDP error: ${method}`));
       else finish(resolve, value.result || {});
@@ -49,7 +62,9 @@ function call(webSocketUrl, method, params = {}, timeout = 6000) {
     socket.addEventListener('error', () => finish(reject, new Error(`CDP socket error: ${method}`)));
     // Without this, a target that closes before replying leaves the caller hanging until
     // the full timeout elapses instead of failing fast.
-    socket.addEventListener('close', () => finish(reject, new Error(`CDP socket closed before response: ${method}`)));
+    socket.addEventListener('close', () =>
+      finish(reject, new Error(`CDP socket closed before response: ${method}`))
+    );
   });
 }
 
@@ -74,7 +89,8 @@ class PersistentConnection {
       this.socket = socket;
       let settled = false;
       const fail = (error, closeSocket = false) => {
-        const value = error instanceof Error ? error : new Error(String(error || 'CDP persistent socket failed'));
+        const value =
+          error instanceof Error ? error : new Error(String(error || 'CDP persistent socket failed'));
         // Do not leave a disconnected transport available for later commands. A stale
         // socket would otherwise make those commands wait until their individual timeout.
         if (this.socket === socket) {
@@ -86,19 +102,25 @@ class PersistentConnection {
         this.failAll(value);
         if (unexpectedDisconnect) {
           this.disconnectNotified = true;
-          try { this.onDisconnect?.(value, this); } catch (_) {}
+          try {
+            this.onDisconnect?.(value, this);
+          } catch (_) {}
         }
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         if (closeSocket) {
-          try { socket.close(); } catch (_) {}
+          try {
+            socket.close();
+          } catch (_) {}
         }
         reject(value);
       };
       const timer = setTimeout(() => {
         fail(new Error('CDP connection timeout'));
-        try { socket.close(); } catch (_) {}
+        try {
+          socket.close();
+        } catch (_) {}
       }, timeout);
       socket.addEventListener('open', () => {
         if (settled) return;
@@ -122,7 +144,11 @@ class PersistentConnection {
 
   handleMessage(event) {
     let value;
-    try { value = JSON.parse(String(event.data)); } catch (_) { return; }
+    try {
+      value = JSON.parse(String(event.data));
+    } catch (_) {
+      return;
+    }
     if (value.id != null) {
       const pending = this.pending.get(value.id);
       if (!pending) return;
@@ -133,7 +159,9 @@ class PersistentConnection {
       return;
     }
     if (value.method && this.onEvent) {
-      try { this.onEvent(value, this); } catch (_) {}
+      try {
+        this.onEvent(value, this);
+      } catch (_) {}
     }
   }
 
@@ -150,8 +178,9 @@ class PersistentConnection {
       }, timeout);
       this.pending.set(id, { resolve, reject, timer });
       const socket = this.socket;
-      try { socket.send(JSON.stringify(message)); }
-      catch (error) {
+      try {
+        socket.send(JSON.stringify(message));
+      } catch (error) {
         clearTimeout(timer);
         this.pending.delete(id);
         reject(error);
@@ -163,7 +192,9 @@ class PersistentConnection {
           this.failAll(error);
           if (unexpectedDisconnect) {
             this.disconnectNotified = true;
-            try { this.onDisconnect?.(error, this); } catch (_) {}
+            try {
+              this.onDisconnect?.(error, this);
+            } catch (_) {}
           }
         }
       }
@@ -183,7 +214,9 @@ class PersistentConnection {
     this.closed = true;
     this.opened = false;
     this.failAll(new Error('CDP persistent connection closed'));
-    try { this.socket?.close(); } catch (_) {}
+    try {
+      this.socket?.close();
+    } catch (_) {}
     this.socket = null;
   }
 }
@@ -194,13 +227,15 @@ async function connect(webSocketUrl, options = {}) {
 
 async function targets(port) {
   const values = await json(`http://127.0.0.1:${port}/json/list`);
-  return values.filter((item) => item.webSocketDebuggerUrl).map((item) => ({
-    id: item.id,
-    type: item.type,
-    title: item.title,
-    url: item.url,
-    webSocketDebuggerUrl: item.webSocketDebuggerUrl
-  }));
+  return values
+    .filter((item) => item.webSocketDebuggerUrl)
+    .map((item) => ({
+      id: item.id,
+      type: item.type,
+      title: item.title,
+      url: item.url,
+      webSocketDebuggerUrl: item.webSocketDebuggerUrl,
+    }));
 }
 
 async function tabs(port) {
@@ -226,7 +261,11 @@ async function activateTab(port, targetId) {
 
 async function firstTab(port) {
   const list = await tabs(port);
-  return list.find((item) => !item.url.startsWith('chrome://') && !item.url.startsWith('edge://')) || list[0] || null;
+  return (
+    list.find((item) => !item.url.startsWith('chrome://') && !item.url.startsWith('edge://')) ||
+    list[0] ||
+    null
+  );
 }
 
 const focusedEditableExpression = `(() => {
@@ -269,7 +308,10 @@ async function focusedEditableTab(port) {
   const inspected = [];
   for (const tab of list) {
     try {
-      const result = await call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression: focusedEditableExpression, returnByValue: true });
+      const result = await call(tab.webSocketDebuggerUrl, 'Runtime.evaluate', {
+        expression: focusedEditableExpression,
+        returnByValue: true,
+      });
       inspected.push({ tab, state: result.result?.value || {} });
     } catch (_) {}
   }
@@ -279,7 +321,10 @@ async function focusedEditableTab(port) {
 function textWasInserted(before, after, text) {
   const inserted = String(text);
   if (before && Number.isInteger(before.selectionStart) && Number.isInteger(before.selectionEnd)) {
-    const expected = String(before.value).slice(0, before.selectionStart) + inserted + String(before.value).slice(before.selectionEnd);
+    const expected =
+      String(before.value).slice(0, before.selectionStart) +
+      inserted +
+      String(before.value).slice(before.selectionEnd);
     return String(after.value) === expected;
   }
   if (!inserted) return String(after.value) === String(before?.value || '');
@@ -291,23 +336,31 @@ async function insertText(port, text) {
   if (!focused) throw new Error('No focused text input was found in the visible tab');
   const value = String(text);
   await call(focused.tab.webSocketDebuggerUrl, 'Input.insertText', { text: value });
-  const checked = await call(focused.tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression: focusedEditableExpression, returnByValue: true });
+  const checked = await call(focused.tab.webSocketDebuggerUrl, 'Runtime.evaluate', {
+    expression: focusedEditableExpression,
+    returnByValue: true,
+  });
   const after = checked.result?.value || {};
-  if (!after.editable || !textWasInserted(focused.state, after, value)) throw new Error('The focused input did not accept the assigned text');
+  if (!after.editable || !textWasInserted(focused.state, after, value))
+    throw new Error('The focused input did not accept the assigned text');
   return { success: true, targetId: focused.tab.id, title: focused.tab.title, insertedLength: value.length };
 }
 
 async function clearFocused(port) {
   const focused = await focusedEditableTab(port);
   if (!focused) throw new Error('No focused text input was found in the visible tab');
-  const expression = `(() => { let e=document.activeElement;const seen=new Set();while(e&&!seen.has(e)){seen.add(e);const nested=e.shadowRoot&&e.shadowRoot.activeElement;if(!nested)break;e=nested;}if(!e)return false;if('value' in e){e.value='';e.dispatchEvent(new Event('input',{bubbles:true,composed:true}));e.dispatchEvent(new Event('change',{bubbles:true,composed:true}));return e.value==='';}if(e.isContentEditable){e.textContent='';e.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true,inputType:'deleteContentBackward'}));return e.textContent==='';}return false;})()`;
-  const result = await call(focused.tab.webSocketDebuggerUrl, 'Runtime.evaluate', { expression, returnByValue: true });
+  const expression =
+    "(() => { let e=document.activeElement;const seen=new Set();while(e&&!seen.has(e)){seen.add(e);const nested=e.shadowRoot&&e.shadowRoot.activeElement;if(!nested)break;e=nested;}if(!e)return false;if('value' in e){e.value='';e.dispatchEvent(new Event('input',{bubbles:true,composed:true}));e.dispatchEvent(new Event('change',{bubbles:true,composed:true}));return e.value==='';}if(e.isContentEditable){e.textContent='';e.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true,inputType:'deleteContentBackward'}));return e.textContent==='';}return false;})()";
+  const result = await call(focused.tab.webSocketDebuggerUrl, 'Runtime.evaluate', {
+    expression,
+    returnByValue: true,
+  });
   if (result.result?.value !== true) throw new Error('The focused input could not be cleared');
   return { success: true, targetId: focused.tab.id, title: focused.tab.title };
 }
 
 async function navigate(port, url) {
-  const tab = await firstTab(port) || await newTab(port, 'about:blank');
+  const tab = (await firstTab(port)) || (await newTab(port, 'about:blank'));
   await call(tab.webSocketDebuggerUrl, 'Page.navigate', { url }, 20000);
   return { targetId: tab.id };
 }
@@ -329,7 +382,10 @@ async function windowForPort(port) {
 
 async function setWindowState(port, state) {
   const value = await windowForPort(port);
-  await call(value.socket, 'Browser.setWindowBounds', { windowId: value.windowId, bounds: { windowState: state } });
+  await call(value.socket, 'Browser.setWindowBounds', {
+    windowId: value.windowId,
+    bounds: { windowState: state },
+  });
   return { windowId: value.windowId, state };
 }
 
@@ -346,7 +402,12 @@ async function setWindowBounds(port, bounds, options = {}) {
   // can opt out so a geometry refresh never collapses fullscreen/maximized windows or
   // dismisses browser-owned menus merely by re-applying windowState=normal.
   if (forceNormal) {
-    try { await call(value.socket, 'Browser.setWindowBounds', { windowId: value.windowId, bounds: { windowState: 'normal' } }); } catch (_) {}
+    try {
+      await call(value.socket, 'Browser.setWindowBounds', {
+        windowId: value.windowId,
+        bounds: { windowState: 'normal' },
+      });
+    } catch (_) {}
   }
   await call(value.socket, 'Browser.setWindowBounds', { windowId: value.windowId, bounds: next });
   // Some Chromium builds need a second pass after leaving maximized state. Passive
@@ -356,12 +417,37 @@ async function setWindowBounds(port, bounds, options = {}) {
   try {
     const current = await call(value.socket, 'Browser.getWindowBounds', { windowId: value.windowId });
     const actual = current?.bounds || {};
-    if (Math.abs((actual.width || 0) - next.width) > 24 || Math.abs((actual.height || 0) - next.height) > 24
-      || Math.abs((actual.left || 0) - next.left) > 24 || Math.abs((actual.top || 0) - next.top) > 24) {
+    if (
+      Math.abs((actual.width || 0) - next.width) > 24 ||
+      Math.abs((actual.height || 0) - next.height) > 24 ||
+      Math.abs((actual.left || 0) - next.left) > 24 ||
+      Math.abs((actual.top || 0) - next.top) > 24
+    ) {
       await call(value.socket, 'Browser.setWindowBounds', { windowId: value.windowId, bounds: next });
     }
   } catch (_) {}
   return { windowId: value.windowId, bounds: next };
 }
 
-module.exports = { json, call, connect, PersistentConnection, targets, tabs, browserSocket, newTab, closeTab, activateTab, firstTab, focusedEditableTab, insertText, clearFocused, navigate, reload, windowForPort, setWindowState, setWindowBounds, __test: { focusedEditableExpression, chooseFocusedEditable, textWasInserted } };
+module.exports = {
+  json,
+  call,
+  connect,
+  PersistentConnection,
+  targets,
+  tabs,
+  browserSocket,
+  newTab,
+  closeTab,
+  activateTab,
+  firstTab,
+  focusedEditableTab,
+  insertText,
+  clearFocused,
+  navigate,
+  reload,
+  windowForPort,
+  setWindowState,
+  setWindowBounds,
+  __test: { focusedEditableExpression, chooseFocusedEditable, textWasInserted },
+};

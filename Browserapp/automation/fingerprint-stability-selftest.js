@@ -52,19 +52,24 @@ function main() {
   assert.strictEqual(off.active, false);
 
   // Worker script must re-evaluate host at runtime (not only launch-time active flag)
-  const workerSrc = buildWorkerInjectionScript(buildFingerprint({
-    id: 'prof_worker_stability',
-    name: 'ws',
-    privacy: { stabilityMode: 'auto', canvas: 'noise', webgl: 'noise' },
-  }));
+  const workerSrc = buildWorkerInjectionScript(
+    buildFingerprint({
+      id: 'prof_worker_stability',
+      name: 'ws',
+      privacy: { stabilityMode: 'auto', canvas: 'noise', webgl: 'noise' },
+    })
+  );
   assert.ok(workerSrc.includes('stabilityActiveNow'), 'worker inject must include host-aware stability');
   assert.ok(workerSrc.includes('hosts'), 'worker CFG must ship host list');
 
-  const custom = resolveStabilityPolicy({
-    stabilityMode: 'auto',
-    stabilityHosts: ['risk.test'],
-    stabilitySkipHosts: [],
-  }, { host: 'a.risk.test' });
+  const custom = resolveStabilityPolicy(
+    {
+      stabilityMode: 'auto',
+      stabilityHosts: ['risk.test'],
+      stabilitySkipHosts: [],
+    },
+    { host: 'a.risk.test' }
+  );
   assert.strictEqual(custom.active, true);
   assert.ok(matchStabilityHost('login.paypal.com', { stabilityMode: 'auto' }));
   assert.ok(DEFAULT_STABILITY_HOSTS.includes('amazon.com'));
@@ -137,7 +142,6 @@ function main() {
   assert.strictEqual(quiet.stability.active, false);
   assert.strictEqual(quiet.stability.noiseAmplitude, 3);
 
-
   // --- hamming session consistency ---
   assert.strictEqual(hammingDistance([0], [0]), 0);
   assert.strictEqual(hammingDistance([0xff], [0x00]), 8);
@@ -153,7 +157,15 @@ function main() {
     return { data, width, height };
   };
   const lockMap = new Map();
-  const opts = { noiseAmplitude: 1, seedNum: 0xabcdef, lockMap, square: 8, maxWidth: 600, maxHeight: 600, mark: 77 };
+  const opts = {
+    noiseAmplitude: 1,
+    seedNum: 0xabcdef,
+    lockMap,
+    square: 8,
+    maxWidth: 600,
+    maxHeight: 600,
+    mark: 77,
+  };
   const imgA = makeImg();
   const imgB = makeImg();
   applyStableCanvasNoise(imgA, 77, opts);
@@ -167,11 +179,13 @@ function main() {
   applyStableCanvasNoise(imgC, 1, { ...opts, lockMap: new Map(), mark: 1 });
   const blocksC = sampleCanvasBlocks(imgC.data, width, height, { square: 8 });
   assert.ok(hammingDistance(blocksA, blocksC) >= 0);
-  const forceScript = buildInjectionScript(buildFingerprint({
-    id: 'prof_hamming_1',
-    name: 'hamming',
-    privacy: { stabilityMode: 'force', stabilityHamming: 12 },
-  }));
+  const forceScript = buildInjectionScript(
+    buildFingerprint({
+      id: 'prof_hamming_1',
+      name: 'hamming',
+      privacy: { stabilityMode: 'force', stabilityHamming: 12 },
+    })
+  );
   assert.ok(forceScript.includes('canvasNoiseLocks'), 'injection must lock deltas on stable hosts');
   assert.ok(forceScript.includes('locked.push'));
 
@@ -242,7 +256,8 @@ function main() {
   engineBlock.networkInfo = new Map();
   engineBlock.emit = () => {};
   engineBlock.sanitizeProfile = BrowserEngine.prototype.sanitizeProfile.bind(engineBlock);
-  engineBlock.prepareProfileProxyForStart = BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineBlock);
+  engineBlock.prepareProfileProxyForStart =
+    BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineBlock);
   engineBlock.applyNetworkToProfile = () => {};
   engineBlock.testProxy = async () => {
     const err = new Error('dead proxy');
@@ -268,7 +283,11 @@ async function runProxyPolicies(engineBlock, BrowserEngine) {
     blockedErr = error;
   }
   assert.ok(blockedErr, 'block policy must throw');
-  assert.ok(String(blockedErr.message).includes('未就绪') || String(blockedErr.message).includes('检测失败') || String(blockedErr.message).includes('dead'));
+  assert.ok(
+    String(blockedErr.message).includes('未就绪') ||
+      String(blockedErr.message).includes('检测失败') ||
+      String(blockedErr.message).includes('dead')
+  );
 
   // continue policy
   const engineCont = Object.create(BrowserEngine.prototype);
@@ -277,7 +296,8 @@ async function runProxyPolicies(engineBlock, BrowserEngine) {
   const events = [];
   engineCont.emit = (e) => events.push(e);
   engineCont.sanitizeProfile = BrowserEngine.prototype.sanitizeProfile.bind(engineCont);
-  engineCont.prepareProfileProxyForStart = BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineCont);
+  engineCont.prepareProfileProxyForStart =
+    BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineCont);
   engineCont.applyNetworkToProfile = () => {};
   engineCont.testProxy = async () => {
     throw Object.assign(new Error('dead'), { errorClass: 'unreachable' });
@@ -300,7 +320,8 @@ async function runProxyPolicies(engineBlock, BrowserEngine) {
   const events2 = [];
   engineDirect.emit = (e) => events2.push(e);
   engineDirect.sanitizeProfile = BrowserEngine.prototype.sanitizeProfile.bind(engineDirect);
-  engineDirect.prepareProfileProxyForStart = BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineDirect);
+  engineDirect.prepareProfileProxyForStart =
+    BrowserEngine.prototype.prepareProfileProxyForStart.bind(engineDirect);
   engineDirect.applyNetworkToProfile = () => {};
   engineDirect.testProxy = async () => {
     throw Object.assign(new Error('dead'), { errorClass: 'unreachable' });
@@ -335,7 +356,10 @@ async function runProxyPolicies(engineBlock, BrowserEngine) {
   assert.ok(fpSrc.includes('applyStableCanvasNoise'));
   assert.ok(fpSrc.includes('metaMode'));
   assert.ok(engSrc.includes("stabilityMode === 'off'"), 'refresh seed must yield to stability');
-  assert.ok(engSrc.includes('fingerprint?.uaProfile?.chromeMajor'), 'tls major should follow built fingerprint');
+  assert.ok(
+    engSrc.includes('fingerprint?.uaProfile?.chromeMajor'),
+    'tls major should follow built fingerprint'
+  );
   // webglMeta real skips vendor spoof
   const metaReal = buildFingerprint({
     id: 'prof_webgl_meta_real',
@@ -387,14 +411,19 @@ async function runProxyPolicies(engineBlock, BrowserEngine) {
     "editorSet('#editor-battery'",
     "editorCheck('#editor-proxy-require-ready'",
     "stabilityMode: ['off', 'auto', 'force']",
-    "requireReady: proxyMeta.requireReady !== false",
+    'requireReady: proxyMeta.requireReady !== false',
     "apiExtractUrl: String(proxyMeta.apiExtractUrl || '')",
   ]) {
     assert.ok(rendererSrc.includes(needle), 'renderer wiring missing: ' + needle);
   }
-  assert.ok(!rendererSrc.includes("apiExtractUrl: String(proxyMeta.apiExtractUrl || proxyMeta.refreshUrl || '')"), 'renderer must not bleed refreshUrl into apiExtractUrl');
+  assert.ok(
+    !rendererSrc.includes("apiExtractUrl: String(proxyMeta.apiExtractUrl || proxyMeta.refreshUrl || '')"),
+    'renderer must not bleed refreshUrl into apiExtractUrl'
+  );
 
-  console.log('FINGERPRINT_STABILITY_SELFTEST_OK host=1 schema=1 inject=1 proxy-policy=1 hamming=1 tls=1 scrub=1 fe-be=1');
+  console.log(
+    'FINGERPRINT_STABILITY_SELFTEST_OK host=1 schema=1 inject=1 proxy-policy=1 hamming=1 tls=1 scrub=1 fe-be=1'
+  );
 }
 
 main().catch((error) => {

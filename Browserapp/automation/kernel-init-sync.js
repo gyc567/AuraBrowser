@@ -22,7 +22,10 @@ function isOpenBrowser148(browser = {}) {
 
 /** Stable ipc / --browser_id window name (SB + 9 digits). */
 function stableBrowserWindowName(profileId) {
-  const h = crypto.createHash('sha1').update(String(profileId || 'default')).digest('hex');
+  const h = crypto
+    .createHash('sha1')
+    .update(String(profileId || 'default'))
+    .digest('hex');
   const n = parseInt(h.slice(0, 8), 16) % 1000000000;
   return `SB${String(n).padStart(9, '0')}`;
 }
@@ -50,9 +53,12 @@ function brandsForInit(fp) {
   const meta = fp.userAgentMetadata || fp.uaProfile?.metadata || {};
   const major = Number(fp.uaProfile?.chromeMajor || meta.brands?.[0]?.version) || 148;
   const full = String(meta.uaFullVersion || meta.fullVersion || `${major}.0.0.0`);
-  const list = Array.isArray(meta.fullVersionList) && meta.fullVersionList.length
-    ? meta.fullVersionList
-    : (Array.isArray(meta.brands) ? meta.brands : []);
+  const list =
+    Array.isArray(meta.fullVersionList) && meta.fullVersionList.length
+      ? meta.fullVersionList
+      : Array.isArray(meta.brands)
+        ? meta.brands
+        : [];
   if (!list.length) {
     return [
       { brand: 'Google Chrome', fullVersion: full, version: String(major) },
@@ -65,8 +71,12 @@ function brandsForInit(fp) {
     const ver = String(b.version || major);
     const isGrease = /not/i.test(brand) && !/chrome|chromium/i.test(brand);
     const fullVersion = isGrease
-      ? (ver.includes('.') ? ver : `${ver}.0.0.0`)
-      : (ver.split('.').length >= 3 ? ver : full);
+      ? ver.includes('.')
+        ? ver
+        : `${ver}.0.0.0`
+      : ver.split('.').length >= 3
+        ? ver
+        : full;
     return {
       brand,
       fullVersion,
@@ -124,9 +134,7 @@ function consistencyFromFp(fp, kind) {
   const stability = fp.stability || fp.canvas?.stability || {};
   const square = Math.min(64, Math.max(2, Number(stability.square) || 8));
   const hamming = Math.min(64, Math.max(1, Number(stability.hammingThreshold) || 12));
-  const noiseOn = kind === 'canvas'
-    ? fp.canvas?.mode === 'noise'
-    : fp.webgl?.mode === 'noise';
+  const noiseOn = kind === 'canvas' ? fp.canvas?.mode === 'noise' : fp.webgl?.mode === 'noise';
   // stabilityMode=off only disables site-aware locking; native noise still runs when mode is noise.
   // (CDP inject is stripped via fingerprintForNativeKernelInject to avoid double noise.)
   const enable = noiseOn;
@@ -145,12 +153,16 @@ function consistencyFromFp(fp, kind) {
 function mapFingerprintToInitFields(fp = {}, profile = {}) {
   const meta = fp.userAgentMetadata || fp.uaProfile?.metadata || {};
   const privacy = profile.privacy || {};
-  const langs = Array.isArray(fp.languages) && fp.languages.length
-    ? fp.languages
-    : String(profile.language || 'en-US').split(',').map((s) => s.trim()).filter(Boolean);
+  const langs =
+    Array.isArray(fp.languages) && fp.languages.length
+      ? fp.languages
+      : String(profile.language || 'en-US')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
   const accept = langs.join(',') || 'en-US';
   const webrtcMode = fp.webrtc || 'proxy';
-  const webrtcPolicy = webrtcMode === 'disabled' ? 0 : (webrtcMode === 'proxy' ? 3 : 1);
+  const webrtcPolicy = webrtcMode === 'disabled' ? 0 : webrtcMode === 'proxy' ? 3 : 1;
   const canvasMode = fp.canvas?.mode || 'noise';
   const webglMode = fp.webgl?.mode || 'noise';
   const audioMode = fp.audio?.mode || 'noise';
@@ -158,10 +170,12 @@ function mapFingerprintToInitFields(fp = {}, profile = {}) {
   const mediaMode = fp.mediaDevices?.mode || 'noise';
   const speechMode = fp.speech?.mode || 'real';
   const fontMode = String(privacy.fontMode || privacy.fonts || fp.fontMode || 'default').toLowerCase();
-  const fontFingerprinting = fontMode === 'noise' || fontMode === 'spoof'
-    || privacy.fontFingerprinting === true
-    || privacy.isFontFingerprinting === true
-    || fp.fontFingerprinting === true;
+  const fontFingerprinting =
+    fontMode === 'noise' ||
+    fontMode === 'spoof' ||
+    privacy.fontFingerprinting === true ||
+    privacy.isFontFingerprinting === true ||
+    fp.fontFingerprinting === true;
 
   const fields = {
     platform: String(fp.platform || meta.platform || 'Win32'),
@@ -218,19 +232,19 @@ function mapFingerprintToInitFields(fp = {}, profile = {}) {
 
   // WebRTC IP surfaces: public (proxy/exit) + private local candidate.
   const publicIp = String(
-    fp.webrtcAddress
-    || fp.dynamicConfig?.webrtcAddress
-    || privacy.webrtcAddress
-    || profile.exitIp
-    || profile.exitIP
-    || ''
+    fp.webrtcAddress ||
+      fp.dynamicConfig?.webrtcAddress ||
+      privacy.webrtcAddress ||
+      profile.exitIp ||
+      profile.exitIP ||
+      ''
   ).trim();
   const localIp = String(
-    fp.webrtcLocalIp
-    || fp.staticConfig?.webrtcLocalIp
-    || fp.dynamicConfig?.webrtcLocalIp
-    || privacy.webrtcLocalIp
-    || ''
+    fp.webrtcLocalIp ||
+      fp.staticConfig?.webrtcLocalIp ||
+      fp.dynamicConfig?.webrtcLocalIp ||
+      privacy.webrtcLocalIp ||
+      ''
   ).trim();
   if (webrtcMode === 'disabled') {
     fields.webrtc_fake_ip = '';
@@ -241,7 +255,9 @@ function mapFingerprintToInitFields(fp = {}, profile = {}) {
   }
   const stunServers = Array.isArray(privacy.webrtcStunServers)
     ? privacy.webrtcStunServers
-    : (Array.isArray(fp.webrtcStunServers) ? fp.webrtcStunServers : null);
+    : Array.isArray(fp.webrtcStunServers)
+      ? fp.webrtcStunServers
+      : null;
   if (stunServers && stunServers.length) {
     fields.webrtc_stun_servers = stunServers.map((item) => String(item || '').trim()).filter(Boolean);
   }
@@ -260,7 +276,12 @@ function mapFingerprintToInitFields(fp = {}, profile = {}) {
   if (!geoText) {
     const lat = Number(privacy.latitude ?? profile.exitLatitude);
     const lon = Number(privacy.longitude ?? profile.exitLongitude);
-    if (Number.isFinite(lat) && Number.isFinite(lon) && privacy.geoMode !== 'disabled' && privacy.geoMode !== 'prompt') {
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      privacy.geoMode !== 'disabled' &&
+      privacy.geoMode !== 'prompt'
+    ) {
       const accuracy = Number.isFinite(Number(privacy.accuracy)) ? Number(privacy.accuracy) : 1000;
       geoText = `${lat},${lon},${accuracy}`;
     }
@@ -337,7 +358,8 @@ function applyIpc(init, windowName) {
 
 function mergeConsistency(existing, patch) {
   const base = existing && typeof existing === 'object' ? { ...existing } : {};
-  if (!Array.isArray(base.check_url)) base.check_url = Array.isArray(existing?.check_url) ? existing.check_url : [];
+  if (!Array.isArray(base.check_url))
+    base.check_url = Array.isArray(existing?.check_url) ? existing.check_url : [];
   base.enable = Boolean(patch.enable);
   base.hanming_distance = patch.hanming_distance;
   base.max_height = patch.max_height;
@@ -416,8 +438,12 @@ async function resolveInitTemplate(browserPath = '', resourceRoots = []) {
   }
   const home = process.env.HOME || '';
   if (home) {
-    candidates.push(path.join(home, 'Library/Application Support/openbrowser/kernels/macos-x64/init_template.json'));
-    candidates.push(path.join(home, 'Library/Application Support/openbrowser/kernels/openbrowser/init_template.json'));
+    candidates.push(
+      path.join(home, 'Library/Application Support/openbrowser/kernels/macos-x64/init_template.json')
+    );
+    candidates.push(
+      path.join(home, 'Library/Application Support/openbrowser/kernels/openbrowser/init_template.json')
+    );
   }
   for (const file of candidates) {
     if (file && fs.existsSync(file)) return file;
@@ -430,13 +456,7 @@ async function resolveInitTemplate(browserPath = '', resourceRoots = []) {
  * @returns {{ windowName: string, path: string, fields: object }}
  */
 async function writeOpenBrowserKernelInit(profileRoot, options = {}) {
-  const {
-    fingerprint,
-    profile = {},
-    browserPath = '',
-    resourceRoots = [],
-    templatePath = null,
-  } = options;
+  const { fingerprint, profile = {}, browserPath = '', resourceRoots = [], templatePath = null } = options;
   if (!profileRoot) throw new Error('profileRoot required');
   await fsp.mkdir(profileRoot, { recursive: true });
 
@@ -448,7 +468,7 @@ async function writeOpenBrowserKernelInit(profileRoot, options = {}) {
     init = null;
   }
   if (!init || typeof init !== 'object') {
-    const tpl = templatePath || await resolveInitTemplate(browserPath, resourceRoots);
+    const tpl = templatePath || (await resolveInitTemplate(browserPath, resourceRoots));
     if (tpl) init = await readJsonIfExists(tpl);
   }
   if (!init || typeof init !== 'object') init = {};
@@ -480,7 +500,7 @@ function fingerprintForNativeKernelInject(fp) {
   const out = { ...fp };
   if (fp.canvas?.mode === 'noise') out.canvas = { ...fp.canvas, mode: 'real' };
   if (fp.webgl?.mode === 'noise') {
-    const metaMode = fp.webgl.metaMode === 'real' ? 'real' : (fp.webgl.metaMode || 'noise');
+    const metaMode = fp.webgl.metaMode === 'real' ? 'real' : fp.webgl.metaMode || 'noise';
     out.webgl = {
       ...fp.webgl,
       // Skip JS readPixels noise (native owns image); keep meta spoof hooks.

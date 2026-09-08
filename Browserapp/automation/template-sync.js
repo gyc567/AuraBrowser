@@ -29,23 +29,29 @@ function requestRaw(url, { method = 'GET', headers = {}, body = null, timeout = 
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const lib = u.protocol === 'https:' ? https : http;
-    const req = lib.request({
-      protocol: u.protocol,
-      hostname: u.hostname,
-      port: u.port || (u.protocol === 'https:' ? 443 : 80),
-      path: u.pathname + u.search,
-      method,
-      headers: {
-        Accept: '*/*',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36',
-        ...headers,
+    const req = lib.request(
+      {
+        protocol: u.protocol,
+        hostname: u.hostname,
+        port: u.port || (u.protocol === 'https:' ? 443 : 80),
+        path: u.pathname + u.search,
+        method,
+        headers: {
+          Accept: '*/*',
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+          ...headers,
+        },
+        timeout,
       },
-      timeout,
-    }, (res) => {
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, buffer: Buffer.concat(chunks), headers: res.headers }));
-    });
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () =>
+          resolve({ status: res.statusCode, buffer: Buffer.concat(chunks), headers: res.headers })
+        );
+      }
+    );
     req.on('error', reject);
     req.on('timeout', () => req.destroy(new Error('请求超时')));
     if (body) req.write(typeof body === 'string' ? body : JSON.stringify(body));
@@ -59,8 +65,11 @@ async function requestJson(url, opts = {}) {
     headers: { Accept: 'application/json, text/plain, */*', ...(opts.headers || {}) },
   });
   let data;
-  try { data = JSON.parse(buffer.toString('utf8')); }
-  catch (_) { throw new Error(`非 JSON 响应 HTTP ${status}: ${buffer.toString('utf8').slice(0, 200)}`); }
+  try {
+    data = JSON.parse(buffer.toString('utf8'));
+  } catch (_) {
+    throw new Error(`非 JSON 响应 HTTP ${status}: ${buffer.toString('utf8').slice(0, 200)}`);
+  }
   return { status, data };
 }
 
@@ -202,7 +211,11 @@ function normalizeRemoteTemplate(item = {}, detail = null, processContent = null
 
   let pc = processContent || src.process_content || src.processContent || null;
   if (typeof pc === 'string') {
-    try { pc = JSON.parse(pc); } catch (_) { /* keep */ }
+    try {
+      pc = JSON.parse(pc);
+    } catch (_) {
+      /* keep */
+    }
   }
   if (pc && pc.nodes && pc.nodes[0] && pc.nodes[0].data) {
     pc = graphToProcessContent(pc);
@@ -218,16 +231,19 @@ function normalizeRemoteTemplate(item = {}, detail = null, processContent = null
     name: String(src.name || src.template_name || `远程模版 ${id}`).slice(0, 120),
     cat: String(src.category_name || src.category || src.cat || 'Other').slice(0, 40),
     category_id: src.category_id != null ? String(src.category_id) : '',
-    desc: String(src.description || src.abstract || src.desc || '').replace(/<[^>]+>/g, ' ').slice(0, 800),
+    desc: String(src.description || src.abstract || src.desc || '')
+      .replace(/<[^>]+>/g, ' ')
+      .slice(0, 800),
     tags: Array.isArray(src.tags) ? src.tags.map(String) : ['远程', '免费'],
     steps,
     process_content: pc,
     uses: Number(src.use_num || src.uses || 0) || 0,
     pay_type: 1,
     price: src.price != null ? Number(src.price) : 0,
-    developer: typeof src.developer === 'object' && src.developer
-      ? String(src.developer.name || 'Remote')
-      : String(src.developer || src.author || 'Remote').slice(0, 80),
+    developer:
+      typeof src.developer === 'object' && src.developer
+        ? String(src.developer.name || 'Remote')
+        : String(src.developer || src.author || 'Remote').slice(0, 80),
     img_url: src.img_url || src.cover || src.uri || '',
     builtin: false,
     source: 'remote',
@@ -248,7 +264,7 @@ async function syncRemoteTemplateStore(config = {}, options = {}) {
   const pageSize = options.pageSize || 50;
   const maxPages = options.maxPages || 20;
   const withDetail = options.withDetail !== false;
-  const payType = options.pay_type != null ? options.pay_type : (options.freeOnly === false ? '' : '1');
+  const payType = options.pay_type != null ? options.pay_type : options.freeOnly === false ? '' : '1';
 
   let categories = [];
   try {
@@ -289,20 +305,26 @@ async function syncRemoteTemplateStore(config = {}, options = {}) {
             const pack = await fetchProcessPack(uri, tid);
             processContent = graphToProcessContent(pack);
           }
-        } catch (_) { /* keep list meta */ }
+        } catch (_) {
+          /* keep list meta */
+        }
       }
       try {
         list.push(normalizeRemoteTemplate(item, detail, processContent));
-      } catch (_) { /* skip */ }
+      } catch (_) {
+        /* skip */
+      }
     }
     if (batch.length < pageSize) break;
   }
 
   return {
-    categories: categories.map((c) => ({
-      id: String(c.id ?? c.category_id ?? ''),
-      name: String(c.name || c.category_name || c.title || ''),
-    })).filter((c) => c.name),
+    categories: categories
+      .map((c) => ({
+        id: String(c.id ?? c.category_id ?? ''),
+        name: String(c.name || c.category_name || c.title || ''),
+      }))
+      .filter((c) => c.name),
     templates: list,
     synced_at: new Date().toISOString(),
   };

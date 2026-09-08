@@ -39,7 +39,10 @@ function main() {
   assert.strictEqual(isPrivateOrLocalHostname('127.0.0.1'), true);
   assert.strictEqual(isPrivateOrLocalHostname('192.168.1.1'), true);
   assert.doesNotThrow(() => assertSafeOutboundUrl('http://127.0.0.1:8080/ip', { allowPrivate: true }));
-  assert.throws(() => assertSafeOutboundUrl('http://127.0.0.1:8080/ip', { allowPrivate: false }), /内网|private|本机/i);
+  assert.throws(
+    () => assertSafeOutboundUrl('http://127.0.0.1:8080/ip', { allowPrivate: false }),
+    /内网|private|本机/i
+  );
 
   // --- Worker injection carries host lists + dynamic stability ---
   const fp = buildFingerprint({
@@ -56,12 +59,18 @@ function main() {
   assert.ok(workerSrc.includes('stabilityActiveNow'), 'worker must evaluate host at runtime');
   assert.ok(workerSrc.includes('currentHost'), 'worker must read location.hostname');
   assert.ok(workerSrc.includes('hosts'), 'worker CFG must include hosts list');
-  assert.ok(!/const stableWorker = Boolean\(CFG\.stability\?\.active\)/.test(workerSrc), 'must not hardcode launch-time active only');
+  assert.ok(
+    !/const stableWorker = Boolean\(CFG\.stability\?\.active\)/.test(workerSrc),
+    'must not hardcode launch-time active only'
+  );
 
   // --- WebRTC createAnswer rewrite present ---
   const inject = buildInjectionScript(fp);
   assert.ok(inject.includes('createAnswer'), 'main inject must patch createAnswer');
-  assert.ok(inject.includes('rewriteSdp') || inject.includes('setLocalDescription'), 'SDP rewrite path required');
+  assert.ok(
+    inject.includes('rewriteSdp') || inject.includes('setLocalDescription'),
+    'SDP rewrite path required'
+  );
 
   // --- Native kernel: stability off still enables consistency when noise ---
   const fpNoiseOff = buildFingerprint({
@@ -71,12 +80,13 @@ function main() {
   });
   // Access internal via require path re-read
   const kin = require('./automation/kernel-init-sync');
-  const patch = kin.mapFingerprintToInitFields
-    ? null
-    : null;
+  const patch = kin.mapFingerprintToInitFields ? null : null;
   // consistencyFromFp not exported — inspect via write path fields by re-require source string
   const kinSrc = fs.readFileSync(path.join(__dirname, 'automation/kernel-init-sync.js'), 'utf8');
-  assert.ok(kinSrc.includes('// stabilityMode=off only disables site-aware locking'), 'stability off comment present');
+  assert.ok(
+    kinSrc.includes('// stabilityMode=off only disables site-aware locking'),
+    'stability off comment present'
+  );
   assert.ok(kinSrc.includes('const enable = noiseOn;'), 'consistency enable must follow noise mode only');
 
   const stripped = fingerprintForNativeKernelInject(fpNoiseOff);
@@ -87,11 +97,14 @@ function main() {
   const rpaSrc = fs.readFileSync(path.join(__dirname, 'automation/rpa-engine.js'), 'utf8');
   assert.ok(rpaSrc.includes('resolveSafeRpaPath'), 'RPA must define path sandbox helper');
   assert.ok(
-    rpaSrc.includes("if (type === 'useexcel')")
-    && (rpaSrc.includes('resolveSafeRpaPath(filePath)') || rpaSrc.includes('resolveSpreadsheetPath')),
+    rpaSrc.includes("if (type === 'useexcel')") &&
+      (rpaSrc.includes('resolveSafeRpaPath(filePath)') || rpaSrc.includes('resolveSpreadsheetPath')),
     'useExcel sandboxed'
   );
-  assert.ok(rpaSrc.includes("if (type === 'uploadattachment')") && rpaSrc.includes('resolveSafeRpaPath(filePath)'), 'uploadAttachment sandboxed');
+  assert.ok(
+    rpaSrc.includes("if (type === 'uploadattachment')") && rpaSrc.includes('resolveSafeRpaPath(filePath)'),
+    'uploadAttachment sandboxed'
+  );
 
   // Runtime sandbox check via re-require internals is hard; unit-test helper by eval of function source
   // Load rpa-engine and exercise through temporary require of path logic:
@@ -106,7 +119,8 @@ function main() {
     if (!raw) throw new Error('file path required');
     if (raw.includes('\0')) throw new Error('invalid file path');
     const resolved = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(OUTPUT_DIRECTORY, raw);
-    if (!isPathInsideRoot(resolved, OUTPUT_DIRECTORY)) throw new Error('RPA file path must be inside the RPA output directory');
+    if (!isPathInsideRoot(resolved, OUTPUT_DIRECTORY))
+      throw new Error('RPA file path must be inside the RPA output directory');
     return resolved;
   }
   const okRel = resolveSafeRpaPath('data/a.csv');
@@ -123,25 +137,42 @@ function main() {
   const prepareBody = engineSrc.slice(prepareIdx, prepareIdx + 2500);
   const refreshPos = prepareBody.indexOf('meta.refreshOnStart');
   const extractPos = prepareBody.indexOf('if (extractUrl)');
-  assert.ok(refreshPos >= 0 && extractPos >= 0 && refreshPos < extractPos, 'refresh must run before extract on start');
+  assert.ok(
+    refreshPos >= 0 && extractPos >= 0 && refreshPos < extractPos,
+    'refresh must run before extract on start'
+  );
   assert.ok(engineSrc.includes("code: 'extract-error'"), 'extract failure must warn');
-  assert.ok(engineSrc.includes("profiles: [...this.profiles.values()]"), 'engine must persist profiles with secrets');
-  assert.ok(!engineSrc.includes('const url = refreshUrl || extractUrl'), 'refresh must not fall back extractUrl as refresh target');
+  assert.ok(
+    engineSrc.includes('profiles: [...this.profiles.values()]'),
+    'engine must persist profiles with secrets'
+  );
+  assert.ok(
+    !engineSrc.includes('const url = refreshUrl || extractUrl'),
+    'refresh must not fall back extractUrl as refresh target'
+  );
 
   // --- renderer: secrets redaction ---
   const renderer = fs.readFileSync(path.join(__dirname, 'renderer.js'), 'utf8');
   assert.ok(renderer.includes('redactProfileForStorage'), 'renderer must redact secrets');
-  assert.ok(renderer.includes('cookies: \'\''), 'redact clears cookies');
-  assert.ok(renderer.includes('totpSecret: \'\''), 'redact clears totp');
+  assert.ok(renderer.includes("cookies: ''"), 'redact clears cookies');
+  assert.ok(renderer.includes("totpSecret: ''"), 'redact clears totp');
 
   // --- IPC sender trust: exact app index.html path, not any file:…/index.html ---
   const mainSrc = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
   assert.ok(mainSrc.includes('function trustedAppIndexUrl'), 'main must pin trusted UI path');
-  assert.ok(mainSrc.includes('function isTrustedAppIndexUrl'), 'main must compare trusted UI path case-insensitively on Windows');
-  assert.ok(mainSrc.includes("path.join(__dirname, 'index.html')"), 'trusted URL must be app index.html under __dirname');
-  assert.ok(!/senderUrl\.startsWith\('file:'\)\s*\|\|\s*!senderUrl\.endsWith\('\/index\.html'\)/.test(mainSrc)
-    && !/!senderUrl\.startsWith\('file:'\)\s*\|\|\s*!senderUrl\.endsWith\('\/index\.html'\)/.test(mainSrc),
-    'must not accept any file:…/index.html');
+  assert.ok(
+    mainSrc.includes('function isTrustedAppIndexUrl'),
+    'main must compare trusted UI path case-insensitively on Windows'
+  );
+  assert.ok(
+    mainSrc.includes("path.join(__dirname, 'index.html')"),
+    'trusted URL must be app index.html under __dirname'
+  );
+  assert.ok(
+    !/senderUrl\.startsWith\('file:'\)\s*\|\|\s*!senderUrl\.endsWith\('\/index\.html'\)/.test(mainSrc) &&
+      !/!senderUrl\.startsWith\('file:'\)\s*\|\|\s*!senderUrl\.endsWith\('\/index\.html'\)/.test(mainSrc),
+    'must not accept any file:…/index.html'
+  );
 
   // Runtime: drive-letter case must not break trusted check (Windows)
   const { pathToFileURL } = require('url');
@@ -150,15 +181,32 @@ function main() {
     if (raw === expected || raw.startsWith(expected + '?') || raw.startsWith(expected + '#')) return true;
     const lower = raw.toLowerCase();
     const expectedLower = expected.toLowerCase();
-    return lower === expectedLower || lower.startsWith(expectedLower + '?') || lower.startsWith(expectedLower + '#');
+    return (
+      lower === expectedLower ||
+      lower.startsWith(expectedLower + '?') ||
+      lower.startsWith(expectedLower + '#')
+    );
   }
   const expectedIdx = pathToFileURL(path.join(__dirname, 'index.html')).href;
-  const flipped = expectedIdx.replace('file:///C:', 'file:///c:').replace('file:///c:', 'file:///C:') === expectedIdx
-    ? expectedIdx.replace(/^file:\/\/\/([A-Za-z]):/, (_, d) => `file:///${d === d.toUpperCase() ? d.toLowerCase() : d.toUpperCase()}:`)
-    : expectedIdx.replace(/^file:\/\/\/([A-Za-z]):/, (_, d) => `file:///${d === d.toUpperCase() ? d.toLowerCase() : d.toUpperCase()}:`);
+  const flipped =
+    expectedIdx.replace('file:///C:', 'file:///c:').replace('file:///c:', 'file:///C:') === expectedIdx
+      ? expectedIdx.replace(
+          /^file:\/\/\/([A-Za-z]):/,
+          (_, d) => `file:///${d === d.toUpperCase() ? d.toLowerCase() : d.toUpperCase()}:`
+        )
+      : expectedIdx.replace(
+          /^file:\/\/\/([A-Za-z]):/,
+          (_, d) => `file:///${d === d.toUpperCase() ? d.toLowerCase() : d.toUpperCase()}:`
+        );
   assert.ok(isTrustedAppIndexUrlLocal(expectedIdx, expectedIdx), 'exact trusted URL ok');
-  assert.ok(isTrustedAppIndexUrlLocal(flipped, expectedIdx), 'drive-letter case flip must still be trusted on Windows');
-  assert.ok(!isTrustedAppIndexUrlLocal('file:///C:/tmp/malicious/index.html', expectedIdx), 'foreign index.html rejected');
+  assert.ok(
+    isTrustedAppIndexUrlLocal(flipped, expectedIdx),
+    'drive-letter case flip must still be trusted on Windows'
+  );
+  assert.ok(
+    !isTrustedAppIndexUrlLocal('file:///C:/tmp/malicious/index.html', expectedIdx),
+    'foreign index.html rejected'
+  );
 
   // --- proxy-forwarder exports ---
   assert.ok(typeof assertSafeOutboundUrl === 'function');

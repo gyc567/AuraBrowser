@@ -28,15 +28,33 @@ const {
 const { BrowserEngine, systemBrowserCandidatesForPlatform } = require('../engine');
 
 function cftBinary(root) {
-  const platform = process.platform === 'darwin'
-    ? (process.arch === 'arm64' ? 'chrome-mac-arm64' : 'chrome-mac-x64')
-    : process.platform === 'win32'
-      ? 'chrome-win64'
-      : 'chrome-linux64';
+  const platform =
+    process.platform === 'darwin'
+      ? process.arch === 'arm64'
+        ? 'chrome-mac-arm64'
+        : 'chrome-mac-x64'
+      : process.platform === 'win32'
+        ? 'chrome-win64'
+        : 'chrome-linux64';
   if (process.platform === 'darwin') {
-    return path.join(root, 'kernels', 'chrome-for-testing', platform, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing');
+    return path.join(
+      root,
+      'kernels',
+      'chrome-for-testing',
+      platform,
+      'Google Chrome for Testing.app',
+      'Contents',
+      'MacOS',
+      'Google Chrome for Testing'
+    );
   }
-  return path.join(root, 'kernels', 'chrome-for-testing', platform, process.platform === 'win32' ? 'chrome.exe' : 'chrome');
+  return path.join(
+    root,
+    'kernels',
+    'chrome-for-testing',
+    platform,
+    process.platform === 'win32' ? 'chrome.exe' : 'chrome'
+  );
 }
 
 async function main() {
@@ -45,11 +63,15 @@ async function main() {
     const binary = cftBinary(root);
     await fsp.mkdir(path.dirname(binary), { recursive: true });
     await fsp.writeFile(binary, '', 'utf8');
-    await fsp.writeFile(path.join(root, 'kernels', 'kernel-meta.json'), JSON.stringify({
-      binary: path.join(root, 'old-app-name', 'kernels', 'missing-browser'),
-      source: 'chrome-for-testing',
-      version: '123.0.0.0',
-    }), 'utf8');
+    await fsp.writeFile(
+      path.join(root, 'kernels', 'kernel-meta.json'),
+      JSON.stringify({
+        binary: path.join(root, 'old-app-name', 'kernels', 'missing-browser'),
+        source: 'chrome-for-testing',
+        version: '123.0.0.0',
+      }),
+      'utf8'
+    );
 
     // Manager without resourceRoots: only scans this temp userData.
     const manager = new BrowserKernelManager(root);
@@ -62,11 +84,17 @@ async function main() {
     const bundledBinary = path.join(bundledRoot, process.platform === 'win32' ? 'wayfern.exe' : 'wayfern');
     await fsp.mkdir(bundledRoot, { recursive: true });
     await fsp.writeFile(bundledBinary, '', 'utf8');
-    await fsp.writeFile(path.join(bundledRoot, 'kernel.json'), JSON.stringify({ version: '149.0.0.0' }), 'utf8');
+    await fsp.writeFile(
+      path.join(bundledRoot, 'kernel.json'),
+      JSON.stringify({ version: '149.0.0.0' }),
+      'utf8'
+    );
     const bundled = findBundledWayfernKernel([root]);
     assert.strictEqual(path.resolve(bundled.binary), path.resolve(bundledBinary));
     assert.strictEqual(isWayfernKernel({ path: bundledBinary }), true);
-    assert.deepStrictEqual(termsAcceptanceArgsForKernel({ path: bundledBinary }), ['--accept-terms-and-conditions']);
+    assert.deepStrictEqual(termsAcceptanceArgsForKernel({ path: bundledBinary }), [
+      '--accept-terms-and-conditions',
+    ]);
     assert.deepStrictEqual(termsAcceptanceArgsForKernel({ path: binary, source: 'chrome-for-testing' }), []);
     console.log('  PASS  bundled Wayfern kernel discovered from packaged resource root');
 
@@ -74,10 +102,16 @@ async function main() {
     const packagedCft = cftBinary(cftResourceRoot);
     await fsp.mkdir(path.dirname(packagedCft), { recursive: true });
     await fsp.writeFile(packagedCft, '', 'utf8');
-    await fsp.writeFile(path.join(cftResourceRoot, 'kernels', 'chrome-for-testing', 'kernel.json'), JSON.stringify({ version: '123.0.0.0' }), 'utf8');
+    await fsp.writeFile(
+      path.join(cftResourceRoot, 'kernels', 'chrome-for-testing', 'kernel.json'),
+      JSON.stringify({ version: '123.0.0.0' }),
+      'utf8'
+    );
     const bundledCft = findBundledChromeForTesting([cftResourceRoot]);
     assert.strictEqual(path.resolve(bundledCft.binary), path.resolve(packagedCft));
-    const packagedManager = new BrowserKernelManager(path.join(root, 'packaged-user-data'), { resourceRoot: cftResourceRoot });
+    const packagedManager = new BrowserKernelManager(path.join(root, 'packaged-user-data'), {
+      resourceRoot: cftResourceRoot,
+    });
     await packagedManager.loadMeta();
     assert.strictEqual(packagedManager.status().kernel.source, SOURCE_CFT);
     assert.strictEqual(path.resolve(packagedManager.status().kernel.path), path.resolve(packagedCft));
@@ -97,7 +131,9 @@ async function main() {
     const originalGet = https.get;
     https.get = (_url, _options, callback) => {
       const req = new EventEmitter();
-      req.destroy = (error) => { if (error) req.emit('error', error); };
+      req.destroy = (error) => {
+        if (error) req.emit('error', error);
+      };
       process.nextTick(() => {
         const res = new PassThrough();
         res.statusCode = 200;
@@ -138,18 +174,59 @@ async function main() {
       PROGRAMW6432: 'C:\\Program Files',
       LOCALAPPDATA: 'C:\\Users\\Test\\AppData\\Local',
     });
-    assert.ok(windowsCandidates.some((item) => item.name === 'Google Chrome' && item.path === 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'));
-    assert.ok(windowsCandidates.some((item) => item.name === 'Google Chrome' && item.path === 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'));
-    assert.ok(windowsCandidates.some((item) => item.name === 'Google Chrome' && item.path === 'C:\\Users\\Test\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'));
-    assert.ok(windowsCandidates.some((item) => item.name === 'Microsoft Edge' && item.path === 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'));
-    assert.ok(windowsCandidates.some((item) => item.name === 'Microsoft Edge' && item.path === 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'));
-    assert.ok(windowsCandidates.some((item) => item.name === 'Microsoft Edge' && item.path === 'C:\\Users\\Test\\AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe'));
-    assert.ok(windowsCandidates.every((item) => item.name === 'Google Chrome' || item.name === 'Microsoft Edge'));
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Google Chrome' &&
+          item.path === 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Google Chrome' &&
+          item.path === 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Google Chrome' &&
+          item.path === 'C:\\Users\\Test\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Microsoft Edge' &&
+          item.path === 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Microsoft Edge' &&
+          item.path === 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.some(
+        (item) =>
+          item.name === 'Microsoft Edge' &&
+          item.path === 'C:\\Users\\Test\\AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe'
+      )
+    );
+    assert.ok(
+      windowsCandidates.every((item) => item.name === 'Google Chrome' || item.name === 'Microsoft Edge')
+    );
     console.log('  PASS  Windows system-browser choices include Chrome and Edge install locations');
 
     // Source-tree discovery: Browserapp/kernels/macos-x64 (or compat openbrowser/)
     const appRoot = path.join(__dirname, '..');
-    const repoKernel = findOpenBrowserKernelBinary(path.join(root, 'kernels'), [appRoot, path.join(appRoot, 'kernels')]);
+    const repoKernel = findOpenBrowserKernelBinary(path.join(root, 'kernels'), [
+      appRoot,
+      path.join(appRoot, 'kernels'),
+    ]);
     if (!isOpenBrowser148SupportedHost()) {
       assert.strictEqual(repoKernel, null);
       console.log('  PASS  non-mac-x64 host never discovers openbrowser-148');
@@ -157,8 +234,8 @@ async function main() {
       assert.ok(fs.existsSync(repoKernel));
       const norm = String(repoKernel);
       assert.ok(
-        norm.includes(`${path.sep}kernels${path.sep}macos-x64${path.sep}`)
-        || norm.includes(`${path.sep}kernels${path.sep}openbrowser${path.sep}`),
+        norm.includes(`${path.sep}kernels${path.sep}macos-x64${path.sep}`) ||
+          norm.includes(`${path.sep}kernels${path.sep}openbrowser${path.sep}`),
         `unexpected kernel path: ${norm}`
       );
       console.log('  PASS  source-tree OpenBrowser 148 binary discovered');
@@ -171,11 +248,15 @@ async function main() {
       const fakeBin = path.join(root, 'kernels', 'openbrowser', 'fake-openbrowser');
       await fsp.mkdir(path.dirname(fakeBin), { recursive: true });
       await fsp.writeFile(fakeBin, '', 'utf8');
-      await fsp.writeFile(path.join(root, 'kernels', 'kernel-meta.json'), JSON.stringify({
-        binary: fakeBin,
-        source: SOURCE_OPENBROWSER,
-        version: '148.0.0.0',
-      }), 'utf8');
+      await fsp.writeFile(
+        path.join(root, 'kernels', 'kernel-meta.json'),
+        JSON.stringify({
+          binary: fakeBin,
+          source: SOURCE_OPENBROWSER,
+          version: '148.0.0.0',
+        }),
+        'utf8'
+      );
       const mgr = new BrowserKernelManager(root);
       await mgr.loadMeta();
       const st = mgr.status();
@@ -184,12 +265,16 @@ async function main() {
       console.log('  PASS  non-mac-x64 rejects stale openbrowser-148 meta');
     }
 
-    const app = { getPath: (name) => name === 'userData' ? root : '' };
-    await fsp.writeFile(path.join(root, 'openbrowser-engine.json'), JSON.stringify({
-      kernelPolicyVersion: 1,
-      preferIndependentKernel: true,
-      allowSystemBrowserFallback: true,
-    }), 'utf8');
+    const app = { getPath: (name) => (name === 'userData' ? root : '') };
+    await fsp.writeFile(
+      path.join(root, 'openbrowser-engine.json'),
+      JSON.stringify({
+        kernelPolicyVersion: 1,
+        preferIndependentKernel: true,
+        allowSystemBrowserFallback: true,
+      }),
+      'utf8'
+    );
     const engine = new BrowserEngine(app);
     await engine.init(null);
     assert.strictEqual(engine.allowSystemBrowserFallback, false);
@@ -205,7 +290,11 @@ async function main() {
       const appRoot = path.join(__dirname, '..');
       const integrated = findBundledWayfernKernel([appRoot, path.join(appRoot, 'kernels')]);
       const integratedCft = findBundledChromeForTesting([appRoot, path.join(appRoot, 'kernels')]);
-      if (integrated && integrated.binary && isIntegratedKernelCdpReady({ path: integrated.binary, source: SOURCE_WAYFERN })) {
+      if (
+        integrated &&
+        integrated.binary &&
+        isIntegratedKernelCdpReady({ path: integrated.binary, source: SOURCE_WAYFERN })
+      ) {
         assert.strictEqual(path.resolve(chosen.path), path.resolve(integrated.binary));
         assert.strictEqual(chosen.source, SOURCE_WAYFERN);
         console.log('  PASS  engine prefers integrated independent kernel over temporary CfT');

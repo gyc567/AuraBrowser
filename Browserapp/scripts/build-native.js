@@ -17,7 +17,12 @@ function ensureDir(directory) {
 }
 
 function windowsBuild() {
-  const framework = path.join(process.env.SystemRoot || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319');
+  const framework = path.join(
+    process.env.SystemRoot || 'C:\\Windows',
+    'Microsoft.NET',
+    'Framework64',
+    'v4.0.30319'
+  );
   const compiler = path.join(framework, 'csc.exe');
   if (!fs.existsSync(compiler)) throw new Error('未找到 .NET Framework C# 编译器：' + compiler);
 
@@ -31,7 +36,8 @@ function windowsBuild() {
     path.join(framework, 'WPF', 'WindowsBase.dll'),
   ];
   const icon = path.join(appRoot, 'assets', 'logo.ico');
-  const targets = fs.readdirSync(appRoot)
+  const targets = fs
+    .readdirSync(appRoot)
     .filter((name) => /^native-.*\.cs$/i.test(name))
     .sort()
     .map((name) => path.join(appRoot, name));

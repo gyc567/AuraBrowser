@@ -52,7 +52,10 @@ function rewritePlist(plistPath) {
     if (re.test(plist)) {
       plist = plist.replace(re, `<key>${key}</key>\n\t<string>${value}</string>`);
     } else if (key === 'CFBundleIconFile') {
-      plist = plist.replace('</dict>\n</plist>', `\t<key>${key}</key>\n\t<string>${value}</string>\n</dict>\n</plist>`);
+      plist = plist.replace(
+        '</dict>\n</plist>',
+        `\t<key>${key}</key>\n\t<string>${value}</string>\n</dict>\n</plist>`
+      );
     }
   }
   fs.writeFileSync(plistPath, plist, 'utf8');
@@ -101,7 +104,9 @@ function brand() {
     }
     try {
       fs.chmodSync(openBin, 0o755);
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   // 3) Info.plist
@@ -117,7 +122,9 @@ function brand() {
       if (name.endsWith('.icns')) {
         try {
           fs.copyFileSync(logoIcns, path.join(resourcesDir, name));
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
       }
     }
     log('icons updated');
@@ -130,14 +137,15 @@ function brand() {
 
   // 6) Refresh LaunchServices so Dock picks up the new name
   try {
-    spawnSync('/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister', [
-      '-f',
-      '-R',
-      '-trusted',
-      hostApp,
-    ], { stdio: 'ignore' });
+    spawnSync(
+      '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister',
+      ['-f', '-R', '-trusted', hostApp],
+      { stdio: 'ignore' }
+    );
     log('LaunchServices refreshed');
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 }
 
 brand();

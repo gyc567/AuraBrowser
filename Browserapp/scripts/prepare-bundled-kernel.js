@@ -37,7 +37,9 @@ function packageArch() {
 
 function platformKey() {
   // Allow verifying any seed from any host (CI/local maintainer checks).
-  const forced = String(process.env.OPENBROWSER_VERIFY_PLATFORM || '').trim().toLowerCase();
+  const forced = String(process.env.OPENBROWSER_VERIFY_PLATFORM || '')
+    .trim()
+    .toLowerCase();
   if (forced) return forced;
   const arch = packageArch();
   if (process.platform === 'darwin') return `macos-${arch}`;
@@ -66,10 +68,10 @@ function assertCdpReady(binary, label) {
   if (!isIntegratedKernelCdpReady({ path: binary, source: 'donut-wayfern' })) {
     const lib = companionLibraryForKernelBinary(binary);
     throw new Error(
-      `${label} CDP readiness check failed.`
-      + ` binary=${binary}`
-      + (lib ? ` companion=${lib}` : ' companion=missing')
-      + ' Re-prepare the integrated seed before packaging.'
+      `${label} CDP readiness check failed.` +
+        ` binary=${binary}` +
+        (lib ? ` companion=${lib}` : ' companion=missing') +
+        ' Re-prepare the integrated seed before packaging.'
     );
   }
 }

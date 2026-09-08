@@ -8,7 +8,9 @@ function asBoolean(value) {
 }
 
 function normalizeNetworkType(network = {}) {
-  return String(network.networkType || network.type || '').trim().toLowerCase();
+  return String(network.networkType || network.type || '')
+    .trim()
+    .toLowerCase();
 }
 
 function finitePercent(value) {
@@ -19,7 +21,7 @@ function finitePercent(value) {
 function riskIntelData(network = {}) {
   const nested = network.riskIntel || network.ipPure || network.ippure || {};
   const fraudScore = finitePercent(
-    nested.fraudScore ?? nested.riskScore ?? network.ippureFraudScore ?? network.fraudScore,
+    nested.fraudScore ?? nested.riskScore ?? network.ippureFraudScore ?? network.fraudScore
   );
   const isResidential = nested.isResidential ?? network.isResidential;
   const isBroadcast = nested.isBroadcast ?? network.isBroadcast;
@@ -39,24 +41,28 @@ function calculateIpHealthScore(network = {}) {
       level: 'unknown',
       label: '待检测',
       confidence: 'low',
-      factors: [{
-        code: 'network-unavailable',
-        state: 'neutral',
-        impact: 0,
-        label: '尚未取得出口 IP',
-        detail: '刷新出口检测后再计算 IP 健康评分。',
-      }],
+      factors: [
+        {
+          code: 'network-unavailable',
+          state: 'neutral',
+          impact: 0,
+          label: '尚未取得出口 IP',
+          detail: '刷新出口检测后再计算 IP 健康评分。',
+        },
+      ],
     };
   }
 
   const proxy = asBoolean(network.proxy) || normalizeNetworkType(network) === 'proxy';
   const risk = riskIntelData(network);
-  const hosting = asBoolean(network.hosting)
-    || normalizeNetworkType(network) === 'hosting'
-    || (risk.isResidential === false && risk.isBroadcast === false);
+  const hosting =
+    asBoolean(network.hosting) ||
+    normalizeNetworkType(network) === 'hosting' ||
+    (risk.isResidential === false && risk.isBroadcast === false);
   const mobile = asBoolean(network.mobile) || normalizeNetworkType(network) === 'mobile';
-  const geoConflict = asBoolean(network.geoConflict)
-    || (Array.isArray(network.countries) && new Set(network.countries.filter(Boolean)).size > 1);
+  const geoConflict =
+    asBoolean(network.geoConflict) ||
+    (Array.isArray(network.countries) && new Set(network.countries.filter(Boolean)).size > 1);
   const factors = [];
   const hasRiskScore = risk.fraudScore != null;
   let score = hasRiskScore ? SCORE_MAX - risk.fraudScore : 70;
@@ -84,8 +90,9 @@ function calculateIpHealthScore(network = {}) {
       state: 'warn',
       impact: -12,
       label: '注册地与使用地不一致',
-      detail: network.countryNote
-        || `多源地区结果不一致：${countries.join(' / ') || [registered, usage].filter(Boolean).join(' / ') || '未知'}。常见于广播/Anycast 或注册地与实际出口不同的线路。`,
+      detail:
+        network.countryNote ||
+        `多源地区结果不一致：${countries.join(' / ') || [registered, usage].filter(Boolean).join(' / ') || '未知'}。常见于广播/Anycast 或注册地与实际出口不同的线路。`,
     });
   }
 
@@ -177,8 +184,12 @@ function calculateIpHealthScore(network = {}) {
   const level = score >= 80 ? 'healthy' : score >= 50 ? 'review' : 'risky';
   const label = level === 'healthy' ? '健康' : level === 'review' ? '需复核' : '高风险';
   const confidence = hasRiskScore
-    ? (missing.length || geoConflict ? 'medium' : 'high')
-    : (geoConflict ? 'medium' : 'low');
+    ? missing.length || geoConflict
+      ? 'medium'
+      : 'high'
+    : geoConflict
+      ? 'medium'
+      : 'low';
 
   return { score, level, label, confidence, factors };
 }

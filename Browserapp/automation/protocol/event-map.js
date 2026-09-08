@@ -179,7 +179,12 @@ function syncEventToCommand(event) {
       params: event,
     };
   }
-  if (t === EVENT_TYPE.WEB_ACTION || t === EVENT_TYPE.NAVIGATE_ACTION || t === EVENT_TYPE.WEB_CHAT || t === EVENT_TYPE.NAVIGATE_CHAT) {
+  if (
+    t === EVENT_TYPE.WEB_ACTION ||
+    t === EVENT_TYPE.NAVIGATE_ACTION ||
+    t === EVENT_TYPE.WEB_CHAT ||
+    t === EVENT_TYPE.NAVIGATE_CHAT
+  ) {
     if (event.text) return { command: 'Browser.sendTextToDom', params: { text: event.text } };
     return { command: 'Browser.actionToDom', params: event };
   }

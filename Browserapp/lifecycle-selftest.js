@@ -26,7 +26,9 @@ function makeEngine() {
   engine.restoreStoredProxyCredentials = (value) => value;
   engine.publicRunning = (id) => ({
     id,
-    running: Boolean(engine.running.get(id) && !engine.running.get(id).cleanedUp && !engine.running.get(id).stopping),
+    running: Boolean(
+      engine.running.get(id) && !engine.running.get(id).cleanedUp && !engine.running.get(id).stopping
+    ),
   });
   return engine;
 }
@@ -36,8 +38,11 @@ async function testStateRecovery() {
   const app = { getPath: (name) => (name === 'userData' ? root : '') };
   const stateFile = path.join(root, 'openbrowser-engine.json');
   const profile = {
-    id: 'recovered-env', name: 'Recovered environment', browser: 'Google Chrome',
-    networkMode: 'proxy', proxy: 'socks5://recover-user:recover-pass@proxy.test:1080',
+    id: 'recovered-env',
+    name: 'Recovered environment',
+    browser: 'Google Chrome',
+    networkMode: 'proxy',
+    proxy: 'socks5://recover-user:recover-pass@proxy.test:1080',
     platform: { type: 'other', startUrl: 'https://example.com/' },
   };
   try {
@@ -45,10 +50,18 @@ async function testStateRecovery() {
     await fs.writeFile(stateFile + '.bak', JSON.stringify({ version: 1, profiles: [profile] }), 'utf8');
     const engine = new BrowserEngine(app);
     await engine.init(null);
-    assert.strictEqual(engine.profiles.get(profile.id).proxy, profile.proxy, 'valid .bak must recover proxy credentials');
+    assert.strictEqual(
+      engine.profiles.get(profile.id).proxy,
+      profile.proxy,
+      'valid .bak must recover proxy credentials'
+    );
     await engine.flushPersistence();
     const persisted = JSON.parse(await fs.readFile(stateFile, 'utf8'));
-    assert.strictEqual(persisted.profiles[0].proxy, profile.proxy, 'recovered state must be rewritten durably');
+    assert.strictEqual(
+      persisted.profiles[0].proxy,
+      profile.proxy,
+      'recovered state must be rewritten durably'
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
   }
@@ -79,30 +92,45 @@ async function testProfileLockRecovery() {
     assert.strictEqual(recovered.profileId, 'env-a');
     assert.strictEqual(path.resolve(recovered.profileRoot), path.resolve(profileRoot));
     assert.strictEqual(await releaseProfileLock(profileRoot, recovered), true);
-    assert.strictEqual(await fs.stat(file).then(() => true, () => false), false, 'recovered lock must be released');
+    assert.strictEqual(
+      await fs.stat(file).then(
+        () => true,
+        () => false
+      ),
+      false,
+      'recovered lock must be released'
+    );
 
     await fs.writeFile(file, JSON.stringify({ ...stale, profileRoot: path.resolve(otherRoot) }), 'utf8');
     await assert.rejects(
       acquireProfileLock(profileRoot, { profileId: 'env-a' }),
-      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE',
+      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE'
     );
-    assert.strictEqual(await fs.readFile(file, 'utf8'), JSON.stringify({ ...stale, profileRoot: path.resolve(otherRoot) }), 'foreign lock must be retained');
+    assert.strictEqual(
+      await fs.readFile(file, 'utf8'),
+      JSON.stringify({ ...stale, profileRoot: path.resolve(otherRoot) }),
+      'foreign lock must be retained'
+    );
 
     await fs.writeFile(file, '{broken lock', 'utf8');
     await assert.rejects(
       acquireProfileLock(profileRoot, { profileId: 'env-a' }),
-      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE',
+      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE'
     );
     assert.strictEqual(await fs.readFile(file, 'utf8'), '{broken lock', 'corrupt lock must be retained');
     await fs.rm(file, { force: true });
 
     const guard = `${file}.guard`;
     await fs.mkdir(guard, { recursive: true });
-    await fs.writeFile(path.join(guard, 'owner.json'), JSON.stringify({
-      profileId: 'env-a',
-      profileRoot: path.resolve(profileRoot),
-      pid: deadPid(),
-    }), 'utf8');
+    await fs.writeFile(
+      path.join(guard, 'owner.json'),
+      JSON.stringify({
+        profileId: 'env-a',
+        profileRoot: path.resolve(profileRoot),
+        pid: deadPid(),
+      }),
+      'utf8'
+    );
     const recoveredAfterGuard = await acquireProfileLock(profileRoot, { profileId: 'env-a' });
     assert.ok(recoveredAfterGuard.token);
     assert.strictEqual(await releaseProfileLock(profileRoot, recoveredAfterGuard), true);
@@ -114,13 +142,20 @@ async function testProfileLockRecovery() {
     const recoveredAfterEmptyGuard = await acquireProfileLock(profileRoot, { profileId: 'env-a' });
     assert.ok(recoveredAfterEmptyGuard.token);
     assert.strictEqual(await releaseProfileLock(profileRoot, recoveredAfterEmptyGuard), true);
-    assert.strictEqual(await fs.stat(guard).then(() => true, () => false), true, 'unknown legacy guard must not be deleted');
+    assert.strictEqual(
+      await fs.stat(guard).then(
+        () => true,
+        () => false
+      ),
+      true,
+      'unknown legacy guard must not be deleted'
+    );
     await fs.rm(guard, { recursive: true, force: true });
 
     const live = await acquireProfileLock(profileRoot, { profileId: 'env-a' });
     await assert.rejects(
       acquireProfileLock(profileRoot, { profileId: 'env-a' }),
-      (error) => error.code === 'PROFILE_LOCKED' && error.lock?.pid === process.pid,
+      (error) => error.code === 'PROFILE_LOCKED' && error.lock?.pid === process.pid
     );
     assert.strictEqual(await releaseProfileLock(profileRoot, live), true);
   } finally {
@@ -144,8 +179,19 @@ async function testBrowserPidPreventsRecovery() {
     });
     assert.strictEqual(bound.browserPid, process.pid, 'lock must record the Chromium child pid');
     assert.strictEqual(bound.pid, process.pid, 'top-level pid must remain the Electron owner pid');
-    assert.strictEqual(await updateProfileLock(profileRoot, { ...bound, token: 'wrong-token' }, { browserPid: browserDeadPid }), false);
-    assert.strictEqual(JSON.parse(await fs.readFile(file, 'utf8')).browserPid, process.pid, 'foreign update must not overwrite lock');
+    assert.strictEqual(
+      await updateProfileLock(
+        profileRoot,
+        { ...bound, token: 'wrong-token' },
+        { browserPid: browserDeadPid }
+      ),
+      false
+    );
+    assert.strictEqual(
+      JSON.parse(await fs.readFile(file, 'utf8')).browserPid,
+      process.pid,
+      'foreign update must not overwrite lock'
+    );
     assert.strictEqual(await releaseProfileLock(profileRoot, bound), true);
 
     // Simulate a crash after lock creation but before spawn() returned a child
@@ -177,9 +223,13 @@ async function testBrowserPidPreventsRecovery() {
     await fs.writeFile(file, JSON.stringify(childStillLive), 'utf8');
     await assert.rejects(
       acquireProfileLock(profileRoot, { profileId: 'env-browser-live' }),
-      (error) => error.code === 'PROFILE_LOCKED' && error.lock?.browserPid === process.pid,
+      (error) => error.code === 'PROFILE_LOCKED' && error.lock?.browserPid === process.pid
     );
-    assert.deepStrictEqual(JSON.parse(await fs.readFile(file, 'utf8')), childStillLive, 'live browser lock must be retained byte-for-byte semantically');
+    assert.deepStrictEqual(
+      JSON.parse(await fs.readFile(file, 'utf8')),
+      childStillLive,
+      'live browser lock must be retained byte-for-byte semantically'
+    );
 
     // Once both recorded owners are definitely gone, the lock remains
     // recoverable for compatibility with normal crash recovery.
@@ -192,7 +242,7 @@ async function testBrowserPidPreventsRecovery() {
     await fs.writeFile(file, JSON.stringify({ ...staleChild, browserPid: 'unknown' }), 'utf8');
     await assert.rejects(
       acquireProfileLock(profileRoot, { profileId: 'env-browser-live' }),
-      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE',
+      (error) => error.code === 'PROFILE_LOCK_UNRECOVERABLE'
     );
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
@@ -213,10 +263,14 @@ async function testStartupResourceCleanup() {
     profileLock,
     child: { exitCode: 0, signalCode: null },
     connection: {
-      close() { connectionClosed += 1; },
+      close() {
+        connectionClosed += 1;
+      },
     },
     proxyForwarder: {
-      async close() { proxyClosed += 1; },
+      async close() {
+        proxyClosed += 1;
+      },
     },
   };
   try {
@@ -226,7 +280,14 @@ async function testStartupResourceCleanup() {
     await first;
     assert.strictEqual(connectionClosed, 1);
     assert.strictEqual(proxyClosed, 1);
-    assert.strictEqual(await fs.stat(lockPath(profileRoot)).then(() => true, () => false), false, 'startup failure must release profile lock');
+    assert.strictEqual(
+      await fs.stat(lockPath(profileRoot)).then(
+        () => true,
+        () => false
+      ),
+      false,
+      'startup failure must release profile lock'
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
   }
@@ -261,20 +322,34 @@ async function testCleanupFailsClosedWhenChildSurvives() {
   try {
     await assert.rejects(
       engine.cleanupRunningItem(profile.id, item, { waitForExit: true, exitTimeout: 10 }),
-      (error) => error.code === 'BROWSER_EXIT_UNCONFIRMED',
+      (error) => error.code === 'BROWSER_EXIT_UNCONFIRMED'
     );
-    assert.strictEqual(await fs.stat(lockPath(profileRoot)).then(() => true, () => false), true, 'unconfirmed child must retain profile lock');
+    assert.strictEqual(
+      await fs.stat(lockPath(profileRoot)).then(
+        () => true,
+        () => false
+      ),
+      true,
+      'unconfirmed child must retain profile lock'
+    );
     assert.strictEqual(engine.running.get(profile.id), item, 'unconfirmed child must remain in running map');
     await assert.rejects(
       engine.start(profile),
       (error) => error.code === 'BROWSER_EXIT_UNCONFIRMED',
-      'restart must remain blocked while child exit is unconfirmed',
+      'restart must remain blocked while child exit is unconfirmed'
     );
 
     child.exitCode = 137;
     const retried = await engine.stop(profile.id);
     assert.strictEqual(retried.running, false, 'confirmed exit must allow public stop retry');
-    assert.strictEqual(await fs.stat(lockPath(profileRoot)).then(() => true, () => false), false, 'confirmed exit may release profile lock');
+    assert.strictEqual(
+      await fs.stat(lockPath(profileRoot)).then(
+        () => true,
+        () => false
+      ),
+      false,
+      'confirmed exit may release profile lock'
+    );
     assert.strictEqual(engine.running.has(profile.id), false, 'confirmed exit may remove running item');
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
@@ -295,7 +370,11 @@ async function testStopAllDrainsLateRestart() {
     return { id, running: false, graceful: true };
   };
   await engine.stopAll();
-  assert.deepStrictEqual(calls, ['first-env', 'late-restart'], 'stopAll must drain a restart queued during cleanup');
+  assert.deepStrictEqual(
+    calls,
+    ['first-env', 'late-restart'],
+    'stopAll must drain a restart queued during cleanup'
+  );
   assert.strictEqual(engine.running.size, 0);
   assert.strictEqual(engine.starting.size, 0);
   assert.strictEqual(engine.stopping.size, 0);
@@ -328,7 +407,10 @@ async function main() {
   };
   const starts = await Promise.all(Array.from({ length: 20 }, () => engine.start(profile)));
   assert.strictEqual(startCount, 1, 'concurrent starts must share one promise');
-  assert.ok(starts.every((value) => value.running === true), 'all start callers receive a running result');
+  assert.ok(
+    starts.every((value) => value.running === true),
+    'all start callers receive a running result'
+  );
 
   engine._stop = async (id, item) => {
     stopCount += 1;
@@ -376,14 +458,15 @@ async function main() {
   assert.strictEqual(engine.starting.size, 0);
   assert.strictEqual(engine.stopping.size, 0);
 
-  process.stdout.write(`LIFECYCLE_SELFTEST_OK concurrent_start=1 start_waits_stop=1 concurrent_stop=1 restart_cycles=5 failed_start_recovery=1 starts=${startCount} stops=${stopCount}\n`);
+  process.stdout.write(
+    `LIFECYCLE_SELFTEST_OK concurrent_start=1 start_waits_stop=1 concurrent_stop=1 restart_cycles=5 failed_start_recovery=1 starts=${startCount} stops=${stopCount}\n`
+  );
 }
 
 main().catch((error) => {
   process.stderr.write((error && error.stack) || String(error));
   process.exitCode = 1;
 });
-
 
 async function testLockReleaseFailureRetainsRunningItem() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'openbrowser-lock-fail-'));
@@ -407,9 +490,13 @@ async function testLockReleaseFailureRetainsRunningItem() {
   try {
     await assert.rejects(
       engine.cleanupRunningItem(profile.id, item, { expected: true }),
-      (error) => error.code === 'PROFILE_LOCK_RELEASE_FAILED',
+      (error) => error.code === 'PROFILE_LOCK_RELEASE_FAILED'
     );
-    assert.strictEqual(engine.running.get(profile.id), item, 'failed lock release must retain running item in memory');
+    assert.strictEqual(
+      engine.running.get(profile.id),
+      item,
+      'failed lock release must retain running item in memory'
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});
   }
@@ -432,7 +519,14 @@ async function testStartupResourceCleanupUnknownScan() {
     const res = await engine.cleanupStartupResources(resources);
     assert.strictEqual(res.lockReleased, false, 'unknown scan must keep lock');
     assert.strictEqual(res.cleanupBlocked, true, 'unknown scan must block cleanup');
-    assert.strictEqual(await fs.stat(lockPath(profileRoot)).then(() => true, () => false), true, 'lock file must be retained');
+    assert.strictEqual(
+      await fs.stat(lockPath(profileRoot)).then(
+        () => true,
+        () => false
+      ),
+      true,
+      'lock file must be retained'
+    );
   } finally {
     isolation.terminateProcessesUsingProfile = origTerminate;
     await fs.rm(root, { recursive: true, force: true }).catch(() => {});

@@ -25,13 +25,15 @@ function assertNonRootDevUser() {
   const isRoot = uid === 0 || euid === 0 || process.env.USER === 'root' || process.env.LOGNAME === 'root';
   if (!isRoot) return;
   const hintUser = process.env.SUDO_USER || process.env.USER || 'your-user';
-  console.error([
-    '[run] refuse to start OpenBrowser as root/sudo.',
-    '      Root writes userData to /var/root/Library/Application Support/openbrowser',
-    '      while the UI you edit lives under ~/Library/Application Support/openbrowser.',
-    `      Start as a normal user, e.g.: sudo -u ${hintUser} -H npm start`,
-    `      home now would be: ${os.homedir()}`,
-  ].join('\n'));
+  console.error(
+    [
+      '[run] refuse to start OpenBrowser as root/sudo.',
+      '      Root writes userData to /var/root/Library/Application Support/openbrowser',
+      '      while the UI you edit lives under ~/Library/Application Support/openbrowser.',
+      `      Start as a normal user, e.g.: sudo -u ${hintUser} -H npm start`,
+      `      home now would be: ${os.homedir()}`,
+    ].join('\n')
+  );
   process.exit(2);
 }
 
@@ -55,7 +57,9 @@ function resolveHostBinary() {
     try {
       const binary = require('desktop-shell');
       if (typeof binary === 'string' && fs.existsSync(binary)) return binary;
-    } catch (_) { /* fall through */ }
+    } catch (_) {
+      /* fall through */
+    }
     const distRoot = resolveHostDist(appRoot);
     const binary = findHostWindowsExe(distRoot);
     if (fs.existsSync(binary)) return binary;
@@ -65,7 +69,9 @@ function resolveHostBinary() {
     try {
       const binary = require('desktop-shell');
       if (typeof binary === 'string' && fs.existsSync(binary)) return binary;
-    } catch (_) { /* fall through */ }
+    } catch (_) {
+      /* fall through */
+    }
     const distRoot = resolveHostDist(appRoot);
     const binary = findHostLinuxBinary(distRoot);
     if (fs.existsSync(binary)) return binary;

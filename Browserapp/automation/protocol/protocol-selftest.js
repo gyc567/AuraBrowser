@@ -43,7 +43,9 @@ const {
   windowsExecutableMatches,
 } = require('./cross-platform');
 
-function pass(name) { console.log('  PASS  ' + name); }
+function pass(name) {
+  console.log('  PASS  ' + name);
+}
 
 async function main() {
   console.log('Pixel-protocol selftest\n');
@@ -64,7 +66,11 @@ async function main() {
   assert.strictEqual(scrollPlan[0].params.deltaY, 120);
   pass('Browser.scroll → mouseWheel');
 
-  const keyPlan = translateToStandardCdp('Browser.keyboard', { key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65 });
+  const keyPlan = translateToStandardCdp('Browser.keyboard', {
+    key: 'a',
+    code: 'KeyA',
+    windowsVirtualKeyCode: 65,
+  });
   assert.strictEqual(keyPlan.length, 2);
   assert.strictEqual(keyPlan[0].params.type, 'keyDown');
   assert.strictEqual(keyPlan[1].params.type, 'keyUp');
@@ -79,10 +85,7 @@ async function main() {
   assert.ok(fanout.delayMs >= 10 && fanout.delayMs <= 20);
   pass('fanout plan delay + operate gate');
 
-  const skipScroll = buildFanoutPlan(
-    { kind: 'scroll', params: { dY: 1 } },
-    { operate: 'click,move' }
-  );
+  const skipScroll = buildFanoutPlan({ kind: 'scroll', params: { dY: 1 } }, { operate: 'click,move' });
   assert.strictEqual(skipScroll.skip, true);
   pass('operate list gates scroll');
 
@@ -106,12 +109,14 @@ async function main() {
   assert.ok(ACTION_PARAM_SCHEMA.waitTime.fields.includes('timeoutType'));
   pass('param schema waitTime/click');
 
-  const steps = parseProcessContent(JSON.stringify([
-    { type: 'gotoUrl', url: 'https://example.com', timeout: 15000 },
-    { type: 'waitTime', timeout: 500, timeoutType: 'randomInterval', timeoutMin: 100, timeoutMax: 200 },
-    { type: 'click', selector: 'a', selectorRadio: 'CSS', button: 'left' },
-    { type: 'inputContent', selector: 'input', content: 'hi', isClear: true },
-  ]));
+  const steps = parseProcessContent(
+    JSON.stringify([
+      { type: 'gotoUrl', url: 'https://example.com', timeout: 15000 },
+      { type: 'waitTime', timeout: 500, timeoutType: 'randomInterval', timeoutMin: 100, timeoutMax: 200 },
+      { type: 'click', selector: 'a', selectorRadio: 'CSS', button: 'left' },
+      { type: 'inputContent', selector: 'input', content: 'hi', isClear: true },
+    ])
+  );
   assert.strictEqual(steps.length, 4);
   assert.strictEqual(steps[0].type, 'gotoUrl');
   assert.strictEqual(steps[0].params.url, 'https://example.com');
@@ -137,7 +142,10 @@ async function main() {
   const appId = '9001';
   const src = path.join(globalRoot, appId, unique);
   await fsp.mkdir(src, { recursive: true });
-  await fsp.writeFile(path.join(src, 'manifest.json'), JSON.stringify({ name: 'Demo', version: '1.0.0', manifest_version: 3 }));
+  await fsp.writeFile(
+    path.join(src, 'manifest.json'),
+    JSON.stringify({ name: 'Demo', version: '1.0.0', manifest_version: 3 })
+  );
 
   const record = toLocalRecord({
     id: appId,
@@ -195,7 +203,14 @@ async function main() {
   assert.strictEqual(wheel.type, EVENT_TYPE.WEB_WHEEL);
   pass('payload wheel → type=2');
 
-  const key = payloadToSyncEvent({ type: 'key', phase: 'down', key: 'a', code: 'KeyA', keyCode: 65, ctrl: true });
+  const key = payloadToSyncEvent({
+    type: 'key',
+    phase: 'down',
+    key: 'a',
+    code: 'KeyA',
+    keyCode: 65,
+    ctrl: true,
+  });
   assert.strictEqual(key.type, EVENT_TYPE.WEB_KEY);
   assert.ok(key.modifiers & 2);
   pass('payload key → type=3 modifiers');
@@ -208,7 +223,17 @@ async function main() {
 
   const fan = planFanoutFromPayload(
     { type: 'mouse', phase: 'down', x: 10, y: 20 },
-    { syncSettings: { click: true, track: true, scroll: true, keyboard: true, delayClick: true, clickMinMs: 5, clickMaxMs: 15 } }
+    {
+      syncSettings: {
+        click: true,
+        track: true,
+        scroll: true,
+        keyboard: true,
+        delayClick: true,
+        clickMinMs: 5,
+        clickMaxMs: 15,
+      },
+    }
   );
   assert.strictEqual(fan.skip, false);
   assert.strictEqual(fan.eventType, EVENT_TYPE.WEB_MOUSE);
@@ -239,7 +264,9 @@ async function main() {
   assert.ok(spacedUrl.includes('OpenBrowser%20Data'), 'toFileUrl must encode folder spaces');
   pass('toFileUrl percent-encodes Windows spaces');
   assert.strictEqual(
-    extractUserDataDir('"C:\\Program Files\\Browser\\browser.exe" "--user-data-dir=C:\\OpenBrowser Data\\env-001" --remote-debugging-port=9222'),
+    extractUserDataDir(
+      '"C:\\Program Files\\Browser\\browser.exe" "--user-data-dir=C:\\OpenBrowser Data\\env-001" --remote-debugging-port=9222'
+    ),
     'C:\\OpenBrowser Data\\env-001'
   );
   assert.strictEqual(
@@ -247,7 +274,10 @@ async function main() {
     'C:\\OpenBrowser Data\\env-002'
   );
   assert.strictEqual(
-    windowsExecutableMatches('C:\\Program Files\\Browser\\browser.exe', 'C:\\Program Files\\Browser\\browser.exe'),
+    windowsExecutableMatches(
+      'C:\\Program Files\\Browser\\browser.exe',
+      'C:\\Program Files\\Browser\\browser.exe'
+    ),
     true
   );
   assert.strictEqual(

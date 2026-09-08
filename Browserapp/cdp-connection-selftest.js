@@ -73,7 +73,11 @@ async function testOpenFailure(kind, expectedPattern) {
   assert.strictEqual(connection.closed, true);
   assert.strictEqual(connection.socket, null);
   assert.strictEqual(connection.pending.size, 0);
-  await rejectsFast(connection.command('Runtime.evaluate'), /connection is closed/, `command after open ${kind}`);
+  await rejectsFast(
+    connection.command('Runtime.evaluate'),
+    /connection is closed/,
+    `command after open ${kind}`
+  );
   return elapsed;
 }
 
@@ -101,7 +105,10 @@ async function testDisconnectRejectsPending() {
   const first = connection.command('Runtime.evaluate', { expression: '1' }, { timeout: 1000 });
   const second = connection.command('Runtime.enable', {}, { timeout: 1000 });
   assert.strictEqual(connection.pending.size, 2);
-  assert.deepStrictEqual(socket.sent.map((message) => message.method), ['Runtime.evaluate', 'Runtime.enable']);
+  assert.deepStrictEqual(
+    socket.sent.map((message) => message.method),
+    ['Runtime.evaluate', 'Runtime.enable']
+  );
 
   const started = Date.now();
   socket.emit('close');
@@ -112,7 +119,11 @@ async function testDisconnectRejectsPending() {
   assert.strictEqual(connection.pending.size, 0);
   assert.strictEqual(connection.closed, true);
   assert.strictEqual(connection.socket, null);
-  await rejectsFast(connection.command('Runtime.evaluate'), /connection is closed/, 'command after disconnect');
+  await rejectsFast(
+    connection.command('Runtime.evaluate'),
+    /connection is closed/,
+    'command after disconnect'
+  );
   return elapsed;
 }
 
@@ -165,7 +176,11 @@ async function testPostOpenErrorRejectsPending() {
   await assert.rejects(pending, /persistent socket error/);
   assert.strictEqual(connection.closed, true);
   assert.strictEqual(connection.socket, null);
-  await rejectsFast(connection.command('Target.getTargets'), /connection is closed/, 'command after socket error');
+  await rejectsFast(
+    connection.command('Target.getTargets'),
+    /connection is closed/,
+    'command after socket error'
+  );
 }
 
 async function main() {
@@ -180,15 +195,17 @@ async function main() {
     await testDisconnectCallback();
     const explicitCloseElapsed = await testExplicitCloseRejectsPending();
     await testPostOpenErrorRejectsPending();
-    process.stdout.write([
-      'CDP_CONNECTION_SELFTEST_OK',
-      `preopen_error_ms=${errorElapsed}`,
-      `preopen_close_ms=${closeElapsed}`,
-      `timeout_ms=${timeoutElapsed}`,
-      `disconnect_pending_ms=${disconnectElapsed}`,
-      `explicit_close_ms=${explicitCloseElapsed}`,
-      `sockets=${FakeWebSocket.instances.length}`,
-    ].join(' ') + '\n');
+    process.stdout.write(
+      [
+        'CDP_CONNECTION_SELFTEST_OK',
+        `preopen_error_ms=${errorElapsed}`,
+        `preopen_close_ms=${closeElapsed}`,
+        `timeout_ms=${timeoutElapsed}`,
+        `disconnect_pending_ms=${disconnectElapsed}`,
+        `explicit_close_ms=${explicitCloseElapsed}`,
+        `sockets=${FakeWebSocket.instances.length}`,
+      ].join(' ') + '\n'
+    );
   } finally {
     global.WebSocket = originalWebSocket;
   }

@@ -30,12 +30,12 @@ function findHostWindowsExe(distRoot) {
 
 function findHostLinuxBinary(distRoot) {
   const entries = fs.readdirSync(distRoot);
-  const preferred = entries.find((entry) => entry === 'OpenBrowser')
-    || entries.find((entry) => entry === 'electron');
+  const preferred =
+    entries.find((entry) => entry === 'OpenBrowser') || entries.find((entry) => entry === 'electron');
   if (preferred) {
     const candidate = path.join(distRoot, preferred);
     try {
-      if (fs.statSync(candidate).isFile() && (fs.statSync(candidate).mode & 0o111)) return candidate;
+      if (fs.statSync(candidate).isFile() && fs.statSync(candidate).mode & 0o111) return candidate;
     } catch (_) {}
   }
   const binary = entries.find((entry) => {
@@ -57,14 +57,15 @@ function findMacBinary(macosDir) {
   const preferred = entries.find((name) => name === 'OpenBrowser');
   if (preferred) return path.join(macosDir, preferred);
   // Host package ships a single main executable
-  const binary = entries.find((name) => {
-    const full = path.join(macosDir, name);
-    try {
-      return fs.statSync(full).isFile() && (fs.statSync(full).mode & 0o111);
-    } catch (_) {
-      return false;
-    }
-  }) || entries[0];
+  const binary =
+    entries.find((name) => {
+      const full = path.join(macosDir, name);
+      try {
+        return fs.statSync(full).isFile() && fs.statSync(full).mode & 0o111;
+      } catch (_) {
+        return false;
+      }
+    }) || entries[0];
   if (!binary) throw new Error('macOS 主机二进制未找到');
   return path.join(macosDir, binary);
 }

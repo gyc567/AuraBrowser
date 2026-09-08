@@ -5,7 +5,12 @@
  * Used by live-sync and selftests on Win/macOS.
  */
 
-const { payloadToSyncEvent, operateAllows, syncEventToCommand, settingsToOperateList } = require('./event-map');
+const {
+  payloadToSyncEvent,
+  operateAllows,
+  syncEventToCommand,
+  settingsToOperateList,
+} = require('./event-map');
 const { translateToStandardCdp, parseOperateList } = require('./window-sync-protocol');
 
 function resolveOperateList(options = {}) {
@@ -34,9 +39,11 @@ function planFanoutFromPayload(payload, options = {}) {
 
   const delayClick = options.delayClick ?? settings.delayClick;
   const delayInput = options.delayInput ?? settings.delayInput;
-  const isDelay = options.isDelay === true || options.isDelay === '1'
-    || (delayClick && (payload.type === 'click' || (payload.type === 'mouse' && payload.phase !== 'move')))
-    || (delayInput && (payload.type === 'key' || payload.type === 'beforeinput' || payload.type === 'input'));
+  const isDelay =
+    options.isDelay === true ||
+    options.isDelay === '1' ||
+    (delayClick && (payload.type === 'click' || (payload.type === 'mouse' && payload.phase !== 'move'))) ||
+    (delayInput && (payload.type === 'key' || payload.type === 'beforeinput' || payload.type === 'input'));
 
   let delayMs = 0;
   if (isDelay) {
@@ -46,7 +53,10 @@ function planFanoutFromPayload(payload, options = {}) {
     const inputMax = options.inputMaxMs ?? settings.inputMaxMs;
     const useInput = payload.type === 'key' || payload.type === 'beforeinput' || payload.type === 'input';
     const min = Number(options.mouseDelayMin ?? (useInput ? inputMin : clickMin) ?? 0) || 0;
-    const max = Math.max(min, Number(options.mouseDelayMax ?? (useInput ? inputMax : clickMax) ?? min) || min);
+    const max = Math.max(
+      min,
+      Number(options.mouseDelayMax ?? (useInput ? inputMax : clickMax) ?? min) || min
+    );
     delayMs = min + Math.random() * Math.max(0, max - min);
   }
 

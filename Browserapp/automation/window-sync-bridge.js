@@ -33,8 +33,11 @@ class WindowSyncBridge {
     const operate = Array.isArray(settings.operate)
       ? settings.operate
       : Object.entries(settings)
-        .filter(([key, value]) => ['keyboard', 'click', 'scroll', 'track', 'move'].includes(key) && value !== false)
-        .map(([key]) => (key === 'track' ? 'move' : key));
+          .filter(
+            ([key, value]) =>
+              ['keyboard', 'click', 'scroll', 'track', 'move'].includes(key) && value !== false
+          )
+          .map(([key]) => (key === 'track' ? 'move' : key));
     return {
       active: Boolean(state.active),
       master: state.master || null,
@@ -44,9 +47,10 @@ class WindowSyncBridge {
       capabilities: settings.capabilities || null,
       // Compatibility aliases for Local API clients
       startSync: Boolean(state.active),
-      syncOperateList: operate.includes('move') || operate.includes('track')
-        ? [...new Set(operate.map((k) => (k === 'track' ? 'move' : k)))]
-        : operate,
+      syncOperateList:
+        operate.includes('move') || operate.includes('track')
+          ? [...new Set(operate.map((k) => (k === 'track' ? 'move' : k)))]
+          : operate,
     };
   }
 
@@ -76,7 +80,14 @@ class WindowSyncBridge {
   }
 
   updateOperateList(list = []) {
-    const set = new Set(Array.isArray(list) ? list.map(String) : String(list).split(',').map((s) => s.trim()).filter(Boolean));
+    const set = new Set(
+      Array.isArray(list)
+        ? list.map(String)
+        : String(list)
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+    );
     const settings = {
       keyboard: set.has('keyboard') || set.has('key'),
       click: set.has('click'),

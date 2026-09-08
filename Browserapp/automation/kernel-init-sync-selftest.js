@@ -17,7 +17,12 @@ const { buildFingerprint } = require('./fingerprint');
 
 async function main() {
   assert.strictEqual(isOpenBrowser148({ source: 'openbrowser-148' }), true);
-  assert.strictEqual(isOpenBrowser148({ path: '/x/kernels/openbrowser/chrome_148/openbrowser_148/OpenBrowser.app/Contents/MacOS/OpenBrowser' }), true);
+  assert.strictEqual(
+    isOpenBrowser148({
+      path: '/x/kernels/openbrowser/chrome_148/openbrowser_148/OpenBrowser.app/Contents/MacOS/OpenBrowser',
+    }),
+    true
+  );
   assert.strictEqual(isOpenBrowser148({ source: 'donut-wayfern' }), false);
 
   const a = stableBrowserWindowName('env-001');
@@ -31,7 +36,8 @@ async function main() {
     id: 'env-sync-test',
     name: 'sync-test',
     language: 'ja-JP',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
     exitIp: '203.0.113.44',
     exitLatitude: 35.6762,
     exitLongitude: 139.6503,
@@ -77,8 +83,15 @@ async function main() {
   assert.strictEqual(stripped.canvas.mode, 'real');
   // Pixel noise stripped for native; WebGL meta spoof must remain (not real-only wipe).
   assert.strictEqual(stripped.webgl.mode, 'real');
-  assert.notStrictEqual(stripped.webgl.metaMode, 'real', 'native inject must keep webgl metaMode for UNMASKED_* spoof');
-  assert.ok(stripped.webgl.vendor || stripped.webgl.renderer, 'native inject must keep webgl vendor/renderer strings');
+  assert.notStrictEqual(
+    stripped.webgl.metaMode,
+    'real',
+    'native inject must keep webgl metaMode for UNMASKED_* spoof'
+  );
+  assert.ok(
+    stripped.webgl.vendor || stripped.webgl.renderer,
+    'native inject must keep webgl vendor/renderer strings'
+  );
   assert.strictEqual(fp.canvas.mode, 'noise');
 
   const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'ob-kernel-init-'));

@@ -14,12 +14,18 @@ function writeApiKeyAtomically(filePath, value) {
   const temporary = `${filePath}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   try {
     fs.writeFileSync(temporary, `${String(value)}\n`, { encoding: 'utf8', mode: 0o600 });
-    try { fs.chmodSync(temporary, 0o600); } catch (_) {}
+    try {
+      fs.chmodSync(temporary, 0o600);
+    } catch (_) {}
     fs.renameSync(temporary, filePath);
-    try { fs.chmodSync(filePath, 0o600); } catch (_) {}
+    try {
+      fs.chmodSync(filePath, 0o600);
+    } catch (_) {}
     return true;
   } catch (_) {
-    try { fs.unlinkSync(temporary); } catch (_) {}
+    try {
+      fs.unlinkSync(temporary);
+    } catch (_) {}
     return false;
   }
 }
@@ -44,18 +50,20 @@ async function startAutomation(context = {}) {
     port = Number(process.env.OPENBROWSER_API_PORT || 50325),
   } = context;
 
-  const keyFilePath = path.join(app.getPath("userData"), "local-api-key.txt");
+  const keyFilePath = path.join(app.getPath('userData'), 'local-api-key.txt');
   let effectiveApiKey = process.env.OPENBROWSER_API_KEY || context.apiKey;
   if (!effectiveApiKey) {
     try {
       if (fs.existsSync(keyFilePath)) {
-        effectiveApiKey = fs.readFileSync(keyFilePath, "utf8").trim();
-        try { fs.chmodSync(keyFilePath, 0o600); } catch (_) {}
+        effectiveApiKey = fs.readFileSync(keyFilePath, 'utf8').trim();
+        try {
+          fs.chmodSync(keyFilePath, 0o600);
+        } catch (_) {}
       }
     } catch (_) {}
   }
   if (!effectiveApiKey) {
-    effectiveApiKey = crypto.randomBytes(32).toString("base64url");
+    effectiveApiKey = crypto.randomBytes(32).toString('base64url');
     writeApiKeyAtomically(keyFilePath, effectiveApiKey);
   }
   const apiKey = effectiveApiKey;
