@@ -110,12 +110,24 @@
       "title": "chore(loop): scaffold loop-engineering framework",
       "commits": ["a27e8bd"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "chore(loop): adopt Phase 0+1 + loop framework commits into STATE",
+      "commits": ["8628502"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "feat(loop): reconcile --adopt and --purge flags",
+      "commits": ["6bfe04d"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
-    "last_audit_run": "2026-09-09T08:35:16.837Z",
-    "last_reconcile_run": "2026-09-09T08:35:14.545Z",
+    "last_audit_run": "2026-09-09T08:35:36.001Z",
+    "last_reconcile_run": "2026-09-09T08:35:47.829Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",
