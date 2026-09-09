@@ -2,7 +2,7 @@
 
 > Loop Engineering state file. Schema: state/schema.json
 > Source of truth: state/current.json (machine-readable mirror)
-> Last reconcile: 2026-09-09T08:35:47.829Z
+> Last reconcile: 2026-09-09T08:35:57.144Z
 
 ## High Priority (next PR slot)
 
@@ -66,12 +66,13 @@
 - 2026-09-09 chore(loop): scaffold loop-engineering framework (a27e8bd)
 - 2026-09-09 chore(loop): adopt Phase 0+1 + loop framework commits into STATE (8628502)
 - 2026-09-09 feat(loop): reconcile --adopt and --purge flags (6bfe04d)
+- 2026-09-09 chore(loop): adopt reconcile --adopt and adopt-state commits (91afae8)
 
 ## Loop Metadata
 
 - last_triage_run: 2026-09-09T08:33:33.602Z
 - last_audit_run: 2026-09-09T08:35:36.001Z
-- last_reconcile_run: 2026-09-09T08:35:47.829Z
+- last_reconcile_run: 2026-09-09T08:35:57.144Z
 - last_audit_score: L3
 - active_patterns: [daily-triage, pr-babysitter, post-merge-cleanup, compound-slicer, compound-verifier]
 - paused_patterns: []
