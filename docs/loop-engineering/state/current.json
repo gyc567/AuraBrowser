@@ -1,18 +1,6 @@
 {
   "high_priority": [
     {
-      "id": "REFAC-engine-diagnostic",
-      "slice": "Extract diagnostic + error-formatting helpers into engine/diagnostic.js",
-      "files_touched": 3,
-      "estimated_diff": "+250/-200",
-      "human_gate": "engine.js public API must remain stable; verify no consumer imports internal functions",
-      "depends_on": [],
-      "block": [],
-      "allowlist": false,
-      "category": "refactor",
-      "added_at": "2026-09-09T08:33:24.274Z"
-    },
-    {
       "id": "REFAC-engine-lock",
       "slice": "Extract profile-lock primitives into engine/lock.js",
       "files_touched": 4,
@@ -140,12 +128,24 @@
       "title": "chore(loop): final adopt (loop framework now self-consistent)",
       "commits": ["9e15c96"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "refactor(engine): extract diagnostic helpers to engine/diagnostic.js",
+      "commits": ["8cc29fc"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "chore(loop): adopt style commit (loop self-consistent)",
+      "commits": ["8e8d0c6"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
-    "last_audit_run": "2026-09-09T08:36:08.668Z",
-    "last_reconcile_run": "2026-09-09T09:07:42.613Z",
+    "last_audit_run": "2026-09-09T09:11:17.224Z",
+    "last_reconcile_run": "2026-09-09T09:14:26.799Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",

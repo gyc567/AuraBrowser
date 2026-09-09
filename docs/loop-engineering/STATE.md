@@ -2,15 +2,9 @@
 
 > Loop Engineering state file. Schema: state/schema.json
 > Source of truth: state/current.json (machine-readable mirror)
-> Last reconcile: 2026-09-09T09:07:42.613Z
+> Last reconcile: 2026-09-09T09:14:26.799Z
 
 ## High Priority (next PR slot)
-
-- [ ] **REFAC-engine-diagnostic**: Extract diagnostic + error-formatting helpers into engine/diagnostic.js
-  - slice: Extract diagnostic + error-formatting helpers into engine/diagnostic.js
-  - files-touched: 3
-  - estimated-diff: +250/-200
-  - human-gate: engine.js public API must remain stable; verify no consumer imports internal functions
 
 - [ ] **REFAC-engine-lock**: Extract profile-lock primitives into engine/lock.js
   - slice: Extract profile-lock primitives into engine/lock.js
@@ -69,12 +63,14 @@
 - 2026-09-09 chore(loop): adopt reconcile --adopt and adopt-state commits (91afae8)
 - 2026-09-09 style(loop): reformat STATE.md and current.json with Prettier (1530775)
 - 2026-09-09 chore(loop): final adopt (loop framework now self-consistent) (9e15c96)
+- 2026-09-09 refactor(engine): extract diagnostic helpers to engine/diagnostic.js (8cc29fc)
+- 2026-09-09 chore(loop): adopt style commit (loop self-consistent) (8e8d0c6)
 
 ## Loop Metadata
 
 - last_triage_run: 2026-09-09T08:33:33.602Z
-- last_audit_run: 2026-09-09T08:36:08.668Z
-- last_reconcile_run: 2026-09-09T09:07:42.613Z
+- last_audit_run: 2026-09-09T09:11:17.224Z
+- last_reconcile_run: 2026-09-09T09:14:26.799Z
 - last_audit_score: L3
 - active_patterns: [daily-triage, pr-babysitter, post-merge-cleanup, compound-slicer, compound-verifier]
 - paused_patterns: []
