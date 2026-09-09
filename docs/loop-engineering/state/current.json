@@ -128,12 +128,24 @@
       "title": "chore(loop): adopt reconcile --adopt and adopt-state commits",
       "commits": ["91afae8"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "style(loop): reformat STATE.md and current.json with Prettier",
+      "commits": ["1530775"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "chore(loop): final adopt (loop framework now self-consistent)",
+      "commits": ["9e15c96"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
     "last_audit_run": "2026-09-09T08:36:08.668Z",
-    "last_reconcile_run": "2026-09-09T08:35:57.144Z",
+    "last_reconcile_run": "2026-09-09T09:07:42.613Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",
