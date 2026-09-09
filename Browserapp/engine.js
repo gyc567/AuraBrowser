@@ -70,24 +70,6 @@ const MAX_PROFILE_PROXY_LENGTH = 64 * 1024;
 const HELPER_CLEANUP_ATTEMPTS = process.platform === 'win32' ? 32 : 3;
 const HELPER_CLEANUP_DELAY_MS = process.platform === 'win32' ? 250 : 120;
 
-function parsedProxy(value) {
-  try {
-    return parseProxy(String(value || '').trim());
-  } catch (_) {
-    return null;
-  }
-}
-
-function proxyHasCredentials(value) {
-  return Boolean(parsedProxy(value)?.authenticated);
-}
-
-function sameProxyEndpoint(left, right) {
-  const a = parsedProxy(left);
-  const b = parsedProxy(right);
-  return Boolean(a && b && a.protocol === b.protocol && a.host === b.host && a.port === b.port);
-}
-
 /** Kill options that match both kernel binary and macOS env Dock shell (OpenBrowser.bin). */
 function managedBrowserKillOptions(itemOrBrowser, root, launchBinary = null) {
   const browserPath = itemOrBrowser?.browser?.path || itemOrBrowser?.path || itemOrBrowser || null;
@@ -105,6 +87,8 @@ const {
   formatBrowserStartupError,
   writeBrowserStartupDiagnostic,
 } = require('./engine/diagnostic');
+
+const { parsedProxy, proxyHasCredentials, sameProxyEndpoint } = require('./engine/proxy');
 
 function systemBrowserCandidatesForPlatform(platform = process.platform, environment = process.env) {
   const home = environment.HOME || '';
@@ -4078,5 +4062,8 @@ module.exports = {
   appendDiagnosticOutput,
   formatBrowserStartupError,
   writeBrowserStartupDiagnostic,
+  parsedProxy,
+  proxyHasCredentials,
+  sameProxyEndpoint,
   systemBrowserCandidatesForPlatform,
 };
