@@ -51,6 +51,8 @@ importers:
         specifier: 5.0.2
         version: 5.0.2
 
+  tools/loop-cli: {}
+
 packages:
 
   '@babel/code-frame@7.29.7':

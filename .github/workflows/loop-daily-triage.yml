@@ -1,0 +1,109 @@
+name: Loop Daily Triage
+
+# Runs daily at 09:00 UTC.
+# Reports only (L1): reads STATE.md, runs loop reconcile + audit + doctor, posts summary as
+# a workflow run summary, optionally opens a draft issue if reconcile returns DRIFT.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-5' # Mon-Fri 09:00 UTC
+  workflow_dispatch: # manual trigger
+  push:
+    branches: [main]
+    paths:
+      - 'docs/loop-engineering/**'
+      - 'config/loop/**'
+      - 'state/current.json'
+      - '.github/workflows/loop-daily-triage.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Loop doctor
+        id: doctor
+        run: node tools/loop-cli/bin/loop.js doctor . 2>&1 | tee /tmp/doctor.txt
+
+      - name: Loop reconcile
+        id: reconcile
+        run: node tools/loop-cli/bin/loop.js reconcile . --json 2>&1 | tee /tmp/reconcile.json
+
+      - name: Loop audit
+        id: audit
+        run: node tools/loop-cli/bin/loop.js audit . --json 2>&1 | tee /tmp/audit.json
+
+      - name: Loop status (compact)
+        id: status
+        run: node tools/loop-cli/bin/loop.js status . 2>&1 | tee /tmp/status.txt
+
+      - name: Verify DSH not required
+        run: |
+          echo "DSH-only patterns are skipped in CI; only L1 report runs."
+
+      - name: Open drift issue
+        if: contains(steps.reconcile.outputs.*, 'DRIFT') || steps.reconcile.outputs.status == 'DRIFT'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reconcile = require('fs').readFileSync('/tmp/reconcile.json', 'utf8');
+            const r = JSON.parse(reconcile);
+            if (r.status === 'DRIFT') {
+              const body = [
+                '## Loop Daily Triage — DRIFT detected',
+                '',
+                '- Schema valid: ' + r.schema_valid,
+                '- Untracked commits: ' + r.untracked_commits.length,
+                ...r.untracked_commits.slice(0, 10).map((c) => '  - `' + c.hash.slice(0, 7) + '` ' + c.subject),
+                '',
+                'Run `node tools/loop-cli/bin/loop.js reconcile .` locally for details.',
+              ].join('\n');
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Loop daily-triage: STATE drift detected',
+                body,
+                labels: ['loop-engineering', 'state-drift'],
+              });
+            }
+
+      - name: Summary
+        run: |
+          {
+            echo "## Loop Daily Triage";
+            echo "";
+            echo "### Status";
+            echo '```';
+            cat /tmp/status.txt;
+            echo '```';
+            echo "";
+            echo "### Doctor";
+            tail -3 /tmp/doctor.txt;
+            echo "";
+            echo "### Audit (JSON)";
+            echo '```json';
+            cat /tmp/audit.json;
+            echo '```';
+          } >> $GITHUB_STEP_SUMMARY
