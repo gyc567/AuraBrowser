@@ -62,13 +62,36 @@ export async function runReconcile({ cwd = '.', json = false, adopt = false, pur
   }
   const runLogEntries = (runLogText.match(/^##\s+\d{4}-\d{2}-\d{2}T/gm) || []).length;
 
+  // --adopt: append each untracked commit as a new done[] entry
+  if (adopt && untracked.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const c of untracked) {
+      const commitHash = shortHash(c.hash);
+      // skip if already in some done[] entry (race condition guard)
+      if (recordedHashes.has(commitHash)) continue;
+      state.done.push({
+        date: today,
+        title: c.subject,
+        commits: [commitHash],
+        score: 'L1',
+      });
+      recordedHashes.add(commitHash);
+    }
+  }
+
   // mark reconcile (do not bump total_runs — that's incremented only by actual loop runs)
   state.loop_metadata.last_reconcile_run = new Date().toISOString();
   await saveState(state, {});
 
+  // After adopt, re-check untracked
+  let finalUntracked = untracked;
+  if (adopt) {
+    finalUntracked = untracked.filter((c) => !recordedHashes.has(shortHash(c.hash)));
+  }
+
   // schema validations
   const schemaValid = violations.length === 0;
-  const untrackedCount = untracked.length;
+  const untrackedCount = finalUntracked.length;
   const status = schemaValid && untrackedCount === 0 ? 'OK' : 'DRIFT';
 
   if (json) {
@@ -76,10 +99,11 @@ export async function runReconcile({ cwd = '.', json = false, adopt = false, pur
       status,
       schema_valid: schemaValid,
       schema_violations: violations,
-      untracked_commits: untracked,
+      untracked_commits: finalUntracked,
       recorded_commits: [...recordedHashes],
       unrecorded_dones: [],
       last_reconcile_run: state.loop_metadata.last_reconcile_run,
+      adopted: adopt,
     };
   }
 
@@ -93,7 +117,7 @@ export async function runReconcile({ cwd = '.', json = false, adopt = false, pur
     for (const v of violations) lines.push(`  ✗ ${v}`);
   }
   lines.push(`Untracked commits: ${untrackedCount}`);
-  for (const c of untracked.slice(0, 10)) {
+  for (const c of finalUntracked.slice(0, 10)) {
     lines.push(`  - ${c.hash.slice(0, 7)} ${c.subject}`);
   }
   if (untrackedCount > 10) lines.push(`  ... and ${untrackedCount - 10} more`);

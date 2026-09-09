@@ -107,10 +107,19 @@ Run \`loop doctor .\` first to check the framework is in place.
         break;
       case 'reconcile':
         if (flags.json) {
-          result = await runReconcile({ cwd: cwdArg, json: true });
+          result = await runReconcile({
+            cwd: cwdArg,
+            json: true,
+            adopt: !!flags.adopt,
+            purge: !!flags.purge,
+          });
           console.log(JSON.stringify(result, null, 2));
         } else {
-          result = await runReconcile({ cwd: cwdArg });
+          result = await runReconcile({
+            cwd: cwdArg,
+            adopt: !!flags.adopt,
+            purge: !!flags.purge,
+          });
           console.log(result);
         }
         break;
