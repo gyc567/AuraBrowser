@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/skills/loop-cost/output-schema.json",
+  "title": "loop-cost output",
+  "type": "object",
+  "required": ["pattern_id", "proposed", "cap", "ratio", "cap_status"],
+  "additionalProperties": false,
+  "properties": {
+    "pattern_id": { "type": "string" },
+    "proposed": {
+      "type": "object",
+      "required": ["operators", "time_seconds"],
+      "properties": {
+        "operators": { "type": "integer", "minimum": 0 },
+        "time_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "cap": {
+      "type": "object",
+      "required": ["operators", "time_seconds"],
+      "properties": {
+        "operators": { "type": "integer", "minimum": 0 },
+        "time_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ratio": {
+      "type": "object",
+      "properties": {
+        "operators": { "type": "number", "minimum": 0 },
+        "time_seconds": { "type": "number", "minimum": 0 }
+      }
+    },
+    "cap_status": { "enum": ["under", "near", "over", "kill"] },
+    "estimated_tokens": { "type": "integer", "minimum": 0 },
+    "daily_remaining": {
+      "type": "object",
+      "properties": {
+        "operators": { "type": "integer", "minimum": 0 },
+        "time_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "advice": { "type": "string", "maxLength": 500 }
+  }
+}

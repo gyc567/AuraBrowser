@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/docs/loop-engineering/state/schema.json",
+  "title": "AuraBrowser Loop State",
+  "type": "object",
+  "required": ["high_priority", "watch", "done", "loop_metadata"],
+  "properties": {
+    "high_priority": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "slice", "files_touched", "depends_on", "added_at"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z]+-[a-z0-9][a-z0-9-]*$" },
+          "slice": { "type": "string", "minLength": 1 },
+          "files_touched": { "type": "integer", "minimum": 1, "maximum": 8 },
+          "estimated_diff": { "type": "string" },
+          "human_gate": { "type": "string" },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "block": { "type": "array", "items": { "type": "string" } },
+          "allowlist": { "type": "boolean" },
+          "category": { "enum": ["refactor", "test", "doc", "security", "perf", "infra"] },
+          "added_at": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "watch": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "done": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["date", "title", "commits"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "title": { "type": "string" },
+          "commits": { "type": "array", "items": { "type": "string" } },
+          "score": { "enum": ["L0", "L1", "L2", "L3"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "loop_metadata": {
+      "type": "object",
+      "required": [
+        "last_triage_run",
+        "last_audit_run",
+        "last_reconcile_run",
+        "last_audit_score",
+        "active_patterns",
+        "schema_version"
+      ],
+      "properties": {
+        "last_triage_run": { "type": ["string", "null"], "format": "date-time" },
+        "last_audit_run": { "type": ["string", "null"], "format": "date-time" },
+        "last_reconcile_run": { "type": ["string", "null"], "format": "date-time" },
+        "last_audit_score": { "enum": ["L0", "L1", "L2", "L3"] },
+        "active_patterns": { "type": "array", "items": { "type": "string" } },
+        "paused_patterns": { "type": "array", "items": { "type": "string" } },
+        "total_runs": { "type": "integer", "minimum": 0 },
+        "operator_count_today": { "type": "integer", "minimum": 0 },
+        "operator_count_total": { "type": "integer", "minimum": 0 },
+        "time_spent_today_seconds": { "type": "integer", "minimum": 0 },
+        "time_spent_total_seconds": { "type": "integer", "minimum": 0 },
+        "schema_version": { "type": "integer", "minimum": 1 },
+        "schema_validated_at": { "type": ["string", "null"], "format": "date-time" },
+        "baseline_commit": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

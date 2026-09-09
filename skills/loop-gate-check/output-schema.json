@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/skills/loop-gate-check/output-schema.json",
+  "title": "loop-gate-check output",
+  "type": "object",
+  "required": ["verdict", "matches", "limits_check"],
+  "additionalProperties": false,
+  "properties": {
+    "verdict": { "enum": ["auto-merge", "needs-human", "blocked"] },
+    "matches": {
+      "type": "object",
+      "required": ["denylist", "compound", "allowlist"],
+      "properties": {
+        "denylist": { "type": "array", "items": { "type": "string" } },
+        "compound": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "paths"],
+            "properties": {
+              "id": { "type": "string" },
+              "paths": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "allowlist": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "limits_check": {
+      "type": "object",
+      "required": ["files_per_PR_ok", "lines_per_file_ok", "lines_per_PR_ok", "attempts_ok"],
+      "properties": {
+        "files_per_PR_ok": { "type": "boolean" },
+        "lines_per_file_ok": { "type": "boolean" },
+        "lines_per_PR_ok": { "type": "boolean" },
+        "attempts_ok": { "type": "boolean" },
+        "files_count": { "type": "integer", "minimum": 0 },
+        "lines_per_PR_total": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "operator_count": { "type": "integer", "minimum": 0 },
+    "time_seconds": { "type": "integer", "minimum": 0 }
+  }
+}

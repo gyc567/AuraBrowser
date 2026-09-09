@@ -1,0 +1,188 @@
+# Loop Engineering pattern registry for AuraBrowser
+# Schema mirrors https://github.com/cobusgreyling/loop-engineering/patterns/registry.yaml
+# 8 upstream patterns; aura-specific compound patterns live in compound.yaml.
+
+patterns:
+  - id: daily-triage
+    name: Daily Triage
+    goal: Prioritized scan of issues, CI, dependencies, and STATE.md to surface next work
+    cadence: 1d-2h
+    risk: low
+    tools: [dsh]
+    skills: [loop-triage, loop-state-update]
+    state: docs/loop-engineering/STATE.md
+    phases: [discover, score, propose]
+    human_gates: [design-decisions, multi-file-refactors, denylist-touched]
+    starter: null
+    week_one_mode: L1
+    token_cost: low
+    cost:
+      operators_noop: 5
+      operators_report: 15
+      operators_action: 30
+      time_cap_seconds: 300
+      early_exit_required: true
+    level: L1
+    last_run: null
+    total_runs: 0
+
+  - id: thin-loop
+    name: Thin Loop
+    goal: Report-only GitHub Actions snapshot; the issue tracker is the state
+    cadence: 1d
+    risk: low
+    tools: [github-actions]
+    skills: [loop-triage]
+    state: docs/loop-engineering/STATE.md
+    phases: [snapshot, summarize, comment]
+    human_gates: [all-writes]
+    starter: null
+    week_one_mode: L1
+    token_cost: low
+    cost:
+      operators_noop: 1
+      operators_report: 3
+      operators_action: 1
+      time_cap_seconds: 120
+      early_exit_required: true
+    level: L0
+    last_run: null
+    total_runs: 0
+
+  - id: pr-babysitter
+    name: PR Babysitter
+    goal: Shepherd PRs through review, CI, rebase, and merge
+    cadence: 5m-15m
+    risk: medium
+    tools: [dsh, github-actions]
+    skills: [loop-pr-babysit, loop-minimal-fix, loop-verifier]
+    state: docs/loop-engineering/STATE.md
+    phases: [discover, triage, fix, verify, notify]
+    human_gates: [denylist-touched, max-attempts, security, payments, auth]
+    starter: null
+    week_one_mode: L1
+    token_cost: high
+    cost:
+      operators_noop: 10
+      operators_report: 40
+      operators_action: 80
+      time_cap_seconds: 900
+      early_exit_required: true
+    level: L1
+    last_run: null
+    total_runs: 0
+
+  - id: ci-sweeper
+    name: CI Sweeper
+    goal: React to failing CI with minimal fixes and escalation
+    cadence: 5m-15m
+    risk: medium
+    tools: [dsh, github-actions]
+    skills: [loop-minimal-fix, loop-verifier, loop-gate-check]
+    state: docs/loop-engineering/STATE.md
+    phases: [detect, classify, fix, verify, escalate]
+    human_gates: [infra-failures, max-attempts, security-tests, denylist-touched]
+    starter: null
+    week_one_mode: L1
+    token_cost: very-high
+    cost:
+      operators_noop: 5
+      operators_report: 20
+      operators_action: 50
+      time_cap_seconds: 600
+      early_exit_required: true
+    level: L0
+    last_run: null
+    total_runs: 0
+
+  - id: post-merge-cleanup
+    name: Post-Merge Cleanup
+    goal: Follow-up tech debt and cleanup after merges to main
+    cadence: 1d-6h
+    risk: low
+    tools: [dsh]
+    skills: [loop-triage, loop-minimal-fix]
+    state: docs/loop-engineering/STATE.md
+    phases: [scan-merges, prioritize, fix-small, ticket-large]
+    human_gates: [architectural-debt, feature-flags, large-diffs, denylist-touched]
+    starter: null
+    week_one_mode: L1
+    token_cost: low
+    cost:
+      operators_noop: 3
+      operators_report: 10
+      operators_action: 20
+      time_cap_seconds: 300
+      early_exit_required: false
+    level: L0
+    last_run: null
+    total_runs: 0
+
+  - id: dependency-sweeper
+    name: Dependency Sweeper
+    goal: Discover, safely apply, and verify dependency + vulnerability updates
+    cadence: 6h-1d
+    risk: medium
+    tools: [dsh, github-actions]
+    skills: [loop-minimal-fix, loop-verifier, loop-gate-check]
+    state: docs/loop-engineering/STATE.md
+    phases: [scan, triage-risk, patch-safe, verify-worktree, escalate-risky]
+    human_gates: [major-bumps, high-sev-cve, denylisted-packages, max-attempts, denylist-touched]
+    starter: null
+    week_one_mode: L1
+    token_cost: medium
+    cost:
+      operators_noop: 5
+      operators_report: 25
+      operators_action: 60
+      time_cap_seconds: 600
+      early_exit_required: true
+    level: L0
+    last_run: null
+    total_runs: 0
+
+  - id: changelog-drafter
+    name: Changelog Drafter
+    goal: Scan merged PRs and commits, draft categorized release notes
+    cadence: 1d or tag
+    risk: low
+    tools: [dsh]
+    skills: [loop-triage, loop-state-update]
+    state: docs/loop-engineering/STATE.md
+    phases: [scan-merges, categorize, draft, review, publish]
+    human_gates: [breaking-changes, security, major-features, marketing-sensitive]
+    starter: null
+    week_one_mode: L1
+    token_cost: low
+    cost:
+      operators_noop: 3
+      operators_report: 15
+      operators_action: 25
+      time_cap_seconds: 300
+      early_exit_required: false
+    level: L0
+    last_run: null
+    total_runs: 0
+
+  - id: issue-triage
+    name: Issue Triage
+    goal: Discover, deduplicate, prioritize and label incoming issues
+    cadence: 2h-1d
+    risk: low
+    tools: [dsh]
+    skills: [loop-triage, loop-verifier]
+    state: docs/loop-engineering/STATE.md
+    phases: [discover, dedupe, score, propose-labels, human-review]
+    human_gates: [security, p0-p1, ambiguous-duplicates, stale-closures]
+    starter: null
+    week_one_mode: L1
+    token_cost: low
+    cost:
+      operators_noop: 3
+      operators_report: 12
+      operators_action: 25
+      time_cap_seconds: 300
+      early_exit_required: false
+    level: L0
+    last_run: null
+    total_runs: 0

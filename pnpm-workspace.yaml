@@ -1,3 +1,4 @@
 packages:
   - 'Browserapp'
   - 'packages/*'
+  - 'tools/*'

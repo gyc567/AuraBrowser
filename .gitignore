@@ -49,6 +49,11 @@ Browserapp/local-api-key.txt
 *-selftest-*/
 .test-tmp/
 
+# Loop engineering runtime artifacts (snapshots are not source of truth)
+docs/loop-engineering/state/history/
+docs/loop-engineering/state.lock
+docs/loop-engineering/state/operators-*.jsonl
+
 # Cached update status
 Browserapp/openbrowser-update-status.json
 

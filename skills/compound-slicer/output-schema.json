@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/skills/compound-slicer/output-schema.json",
+  "title": "compound-slicer output",
+  "type": "object",
+  "required": ["task_id", "slices", "constraints_used", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "task_id": { "type": "string" },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "constraints_used": {
+      "type": "object",
+      "required": ["max_slices", "max_files_per_slice", "max_lines_per_slice"],
+      "properties": {
+        "max_slices": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "max_files_per_slice": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "max_lines_per_slice": { "type": "integer", "minimum": 1, "maximum": 800 }
+      }
+    },
+    "slices": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["id", "slice", "files_touched", "depends_on", "gate"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z]+-[a-z0-9][a-z0-9-]*$" },
+          "slice": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "files_touched": { "type": "integer", "minimum": 1, "maximum": 8 },
+          "files": {
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "string" }
+          },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "gate": { "enum": ["auto-merge", "needs-human", "blocked"] },
+          "estimated_diff": { "type": "string" },
+          "human_gate_note": { "type": "string", "maxLength": 500 },
+          "lines_total": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "operator_count": { "type": "integer", "minimum": 0 },
+    "time_seconds": { "type": "integer", "minimum": 0 }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/skills/loop-pr-babysit/output-schema.json",
+  "title": "loop-pr-babysit output",
+  "type": "object",
+  "required": ["pr_number", "status", "next_action"],
+  "additionalProperties": false,
+  "properties": {
+    "pr_number": { "type": "integer", "minimum": 1 },
+    "status": {
+      "type": "object",
+      "required": ["review_state", "ci_state", "merge_state", "gate_verdict"],
+      "properties": {
+        "review_state": { "enum": ["approved", "changes_requested", "pending", "dismissed"] },
+        "ci_state": { "enum": ["success", "failure", "pending", "none"] },
+        "merge_state": { "enum": ["clean", "conflicts", "behind", "locked", "unknown"] },
+        "gate_verdict": { "enum": ["auto-merge", "needs-human", "blocked"] }
+      }
+    },
+    "next_action": { "enum": ["wait", "rebase", "fix-ci", "address-review", "request-human", "merge"] },
+    "next_action_minutes": { "type": "integer", "minimum": 1, "maximum": 15 },
+    "operator_count": { "type": "integer", "minimum": 0 },
+    "time_seconds": { "type": "integer", "minimum": 0 },
+    "notes": { "type": "string", "maxLength": 500 }
+  }
+}

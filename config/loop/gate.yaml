@@ -1,0 +1,91 @@
+# Loop Engineering gate configuration for AuraBrowser.
+# Evaluated in order: denylist -> compound rules -> allowlist -> fallback to human.
+
+evaluation_order:
+  - denylist_match
+  - compound_rules
+  - allowlist_match
+  - fallback_human
+
+denylist:
+  paths:
+    - 'Browserapp/main.js'
+    - 'Browserapp/cdp.js'
+    - 'Browserapp/automation/mcp-server.js'
+    - 'Browserapp/automation/isolation.js'
+    - 'Browserapp/automation/fingerprint.js'
+    - 'Browserapp/lib/errors.js'
+    - 'Browserapp/lib/store.js'
+    - 'Browserapp/lib/log.js'
+    - '**/*-selftest.js'
+    - 'package.json'
+    - 'pnpm-workspace.yaml'
+    - '.npmrc'
+    - 'eslint.config.js'
+    - '.prettierrc.json'
+    - 'commitlint.config.js'
+    - 'husky/**'
+  reason_doc: 'docs/loop-engineering/denylist-reasons.md'
+  reason_summary: 'main.js/cdp.js process entry; mcp-server/isolation/fingerprint external security; lib/* Phase 0-1 contracts; selftest bespoke; monorepo layout, lint, format, hooks'
+
+compound_rules:
+  - id: test_changes_denied
+    description: 'test files referencing denylist paths upgrade to denylist'
+    when: 'diff test file imports/requires any denylist path'
+    action: upgrade_to_denylist
+    severity: high
+
+  - id: doc_covers_denied
+    description: 'documentation covering security/denylist topics upgrades to denylist'
+    when: 'diff modifies docs/security/** or docs/error-codes.md substantive content'
+    action: upgrade_to_denylist
+    severity: high
+
+  - id: ci_workflow_change
+    description: 'CI workflow changes require 2 reviewers'
+    when: 'diff touches .github/workflows/*.yml'
+    action: require_2_reviewers
+    severity: medium
+
+  - id: loop_self_change
+    description: 'loop framework self-change requires 1 reviewer + audit rerun'
+    when: 'diff modifies config/loop/**, tools/loop-cli/**, or skills/loop-*/**'
+    action: require_1_reviewer_and_audit
+    severity: medium
+
+  - id: state_drift
+    description: 'STATE.md changed without matching loop run entry in loop-run-log.md'
+    when: 'diff modifies STATE.md but no append to loop-run-log.md in same commit'
+    action: require_1_reviewer
+    severity: medium
+
+allowlist:
+  paths:
+    - 'tests/**/*.test.js'
+    - 'tests/**/conversions/**/*.test.js'
+    - 'docs/loop-engineering/**'
+    - 'config/loop/**'
+    - 'tools/loop-cli/**'
+    - 'skills/loop-*/**'
+    - 'skills/compound-*/**'
+    - '.github/ISSUE_TEMPLATE/**'
+    - '.github/PULL_REQUEST_TEMPLATE.md'
+    - '**/*.bak'
+  rules:
+    - 'tests/test_changes_denied: must obey compound rule'
+    - 'docs/loop-engineering/state_drift: must obey compound rule'
+
+limits:
+  max_files_per_PR: 8
+  max_lines_per_file: 600
+  max_lines_per_PR: 1500
+  max_attempts_per_item: 3
+  max_PRs_per_day:
+    pr-babysitter: 4
+    post-merge-cleanup: 2
+    compound-slicer: 3
+    changelog-drafter: 1
+    ci-sweeper: 2
+  max_slices_per_goal: 12
+  max_concurrent_runs: 1
+  require_reconcile_before_run: true

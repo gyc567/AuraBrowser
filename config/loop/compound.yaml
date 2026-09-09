@@ -1,0 +1,61 @@
+# AuraBrowser-specific compound patterns.
+# These extend the upstream registry with project-specific orchestration patterns.
+# Stored separately to avoid merge conflicts when upstream registry.yaml is updated.
+
+patterns:
+  - id: compound-slicer
+    name: Compound Slicer
+    goal: Decompose a large refactor (Phase 2/3) into N <=8-file slice-cards
+    cadence: on-demand
+    risk: medium
+    tools: [dsh]
+    skills: [loop-triage, loop-state-update, loop-gate-check]
+    state: docs/loop-engineering/STATE.md
+    phases: [ingest-task, scan-codebase, emit-slices, write-state]
+    human_gates: [denylist-touched, max-slices, max-files-per-slice]
+    starter: null
+    week_one_mode: L2
+    token_cost: medium
+    cost:
+      operators_noop: 5
+      operators_report: 20
+      operators_action: 40
+      time_cap_seconds: 600
+      early_exit_required: true
+    level: L2
+    last_run: null
+    total_runs: 0
+    constraints:
+      max_slices: 12
+      max_files_per_slice: 8
+      max_lines_per_slice: 800
+      slice_must_have: [id, slice, files_touched, depends_on, gate]
+    output_schema: skills/compound-slicer/output-schema.json
+
+  - id: compound-verifier
+    name: Compound Verifier
+    goal: Run an independent subagent as a fresh-context verifier with REJECT default stance
+    cadence: on-demand (after every compound-slicer PR)
+    risk: low
+    tools: [dsh]
+    skills: [loop-verifier, loop-gate-check, loop-cost]
+    state: docs/loop-engineering/STATE.md
+    phases: [spawn-verifier, capture-output, apply-verdict, log-run]
+    human_gates: [verifier-escalate, denylist-touched, score-below-70]
+    starter: null
+    week_one_mode: L2
+    token_cost: medium
+    cost:
+      operators_noop: 1
+      operators_report: 8
+      operators_action: 15
+      time_cap_seconds: 300
+      early_exit_required: true
+    level: L2
+    last_run: null
+    total_runs: 0
+    constraints:
+      must_use_subagent_not_fork: true
+      default_stance: REJECT
+      min_score_to_pass: 70
+    output_schema: skills/loop-verifier/output-schema.json

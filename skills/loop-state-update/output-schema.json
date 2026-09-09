@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gyc567/AuraBrowser/skills/loop-state-update/output-schema.json",
+  "title": "loop-state-update output",
+  "type": "object",
+  "required": ["applied", "conflicts", "lock_held", "schema_valid", "state_md_rendered"],
+  "additionalProperties": false,
+  "properties": {
+    "applied": { "type": "integer", "minimum": 0 },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "reason": { "enum": ["already_exists", "not_found", "schema_violation"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "lock_held": { "type": "boolean" },
+    "schema_valid": { "type": "boolean" },
+    "state_md_rendered": { "type": "boolean" },
+    "operator_count": { "type": "integer", "minimum": 0 },
+    "time_seconds": { "type": "integer", "minimum": 0 }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "high_priority": [
+    {
+      "id": "REFAC-engine-diagnostic",
+      "slice": "Extract diagnostic + error-formatting helpers into engine/diagnostic.js",
+      "files_touched": 3,
+      "estimated_diff": "+250/-200",
+      "human_gate": "engine.js public API must remain stable; verify no consumer imports internal functions",
+      "depends_on": [],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.274Z"
+    },
+    {
+      "id": "REFAC-engine-lock",
+      "slice": "Extract profile-lock primitives into engine/lock.js",
+      "files_touched": 4,
+      "estimated_diff": "+400/-350",
+      "human_gate": "isolation.js is denylist — touch only with explicit human review (lock semantics are security boundary)",
+      "depends_on": ["REFAC-engine-diagnostic"],
+      "block": ["denylist-touched"],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.275Z"
+    },
+    {
+      "id": "REFAC-engine-profile",
+      "slice": "Extract profile state machine into engine/profile.js",
+      "files_touched": 5,
+      "estimated_diff": "+500/-450",
+      "human_gate": "isolation.js + lib/store.js are denylist; coordinate with Phase 1 store migration",
+      "depends_on": ["REFAC-engine-lock"],
+      "block": ["denylist-touched"],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.275Z"
+    },
+    {
+      "id": "REFAC-engine-proxy",
+      "slice": "Extract proxy + credential redaction into engine/proxy.js",
+      "files_touched": 3,
+      "estimated_diff": "+300/-250",
+      "human_gate": "proxy credentials; verify password redaction remains",
+      "depends_on": ["REFAC-engine-diagnostic"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.275Z"
+    },
+    {
+      "id": "REFAC-engine-extension",
+      "slice": "Extract extension registry into engine/extension.js",
+      "files_touched": 3,
+      "estimated_diff": "+350/-300",
+      "human_gate": "extension assignExtension/listExtensions must preserve existing IPC semantics",
+      "depends_on": ["REFAC-engine-profile"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.275Z"
+    },
+    {
+      "id": "REFAC-engine-index",
+      "slice": "Re-export BrowserEngine from engine/index.js for backward compat",
+      "files_touched": 2,
+      "estimated_diff": "+50/-30",
+      "human_gate": "final PR — must be last to land; all import sites need shim",
+      "depends_on": ["REFAC-engine-profile", "REFAC-engine-proxy", "REFAC-engine-extension"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T08:33:24.275Z"
+    }
+  ],
+  "watch": [
+    "lib/ coverage: 93.89% lines / 77.02% branches",
+    "70+ standalone *-selftest.js — slow migration to node:test (26 cases so far)",
+    "Phase 2 (engine.js 拆 8 modules) — no slice-cards yet",
+    "Phase 3 (renderer.js 6053 lines 拆 + Preact + i18n) — no slice-cards yet",
+    "Phase 4 (performance + release-please) — schema TBD"
+  ],
+  "done": [
+    {
+      "date": "2026-09-09",
+      "title": "PHASE-1: errors + store + c8 coverage + docs",
+      "commits": ["f3418fe", "f5d40b9", "cf171b3", "40e05f7"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-08",
+      "title": "PHASE-0: build + log + security + docs",
+      "commits": ["579ed33", "f8a9717", "5e37f26", "a9bc481"],
+      "score": "L1"
+    }
+  ],
+  "loop_metadata": {
+    "last_triage_run": "2026-09-09T08:33:33.602Z",
+    "last_audit_run": "2026-09-09T08:33:35.884Z",
+    "last_reconcile_run": "2026-09-09T08:33:35.970Z",
+    "last_audit_score": "L3",
+    "active_patterns": [
+      "daily-triage",
+      "pr-babysitter",
+      "post-merge-cleanup",
+      "compound-slicer",
+      "compound-verifier"
+    ],
+    "paused_patterns": [],
+    "total_runs": 1,
+    "operator_count_today": 0,
+    "operator_count_total": 0,
+    "time_spent_today_seconds": 0,
+    "time_spent_total_seconds": 0,
+    "schema_version": 1,
+    "schema_validated_at": "2026-09-09T00:49:07.781Z",
+    "baseline_commit": "c766fc4"
+  }
+}
