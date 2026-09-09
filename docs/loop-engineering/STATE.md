@@ -2,7 +2,7 @@
 
 > Loop Engineering state file. Schema: state/schema.json
 > Source of truth: state/current.json (machine-readable mirror)
-> Last reconcile: 2026-09-09T09:14:26.799Z
+> Last reconcile: 2026-09-09T09:24:47.674Z
 
 ## High Priority (next PR slot)
 
@@ -21,13 +21,6 @@
   - human-gate: isolation.js + lib/store.js are denylist; coordinate with Phase 1 store migration
   - depends-on: [REFAC-engine-lock]
   - block: [denylist-touched]
-
-- [ ] **REFAC-engine-proxy**: Extract proxy + credential redaction into engine/proxy.js
-  - slice: Extract proxy + credential redaction into engine/proxy.js
-  - files-touched: 3
-  - estimated-diff: +300/-250
-  - human-gate: proxy credentials; verify password redaction remains
-  - depends-on: [REFAC-engine-diagnostic]
 
 - [ ] **REFAC-engine-extension**: Extract extension registry into engine/extension.js
   - slice: Extract extension registry into engine/extension.js
@@ -65,12 +58,14 @@
 - 2026-09-09 chore(loop): final adopt (loop framework now self-consistent) (9e15c96)
 - 2026-09-09 refactor(engine): extract diagnostic helpers to engine/diagnostic.js (8cc29fc)
 - 2026-09-09 chore(loop): adopt style commit (loop self-consistent) (8e8d0c6)
+- 2026-09-09 refactor(engine): extract proxy helpers to engine/proxy.js (8f4e71c)
+- 2026-09-09 feat(loop): first L2 slice complete (REFAC-engine-diagnostic) (b1aa609)
 
 ## Loop Metadata
 
 - last_triage_run: 2026-09-09T08:33:33.602Z
-- last_audit_run: 2026-09-09T09:11:17.224Z
-- last_reconcile_run: 2026-09-09T09:14:26.799Z
+- last_audit_run: 2026-09-09T09:14:47.957Z
+- last_reconcile_run: 2026-09-09T09:24:47.674Z
 - last_audit_score: L3
 - active_patterns: [daily-triage, pr-babysitter, post-merge-cleanup, compound-slicer, compound-verifier]
 - paused_patterns: []

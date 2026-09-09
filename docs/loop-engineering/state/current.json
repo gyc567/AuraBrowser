@@ -25,18 +25,6 @@
       "added_at": "2026-09-09T08:33:24.275Z"
     },
     {
-      "id": "REFAC-engine-proxy",
-      "slice": "Extract proxy + credential redaction into engine/proxy.js",
-      "files_touched": 3,
-      "estimated_diff": "+300/-250",
-      "human_gate": "proxy credentials; verify password redaction remains",
-      "depends_on": ["REFAC-engine-diagnostic"],
-      "block": [],
-      "allowlist": false,
-      "category": "refactor",
-      "added_at": "2026-09-09T08:33:24.275Z"
-    },
-    {
       "id": "REFAC-engine-extension",
       "slice": "Extract extension registry into engine/extension.js",
       "files_touched": 3,
@@ -140,12 +128,24 @@
       "title": "chore(loop): adopt style commit (loop self-consistent)",
       "commits": ["8e8d0c6"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "refactor(engine): extract proxy helpers to engine/proxy.js",
+      "commits": ["8f4e71c"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "feat(loop): first L2 slice complete (REFAC-engine-diagnostic)",
+      "commits": ["b1aa609"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
-    "last_audit_run": "2026-09-09T09:11:17.224Z",
-    "last_reconcile_run": "2026-09-09T09:14:26.799Z",
+    "last_audit_run": "2026-09-09T09:14:47.957Z",
+    "last_reconcile_run": "2026-09-09T09:24:47.674Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",
