@@ -110,7 +110,7 @@ const renderer = {
 };
 
 const esmScripts = {
-  files: ['Browserapp/scripts/**/*.mjs'],
+  files: ['Browserapp/scripts/**/*.mjs', 'tools/loop-cli/**/*.js'],
   languageOptions: {
     ecmaVersion: 2024,
     sourceType: 'module',

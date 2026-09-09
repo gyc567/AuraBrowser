@@ -1,0 +1,31 @@
+{
+  "name": "@aura/loop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Loop Engineering CLI for AuraBrowser (self-evolution framework)",
+  "type": "module",
+  "bin": {
+    "loop": "./bin/loop.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./lib/schema": "./src/lib/schema.js",
+    "./lib/state": "./src/lib/state.js",
+    "./lib/lock": "./src/lib/lock.js",
+    "./lib/operator": "./src/lib/operator.js",
+    "./lib/gate": "./src/lib/gate.js",
+    "./lib/yaml": "./src/lib/yaml.js"
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js",
+    "doctor": "node bin/loop.js doctor ."
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "files": [
+    "bin",
+    "src"
+  ]
+}
