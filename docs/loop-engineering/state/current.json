@@ -92,12 +92,30 @@
       "title": "PHASE-0: build + log + security + docs",
       "commits": ["579ed33", "f8a9717", "5e37f26", "a9bc481"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "ci(loop): add daily-triage workflow (L1 report, no auto-merge)",
+      "commits": ["3a3351e"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "feat(loop): @aura/loop CLI runtime with 6 working commands",
+      "commits": ["267bd83"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "chore(loop): scaffold loop-engineering framework",
+      "commits": ["a27e8bd"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
-    "last_audit_run": "2026-09-09T08:33:35.884Z",
-    "last_reconcile_run": "2026-09-09T08:33:35.970Z",
+    "last_audit_run": "2026-09-09T08:35:16.837Z",
+    "last_reconcile_run": "2026-09-09T08:35:14.545Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",

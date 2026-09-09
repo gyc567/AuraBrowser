@@ -2,7 +2,7 @@
 
 > Loop Engineering state file. Schema: state/schema.json
 > Source of truth: state/current.json (machine-readable mirror)
-> Last reconcile: 2026-09-09T08:33:35.970Z
+> Last reconcile: 2026-09-09T08:35:14.545Z
 
 ## High Priority (next PR slot)
 
@@ -61,12 +61,15 @@
 
 - 2026-09-09 PHASE-1: errors + store + c8 coverage + docs (f3418fe, f5d40b9, cf171b3, 40e05f7)
 - 2026-09-08 PHASE-0: build + log + security + docs (579ed33, f8a9717, 5e37f26, a9bc481)
+- 2026-09-09 ci(loop): add daily-triage workflow (L1 report, no auto-merge) (3a3351e)
+- 2026-09-09 feat(loop): @aura/loop CLI runtime with 6 working commands (267bd83)
+- 2026-09-09 chore(loop): scaffold loop-engineering framework (a27e8bd)
 
 ## Loop Metadata
 
 - last_triage_run: 2026-09-09T08:33:33.602Z
-- last_audit_run: 2026-09-09T08:33:35.884Z
-- last_reconcile_run: 2026-09-09T08:33:35.970Z
+- last_audit_run: 2026-09-09T08:35:16.837Z
+- last_reconcile_run: 2026-09-09T08:35:14.545Z
 - last_audit_score: L3
 - active_patterns: [daily-triage, pr-babysitter, post-merge-cleanup, compound-slicer, compound-verifier]
 - paused_patterns: []
