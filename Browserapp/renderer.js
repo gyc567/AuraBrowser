@@ -1,4 +1,7 @@
 const UI_KEY = 'openbrowser-ui-state';
+// Pure helpers extracted into renderer/utils.js (Phase 3 REFAC-renderer-utils).
+// Loaded as a separate <script> tag in index.html so these globals are available.
+const { formatBytes, createGroupId, positiveProfileNumber } = window.__rendererUtils;
 const GROUP_COLORS = [
   '#245cff',
   '#22d3ee',
@@ -192,12 +195,6 @@ async function downloadAppUpdate() {
   renderAppUpdateState();
 }
 
-function formatBytes(value) {
-  const bytes = Number(value) || 0;
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
 document.getElementById('github-link')?.addEventListener('click', async (event) => {
   event.preventDefault();
   try {
@@ -291,10 +288,6 @@ function refreshIcons() {
 applyPlatformClass();
 refreshIcons();
 
-function createGroupId() {
-  return 'grp-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-}
-
 function defaultGroups() {
   return [
     {
@@ -323,11 +316,6 @@ const defaultProfiles = () => [
     location: 'Local',
   },
 ];
-
-function positiveProfileNumber(value) {
-  const number = Number.parseInt(value, 10);
-  return Number.isInteger(number) && number > 0 ? number : 0;
-}
 
 function normalizeProfileSettings(profile) {
   const value = profile && typeof profile === 'object' ? profile : {};
