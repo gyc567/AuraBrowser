@@ -5,6 +5,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const { ProfileLockedError, ProfileLockUnrecoverableError } = require('../lib/errors');
 
 // PowerShell startup plus the WMI provider can exceed two seconds on a busy
 // Windows/RDP host. A short timeout turns a safe process check into a false
@@ -44,9 +45,21 @@ function lockBelongsToProfile(lock, identity) {
   return true;
 }
 
+/**
+ * Build a profile lock error.
+ *
+ * Returns a ProfileLockedError or ProfileLockUnrecoverableError based on the
+ * provided code. The original lock object (if any) is attached as `.lock` and
+ * also mirrored into `.context.lock` for structured logging.
+ *
+ * @param {string} code
+ * @param {string} message
+ * @param {object} [lock]
+ * @returns {ProfileLockedError|ProfileLockUnrecoverableError}
+ */
 function lockOwnerError(code, message, lock = null) {
-  const error = new Error(message);
-  error.code = code;
+  const Cls = code === 'PROFILE_LOCK_UNRECOVERABLE' ? ProfileLockUnrecoverableError : ProfileLockedError;
+  const error = new Cls(message, { code, context: { lock } });
   if (lock) error.lock = lock;
   return error;
 }
