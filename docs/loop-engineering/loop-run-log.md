@@ -84,3 +84,34 @@
 - slice removed from High Priority via loop-state-update (applied: 1)
 - next_action: git push; review blocked slices (REFAC-engine-lock, REFAC-engine-profile) before continuing engine modularization
 - second L2 slice successful; loop is producing repeatable results
+
+## 2026-09-09T09:05:00Z | compound-slicer | L2 | OK
+
+- run_id: slicer-renderer-split-001
+- pattern: compound-slicer (extended to support --goal REFAC-renderer-split)
+- summary: Decomposed Browserapp/renderer.js (8016 lines, 294 top-level decls, 221 functions) into 9 slice-cards: 6 for renderer modularization (utils, localization, profile-migrations, app-update, groups, format-bytes), 1 final integration (renderer-index), 1 Phase 4 perf slice (renderer-dom-budget), 1 Phase 4 infra slice (release-please). All 9 marked needs-human; 0 blocked (no denylist touches in renderer.js).
+- total_lines: 8016
+- constraints_used: { max_slices: 12, max_files_per_slice: 8, max_lines_per_slice: 800 }
+- target_paths: [Browserapp/renderer.js, Browserapp/index.html]
+- next_action: pick first ready slice (REFAC-renderer-utils, 0 deps)
+- slicer extended to support multiple goals (added REFAC-renderer-split case to GOAL_TEMPLATES)
+
+## 2026-09-09T09:10:00Z | compound-verifier | L2 | PASS
+
+- run_id: verifier-REFAC-renderer-utils-001
+- pattern: compound-verifier
+- verdict: PASS, score 100/100 (perfect score)
+- evidence:
+  - tests_run: 138 (14 new + 124 from pnpm test Browserapp)
+  - tests_passed: 138
+  - denylist_touched: false
+  - console_log_residue: false
+  - test_new_branches_covered: true
+  - renderer/utils.js: UMD-lite pattern works (CommonJS + window.__rendererUtils)
+  - renderer.js: destructured globals at line 4, 3 functions removed (semantics preserved)
+  - index.html: <script src=renderer/utils.js> loads BEFORE renderer.js (correct ordering)
+- maker: this session
+- verifier: fresh subagent (non-fork), default REJECT stance
+- slice removed from High Priority via loop-state-update (applied: 1)
+- third L2 slice successful; loop now has 3 consecutive perfect/almost-perfect scores (96, 100, 100)
+- next_action: REFAC-renderer-localization OR REFAC-renderer-format-bytes (both depend on this slice)

@@ -47,6 +47,109 @@
       "allowlist": false,
       "category": "refactor",
       "added_at": "2026-09-09T08:33:24.275Z"
+    },
+    {
+      "id": "REFAC-renderer-localization",
+      "slice": "Extract localization table (t, tx, localizeSystemLabel, refreshLocaleChrome) into renderer/l10n.js with i18next-shaped API",
+      "files_touched": 3,
+      "estimated_diff": "+250/-230",
+      "human_gate": "keep UI_KEY_LOCALIZED backward compat; do not switch to i18next runtime yet (that is a later slice)",
+      "depends_on": ["REFAC-renderer-utils"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "REFAC-renderer-profile-migrations",
+      "slice": "Extract profile normalization + migration chain (normalizeProfileSettings, normalizeGroup, migrateGroups, migrateProfileNumbers) into renderer/profile-migrations.js",
+      "files_touched": 3,
+      "estimated_diff": "+500/-480",
+      "human_gate": "migrations are sequenced; any reorder breaks user profiles; preserve order exactly",
+      "depends_on": ["REFAC-renderer-utils"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "REFAC-renderer-app-update",
+      "slice": "Extract app-update panel (applyVersionTrafficLight, openAppUpdatePanel, renderAppUpdateState, checkAppUpdate, downloadAppUpdate, appUpdateState) into renderer/app-update.js",
+      "files_touched": 3,
+      "estimated_diff": "+200/-180",
+      "human_gate": "app-update IPC contract (aura-browser:check-update, aura-browser:download-update) must remain unchanged",
+      "depends_on": ["REFAC-renderer-utils"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "REFAC-renderer-groups",
+      "slice": "Extract group registry (listGroups, findGroup, groupNameOf, groupNameRaw, groupColorOf, countProfilesInGroup, activeGroupFilter) into renderer/groups.js",
+      "files_touched": 3,
+      "estimated_diff": "+150/-130",
+      "human_gate": "group name + color computed from profile id + migration; preserve lookup order for unresolved ids",
+      "depends_on": ["REFAC-renderer-utils", "REFAC-renderer-profile-migrations"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "REFAC-renderer-format-bytes",
+      "slice": "Extract formatBytes + applyPlatformClass + refreshIcons into renderer/format.js",
+      "files_touched": 3,
+      "estimated_diff": "+120/-110",
+      "human_gate": "refreshIcons manipulates DOM classList; must run in browser context only",
+      "depends_on": ["REFAC-renderer-utils"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "REFAC-renderer-index",
+      "slice": "Move shared state and boot wiring into renderer/index.js; renderer.js becomes the original entry that re-exports for backward compat",
+      "files_touched": 2,
+      "estimated_diff": "+80/-60",
+      "human_gate": "final integration slice; index.html script tag still points to renderer.js",
+      "depends_on": [
+        "REFAC-renderer-utils",
+        "REFAC-renderer-localization",
+        "REFAC-renderer-profile-migrations",
+        "REFAC-renderer-app-update",
+        "REFAC-renderer-groups",
+        "REFAC-renderer-format-bytes"
+      ],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "PERF-renderer-dom-budget",
+      "slice": "Audit and cap DOM mutations per render cycle (event-listener leak check, reflow batching)",
+      "files_touched": 2,
+      "estimated_diff": "+150/-100",
+      "human_gate": "Phase 4 perf slice; requires benchmark harness in tests/perf/",
+      "depends_on": ["REFAC-renderer-index"],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
+    },
+    {
+      "id": "INFRA-release-please",
+      "slice": "Configure release-please with conventional-commits + auto CHANGELOG + npm publish",
+      "files_touched": 4,
+      "estimated_diff": "+120/-0",
+      "human_gate": "phase 4 infra slice; configure releaseType per package; first release will be v1.1.1",
+      "depends_on": [],
+      "block": [],
+      "allowlist": false,
+      "category": "refactor",
+      "added_at": "2026-09-09T10:00:31.514Z"
     }
   ],
   "watch": [
@@ -140,12 +243,24 @@
       "title": "feat(loop): first L2 slice complete (REFAC-engine-diagnostic)",
       "commits": ["b1aa609"],
       "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "refactor(renderer): extract pure helpers to renderer/utils.js",
+      "commits": ["e0d309f"],
+      "score": "L1"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "feat(loop): second L2 slice complete (REFAC-engine-proxy)",
+      "commits": ["07c0c4d"],
+      "score": "L1"
     }
   ],
   "loop_metadata": {
     "last_triage_run": "2026-09-09T08:33:33.602Z",
-    "last_audit_run": "2026-09-09T09:14:47.957Z",
-    "last_reconcile_run": "2026-09-09T09:24:47.674Z",
+    "last_audit_run": "2026-09-09T09:25:08.091Z",
+    "last_reconcile_run": "2026-09-09T10:07:16.728Z",
     "last_audit_score": "L3",
     "active_patterns": [
       "daily-triage",

@@ -2,7 +2,7 @@
 
 > Loop Engineering state file. Schema: state/schema.json
 > Source of truth: state/current.json (machine-readable mirror)
-> Last reconcile: 2026-09-09T09:24:47.674Z
+> Last reconcile: 2026-09-09T10:07:16.728Z
 
 ## High Priority (next PR slot)
 
@@ -36,6 +36,61 @@
   - human-gate: final PR — must be last to land; all import sites need shim
   - depends-on: [REFAC-engine-profile, REFAC-engine-proxy, REFAC-engine-extension]
 
+- [ ] **REFAC-renderer-localization**: Extract localization table (t, tx, localizeSystemLabel, refreshLocaleChrome) into renderer/l10n.js with i18next-shaped API
+  - slice: Extract localization table (t, tx, localizeSystemLabel, refreshLocaleChrome) into renderer/l10n.js with i18next-shaped API
+  - files-touched: 3
+  - estimated-diff: +250/-230
+  - human-gate: keep UI_KEY_LOCALIZED backward compat; do not switch to i18next runtime yet (that is a later slice)
+  - depends-on: [REFAC-renderer-utils]
+
+- [ ] **REFAC-renderer-profile-migrations**: Extract profile normalization + migration chain (normalizeProfileSettings, normalizeGroup, migrateGroups, migrateProfileNumbers) into renderer/profile-migrations.js
+  - slice: Extract profile normalization + migration chain (normalizeProfileSettings, normalizeGroup, migrateGroups, migrateProfileNumbers) into renderer/profile-migrations.js
+  - files-touched: 3
+  - estimated-diff: +500/-480
+  - human-gate: migrations are sequenced; any reorder breaks user profiles; preserve order exactly
+  - depends-on: [REFAC-renderer-utils]
+
+- [ ] **REFAC-renderer-app-update**: Extract app-update panel (applyVersionTrafficLight, openAppUpdatePanel, renderAppUpdateState, checkAppUpdate, downloadAppUpdate, appUpdateState) into renderer/app-update.js
+  - slice: Extract app-update panel (applyVersionTrafficLight, openAppUpdatePanel, renderAppUpdateState, checkAppUpdate, downloadAppUpdate, appUpdateState) into renderer/app-update.js
+  - files-touched: 3
+  - estimated-diff: +200/-180
+  - human-gate: app-update IPC contract (aura-browser:check-update, aura-browser:download-update) must remain unchanged
+  - depends-on: [REFAC-renderer-utils]
+
+- [ ] **REFAC-renderer-groups**: Extract group registry (listGroups, findGroup, groupNameOf, groupNameRaw, groupColorOf, countProfilesInGroup, activeGroupFilter) into renderer/groups.js
+  - slice: Extract group registry (listGroups, findGroup, groupNameOf, groupNameRaw, groupColorOf, countProfilesInGroup, activeGroupFilter) into renderer/groups.js
+  - files-touched: 3
+  - estimated-diff: +150/-130
+  - human-gate: group name + color computed from profile id + migration; preserve lookup order for unresolved ids
+  - depends-on: [REFAC-renderer-utils, REFAC-renderer-profile-migrations]
+
+- [ ] **REFAC-renderer-format-bytes**: Extract formatBytes + applyPlatformClass + refreshIcons into renderer/format.js
+  - slice: Extract formatBytes + applyPlatformClass + refreshIcons into renderer/format.js
+  - files-touched: 3
+  - estimated-diff: +120/-110
+  - human-gate: refreshIcons manipulates DOM classList; must run in browser context only
+  - depends-on: [REFAC-renderer-utils]
+
+- [ ] **REFAC-renderer-index**: Move shared state and boot wiring into renderer/index.js; renderer.js becomes the original entry that re-exports for backward compat
+  - slice: Move shared state and boot wiring into renderer/index.js; renderer.js becomes the original entry that re-exports for backward compat
+  - files-touched: 2
+  - estimated-diff: +80/-60
+  - human-gate: final integration slice; index.html script tag still points to renderer.js
+  - depends-on: [REFAC-renderer-utils, REFAC-renderer-localization, REFAC-renderer-profile-migrations, REFAC-renderer-app-update, REFAC-renderer-groups, REFAC-renderer-format-bytes]
+
+- [ ] **PERF-renderer-dom-budget**: Audit and cap DOM mutations per render cycle (event-listener leak check, reflow batching)
+  - slice: Audit and cap DOM mutations per render cycle (event-listener leak check, reflow batching)
+  - files-touched: 2
+  - estimated-diff: +150/-100
+  - human-gate: Phase 4 perf slice; requires benchmark harness in tests/perf/
+  - depends-on: [REFAC-renderer-index]
+
+- [ ] **INFRA-release-please**: Configure release-please with conventional-commits + auto CHANGELOG + npm publish
+  - slice: Configure release-please with conventional-commits + auto CHANGELOG + npm publish
+  - files-touched: 4
+  - estimated-diff: +120/-0
+  - human-gate: phase 4 infra slice; configure releaseType per package; first release will be v1.1.1
+
 ## Watch (this week)
 
 - lib/ coverage: 93.89% lines / 77.02% branches
@@ -60,12 +115,14 @@
 - 2026-09-09 chore(loop): adopt style commit (loop self-consistent) (8e8d0c6)
 - 2026-09-09 refactor(engine): extract proxy helpers to engine/proxy.js (8f4e71c)
 - 2026-09-09 feat(loop): first L2 slice complete (REFAC-engine-diagnostic) (b1aa609)
+- 2026-09-09 refactor(renderer): extract pure helpers to renderer/utils.js (e0d309f)
+- 2026-09-09 feat(loop): second L2 slice complete (REFAC-engine-proxy) (07c0c4d)
 
 ## Loop Metadata
 
 - last_triage_run: 2026-09-09T08:33:33.602Z
-- last_audit_run: 2026-09-09T09:14:47.957Z
-- last_reconcile_run: 2026-09-09T09:24:47.674Z
+- last_audit_run: 2026-09-09T09:25:08.091Z
+- last_reconcile_run: 2026-09-09T10:07:16.728Z
 - last_audit_score: L3
 - active_patterns: [daily-triage, pr-babysitter, post-merge-cleanup, compound-slicer, compound-verifier]
 - paused_patterns: []
